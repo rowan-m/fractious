@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <meta charset="utf-8" />
@@ -21,7 +20,10 @@
     content="Learn about the new User-Agent Client Hints and how they work."
   />
 
-  <meta property="og:url" content="https://user-agent-client-hints.glitch.me/" />
+  <meta
+    property="og:url"
+    content="https://user-agent-client-hints.glitch.me/"
+  />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="User-Agent Client Hints 🧩" />
   <meta
@@ -46,7 +48,11 @@
     style="position: absolute; top: 2px; right: 2px;"
   ></div>
   <script src="https://button.glitch.me/button.js"></script>
-
   <script>
+    var req = new XMLHttpRequest();
+    req.open("GET", document.location, false);
+    req.send(null);
+    var headers = req.getAllResponseHeaders().toLowerCase();
+    console.log(headers);
   </script>
 </html>
