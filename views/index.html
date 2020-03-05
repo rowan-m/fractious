@@ -1,51 +1,52 @@
-<!-- This is a static file -->
-<!-- served from your routes in server.js -->
+
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Welcome to Glitch!</title>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="A cool thing made with Glitch">
-    <link id="favicon" rel="icon" href="https://glitch.com/edit/favicon-app.ico" type="image/x-icon">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>User-Agent Client Hints</title>
+  <link rel="canonical" href="https://user-agent-client-hints.glitch.me/" />
 
-    <!-- import the webpage's stylesheet -->
-    <link rel="stylesheet" href="/style.css">
+  <meta name="Description" content="Test SameSite cookie compatibility." />
+  <meta name="theme-color" content="honeydew" />
+  <link
+    rel="shortcut icon"
+    href="https://cdn.glitch.com/e304e580-9956-4cb6-9f62-9e89ad6cd85f%2Fcookie.png?v=1572981153632"
+  />
 
-    <!-- import the webpage's client-side javascript file -->
-    <script src="/script.js" defer></script>
-  </head>
-  <body>
-    <header>
-      <h1>A Dream of the Future</h1>
-    </header>
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@rowan_m" />
+  <meta name="twitter:title" content="User-Agent Client Hints" />
+  <meta
+    name="twitter:description"
+    content="Learn about the new User-Agent Client Hints and how they work."
+  />
 
-    <main>
-      <h2>Oh hi,</h2>
+  <meta property="og:url" content="https://user-agent-client-hints.glitch.me/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="User-Agent Client Hints" />
+  <meta
+    property="og:description"
+    content="Learn about the new User-Agent Client Hints and how they work."
+  />
 
-      <p>Tell me your hopes and dreams:</p>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
 
-      <form>
-        <label>
-          New Dream
-          <input name="dream" type="text" maxlength="100" required placeholder="Dreams!">
-        </label>
-        <button type="submit" id="submit-dream">Add Dream</button>
-      </form>
+    h1 {
+      font-size: 120%;
+      color: darkslateblue;
+    }
+  </style>
+  <h1>User-Agent Client Hints</h1>
 
-      <section class="dreams">
-        <ul id="dreams">
-          <em>loading dreams&hellip;</em>
-        </ul>
-      </section>
-    </main>
+  <div
+    class="glitchButton"
+    style="position: absolute; top: 2px; right: 2px;"
+  ></div>
+  <script src="https://button.glitch.me/button.js"></script>
 
-    <footer>Made with <a href="https://glitch.com">Glitch</a>!</footer>
-
-    <!-- include the Glitch button to show what the webpage is about and
-          to make it easier for folks to view source and remix -->
-    <div class="glitchButton" style="position:fixed;top:2em;right:20px;"></div>
-    <script src="https://button.glitch.me/button.js"></script>
-  </body>
+  <script>
+  </script>
 </html>
