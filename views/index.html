@@ -51,6 +51,7 @@
   <script>
     var req = new XMLHttpRequest();
     req.open("GET", document.location, false);
+    console.log(req);
     req.send(null);
     var headers = req.getAllResponseHeaders().toLowerCase();
     console.log(headers);
