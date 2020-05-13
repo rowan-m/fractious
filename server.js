@@ -21,6 +21,12 @@ app.use(function (req, res, next) {
   res.redirect('https://' + req.headers.host + req.url);
 });
 
+app.get('/', (req, res) => {
+  res.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  res.set('X-Foo', 'bar');
+  res.sendFile(__dirname + '/public/index.html');
+});
+
 app.use(express.static('public',
   {
     maxAge: '1d',
@@ -29,11 +35,6 @@ app.use(express.static('public',
     }
   }
 ));
-
-// app.get('/', (req, res) => {
-//   res.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-//   res.sendFile(__dirname + '/views/index.html');
-// });
 
 const listener = app.listen(process.env.PORT, function () {
   console.log('Your app is listening on port ' + listener.address().port);
