@@ -1,6 +1,11 @@
 const express = require('express');
 const app = express();
 
+// Valid hints prefixed with 
+const _HINTS = [
+  
+];
+
 app.enable('trust proxy');
 app.use(function (req, res, next) {
   if (req.secure) {
