@@ -3,7 +3,13 @@ const app = express();
 
 // Valid hints prefixed with 
 const _HINTS = [
-  
+  'UA-Arch',
+  'UA-Model',
+  'UA-Platform',
+  'UA-Platform-Version',
+  'UA',
+  'UA-Full-Version',
+  'UA-Mobile',
 ];
 
 app.enable('trust proxy');
