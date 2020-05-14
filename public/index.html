@@ -54,6 +54,7 @@
     font-weight: 400;
     margin-bottom: 0.1rem;
     background: thistle;
+    color: indigo;
   }
   
   pre, label {
@@ -64,6 +65,10 @@
     color: #444;
     background: oldlace;
     padding: 2vw;
+  }
+  
+  fieldset {
+    border: 2px thistle ridge;
   }
   
   div {
@@ -79,9 +84,9 @@
 </header>
 <main>
   <h2>[Response] Server asked for:</h2>
-  <pre class="response" disabled>[none]</pre>
+  <pre class="response" disabled>[…]</pre>
   <h2>[Subsequent Request] Client sent:</h2>
-  <pre class="request" disabled>[none]</pre>
+  <pre class="request" disabled>[…]</pre>
   <h2>Server should ask for:</h2>
   <form method="get" action="/">
     <fieldset>
@@ -98,7 +103,7 @@
   </form>
 </main>
 <footer>
-  <p>Enable 🚩 <tt>chrome://flags/#enable-experimental-web-platform-features</tt>.</p>
+  <p>🚩 Enable <tt>chrome://flags/#enable-experimental-web-platform-features</tt>.</p>
   <p>💻 <a href="https://glitch.com/edit/#!/user-agent-client-hints">See the code</a></p>
 </footer>
 <script>
