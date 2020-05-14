@@ -41,11 +41,17 @@
 <style>
   body {
     font-family: sans-serif;
+    font-weight: 300;
+  }
+  
+  h1 {
+    font-size: 1.2rem;
+    font-weight: 400;
   }
 </style>
 <header>
   <h1>User-Agent 🧩 Client Hints</h1>
-  <p>Enable <tt>chrome://flags/#enable-experimental-web-platform-features</tt>.</p>
+  <p>Enable 🚩 <tt>chrome://flags/#enable-experimental-web-platform-features</tt>.</p>
 </header>
 <main>
   <p>In this response, the server asked for the following Client Hints:</p>
@@ -68,5 +74,9 @@
 </footer>
 <script>
   'use strict';
-  
+  var req = new XMLHttpRequest();
+req.open('GET', document.location, false);
+req.send(null);
+var headers = req.getAllResponseHeaders().toLowerCase();
+alert(headers);
 </script>
