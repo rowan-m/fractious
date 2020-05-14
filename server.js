@@ -48,7 +48,7 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/public/index.html');
 });
 
-app.get('/show-headers', (req, res) => {
+app.get('/show-headers.json', (req, res) => {
   res.json({
     'Accept-CH': res.get('Accept-CH'),
     'Sec-CH': {

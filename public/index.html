@@ -55,9 +55,9 @@
 </header>
 <main>
   <p>In this response, the server asked for the following Client Hints:</p>
-  <textarea>[none]</textarea>
+  <textarea class="response">[none]</textarea>
   <p>On the subsequent request, this browser sent:</p>
-  <textarea>[none]</textarea>
+  <textarea class="request">[none]</textarea>
   <p>The server should ask for:</p>
   <form method="get" action="/">
     <input type="checkbox" id="ua-arch" name="uach" value="UA-Arch"><label for="ua-arch"><tt>UA-Arch</tt></label>
@@ -75,7 +75,16 @@
 <script>
   'use strict';
   
-  const req = new XMLHttpRequest();
-  req.open('GET', '/show-headers' + document.location.search, false);
-  req.send(null);
+  fetch('/show-headers' + document.location.search)
+  .then(
+    (res) => {
+      if (res.status === 200) {
+      res.json().then((data) => {
+        console.log(data);
+      });
+      }
+
+      });
+    }
+  );
 </script>
