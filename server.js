@@ -24,20 +24,23 @@ app.use(function (req, res, next) {
 app.get('/', (req, res) => {
   res.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   
-  let rawUa = [];
+  let rawCH = [];
   
-  if (typeof req.query.ua === 'string') {
-    rawUa = [req.query.ua];
-  } else if (Array.isArray(req.query.ua)) {
-    rawUa = req.query.ua;
+  if (typeof req.query.uach === 'string') {
+    rawCH = [req.query.uach];
+  } else if (Array.isArray(req.query.uach)) {
+    rawCH = req.query.uach;
   }
   
-  rawUa.foreach((ua) => {
-    if (_HINTS.indexOf(ua) !== -1) {
-      
+  const acceptCH = [];
+  
+  rawCH.forEach((uach) => {
+    if (_HINTS.indexOf(uach) >= 0) {
+      acceptCH.push(uach);
     }
   });
-  
+
+  res.set('Accept-CH', acceptCH.join(', '));
   res.sendFile(__dirname + '/public/index.html');
 });
 
