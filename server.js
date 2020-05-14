@@ -1,6 +1,3 @@
-const express = require('express');
-const app = express();
-
 // Valid hints prefixed with 
 const _HINTS = [
   'UA-Arch',
@@ -11,6 +8,9 @@ const _HINTS = [
   'UA-Full-Version',
   'UA-Mobile',
 ];
+
+const express = require('express');
+const app = express();
 
 app.enable('trust proxy');
 app.use(function (req, res, next) {
