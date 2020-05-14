@@ -39,15 +39,25 @@
 -->
 
 <style>
+  * {
+    box-sizing: border-box;
+  }
+  
   body {
     font-family: sans-serif;
     font-weight: 300;
+    margin: 1vw;
   }
   
   h1 {
     font-size: 1.2rem;
     font-weight: 400;
   }
+  
+  pre {
+    font-family: monospace;
+  }
+  
 </style>
 <header>
   <h1>User-Agent 👀 Client Hints</h1>
@@ -55,18 +65,21 @@
 </header>
 <main>
   <p>In this response, the server asked for the following Client Hints:</p>
-  <textarea class="response">[none]</textarea>
+  <pre class="response" disabled>[none]</pre>
   <p>On the subsequent request, this browser sent:</p>
-  <textarea class="request">[none]</textarea>
+  <pre class="request" disabled>[none]</pre>
   <p>The server should ask for:</p>
   <form method="get" action="/">
-    <input type="checkbox" id="ua-arch" name="uach" value="UA-Arch"><label for="ua-arch"><tt>UA-Arch</tt></label>
-    <input type="checkbox" id="ua-model" name="uach" value="UA-Model"><label for="ua-model"><tt>UA-Model</tt></label>
-    <input type="checkbox" id="ua-platform" name="uach" value="UA-Platform"><label for="ua-platform"><tt>UA-Platform</tt></label>
-    <input type="checkbox" id="ua-platform-version" name="uach" value="UA-Platform-Version"><label for="ua-platform-version"><tt>UA-Platform-Version</tt></label>
-    <input type="checkbox" id="ua" name="uach" value="UA"><label for="ua"><tt>UA</tt></label>
-    <input type="checkbox" id="ua-full-version" name="uach" value="UA-Full-Version"><label for="ua-full-version"><tt>UA-Full-Version</tt></label>
-    <input type="checkbox" id="ua-mobile" name="uach" value="UA-Mobile"><label for="ua-mobile"><tt>UA-Mobile</tt></label>
+    <fieldset>
+      <legend>User-Agent Client Hints</legend>
+      <div><input type="checkbox" id="ua-arch" name="uach" value="UA-Arch"><label for="ua-arch"><tt>UA-Arch</tt></label></div>
+      <div><input type="checkbox" id="ua-model" name="uach" value="UA-Model"><label for="ua-model"><tt>UA-Model</tt></label></div>
+      <div><input type="checkbox" id="ua-platform" name="uach" value="UA-Platform"><label for="ua-platform"><tt>UA-Platform</tt></label></div>
+      <div><input type="checkbox" id="ua-platform-version" name="uach" value="UA-Platform-Version"><label for="ua-platform-version"><tt>UA-Platform-Version</tt></label></div>
+      <div><input type="checkbox" id="ua" name="uach" value="UA"><label for="ua"><tt>UA</tt></label></div>
+      <div><input type="checkbox" id="ua-full-version" name="uach" value="UA-Full-Version"><label for="ua-full-version"><tt>UA-Full-Version</tt></label></div>
+      <div><input type="checkbox" id="ua-mobile" name="uach" value="UA-Mobile"><label for="ua-mobile"><tt>UA-Mobile</tt></label></div>
+    </fieldset>
     <button type="submit">Send</button>
   </form>
 </main>
