@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <meta charset="utf-8" />
-<title>User-Agent 🧩 Client Hints</title>
+<title>User-Agent 👀 Client Hints</title>
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link id="favicon" rel="icon" href="data:" type="image/x-icon" />
 
-<meta name="Description" content="User-Agent 🧩 Client Hints" />
+<meta name="Description" content="User-Agent 👀 Client Hints" />
 <link rel="canonical" href="https://user-agent-client-hints.glitch.me/" />
 
 <!--
@@ -50,7 +50,7 @@
   }
 </style>
 <header>
-  <h1>User-Agent 🧩 Client Hints</h1>
+  <h1>User-Agent 👀 Client Hints</h1>
   <p>Enable 🚩 <tt>chrome://flags/#enable-experimental-web-platform-features</tt>.</p>
 </header>
 <main>
@@ -77,6 +77,14 @@
   
   const resText = document.querySelector('.response');
   const reqText = document.querySelector('.request');
+  
+  const activeHeaders = new URLSearchParams(document.location.search);
+  for(var header of activeHeaders.values()) {
+    const checkbox = document.querySelector(`input[value=${header}]`);
+    if (checkbox) {
+      checkbox.checked = true;
+    }
+  }
   
   fetch('/show-headers.json' + document.location.search)
   .then((res) => {
