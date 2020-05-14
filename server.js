@@ -52,13 +52,13 @@ app.get('/show-headers', (req, res) => {
   res.json({
     'Accept-CH': res.get('Accept-CH'),
     'Sec-CH': {
-      'UA-Arch': req.get('UA-Arch'),
-      'UA-Model': req.get('UA-Model'),
-      'UA-Platform': req.get('UA-Platform'),
-      'UA-Platform-Version': req.get('UA-Platform-Version'),
-      'UA': req.get('UA'),
-      'UA-Full-Version': req.get('UA-Full-Version'),
-      'UA-Mobile': req.get('UA-Mobile'),
+      'UA-Arch': req.get('Sec-CH-UA-Arch'),
+      'UA-Model': req.get('Sec-CH-UA-Model'),
+      'UA-Platform': req.get('Sec-CH-UA-Platform'),
+      'UA-Platform-Version': req.get('Sec-CH-UA-Platform-Version'),
+      'UA': req.get('Sec-CH-UA'),
+      'UA-Full-Version': req.get('Sec-CH-UA-Full-Version'),
+      'UA-Mobile': req.get('Sec-CH-UA-Mobile'),
     }
   });  
 });
