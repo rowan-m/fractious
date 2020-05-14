@@ -75,16 +75,21 @@
 <script>
   'use strict';
   
-  fetch('/show-headers' + document.location.search)
-  .then(
-    (res) => {
+  const resText = document.querySelector('.response');
+  const reqText = document.querySelector('.request');
+  
+  fetch('/show-headers.json' + document.location.search)
+  .then((res) => {
       if (res.status === 200) {
-      res.json().then((data) => {
-        console.log(data);
-      });
+        res.json().then((data) => {
+          resText.textContent = 'Accept-CH: ' + data['Accept-CH'];
+          
+          let secChText = '';
+          for (const header in data['Sec-CH']) {
+            secChText += `Sec-CH-${header}: ${data['Sec-CH'][header]}\n`;
+          }
+          reqText.textContent = secChText;
+        });
       }
-
-      });
-    }
-  );
+  });
 </script>
