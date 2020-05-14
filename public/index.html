@@ -49,13 +49,25 @@
     margin: 1vw;
   }
   
-  h1 {
+  h1, h2 {
     font-size: 1.2rem;
     font-weight: 400;
+    margin-bottom: 0.1rem;
   }
   
-  pre {
+  pre, label {
     font-family: monospace;
+    font-weight: 700;
+    width: 98vw;
+    overflow: scroll;
+    color: #444;
+    background: whitesmoke;
+    padding: 2vw;
+  }
+  
+  div {
+    padding-top: 2vw;
+    padding-bottom: 2vw;
   }
   
 </style>
@@ -64,11 +76,11 @@
   <p>Enable 🚩 <tt>chrome://flags/#enable-experimental-web-platform-features</tt>.</p>
 </header>
 <main>
-  <p>In this response, the server asked for the following Client Hints:</p>
+  <h2>[Response] Server asked for:</h2>
   <pre class="response" disabled>[none]</pre>
-  <p>On the subsequent request, this browser sent:</p>
+  <h2>[Subsequent Request] Client sent:</h2>
   <pre class="request" disabled>[none]</pre>
-  <p>The server should ask for:</p>
+  <h2>Server should ask for:</h2>
   <form method="get" action="/">
     <fieldset>
       <legend>User-Agent Client Hints</legend>
