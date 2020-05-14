@@ -49,7 +49,18 @@ app.get('/', (req, res) => {
 });
 
 app.get('/show-headers', (req, res) => {
-  
+  res.json({
+    'Accept-CH': res.get('Accept-CH'),
+    'Sec-CH': {
+      'UA-Arch': req.get('UA-Arch'),
+      'UA-Model': req.get('UA-Model'),
+      'UA-Platform': req.get('UA-Platform'),
+      'UA-Platform-Version': req.get('UA-Platform-Version'),
+      'UA': req.get('UA'),
+      'UA-Full-Version': req.get('UA-Full-Version'),
+      'UA-Mobile': req.get('UA-Mobile'),
+    }
+  });  
 });
 
 app.use(express.static('public', { maxAge: '1d' } ));
