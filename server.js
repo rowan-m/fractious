@@ -22,7 +22,7 @@ app.use(function (req, res, next) {
   res.redirect(301, 'https://' + req.headers.host + req.url);
 });
 
-app.get('/', (req, res) => {
+app.use(function (req, res, next) {
   let rawCH = [];
   
   if (typeof req.query.uach === 'string') {
@@ -39,8 +39,17 @@ app.get('/', (req, res) => {
     }
   });
 
-  res.set('Accept-CH', acceptCH.join(', '));
+  res.set('Accept-CH', acceptCH.join(', '));    res.set('Strict-Transport-Security', 'max-age=63072000; inlcudeSubdomains; preload');
+  return next();
+});
+
+app.get('/', (req, res) => {
+
   res.sendFile(__dirname + '/public/index.html');
+});
+
+app.get('/show-headers', (req, res) => {
+  
 });
 
 app.use(express.static('public', { maxAge: '1d' } ));
