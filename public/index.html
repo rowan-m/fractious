@@ -50,7 +50,7 @@
   }
   
   h1, h2 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 400;
     margin-bottom: 0.1rem;
   }
@@ -66,14 +66,15 @@
   }
   
   div {
-    padding-top: 2vw;
-    padding-bottom: 2vw;
+    padding: 2vw;
   }
   
+  button {
+    margin: 2vw;
+  }
 </style>
 <header>
   <h1>User-Agent 👀 Client Hints</h1>
-  <p>Enable 🚩 <tt>chrome://flags/#enable-experimental-web-platform-features</tt>.</p>
 </header>
 <main>
   <h2>[Response] Server asked for:</h2>
@@ -92,10 +93,12 @@
       <div><input type="checkbox" id="ua-full-version" name="uach" value="UA-Full-Version"><label for="ua-full-version"><tt>UA-Full-Version</tt></label></div>
       <div><input type="checkbox" id="ua-mobile" name="uach" value="UA-Mobile"><label for="ua-mobile"><tt>UA-Mobile</tt></label></div>
     </fieldset>
-    <button type="submit">Send</button>
+    <button type="submit">▶️ Send</button>
   </form>
 </main>
 <footer>
+  <p>Enable 🚩 <tt>chrome://flags/#enable-experimental-web-platform-features</tt>.</p>
+  <p>💻 <a href="https://glitch.com/edit/#!/user-agent-client-hints">See the code</a></p>
 </footer>
 <script>
   'use strict';
