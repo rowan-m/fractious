@@ -23,7 +23,11 @@ app.use(function (req, res, next) {
 
 app.get('/', (req, res) => {
   res.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-  res.set('X-Foo', 'bar');
+  
+  const uas = (req.query.ua) ? req.query.ua : [];
+  console.log(req.query.ua);
+  
+  
   res.sendFile(__dirname + '/public/index.html');
 });
 
