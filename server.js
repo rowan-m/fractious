@@ -19,7 +19,7 @@ app.use(function (req, res, next) {
     return next();
   }
   
-  res.redirect('https://' + req.headers.host + req.url);
+  res.redirect(301, 'https://' + req.headers.host + req.url);
 });
 
 app.get('/', (req, res) => {
