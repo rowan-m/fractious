@@ -1,12 +1,12 @@
 // Valid hints prefixed with 
 const _HINTS = [
   'UA-Arch',
-  'UA-Model',
-  'UA-Platform',
-  'UA-Platform-Version',
-  'UA',
   'UA-Full-Version',
   'UA-Mobile',
+  'UA-Model',
+  'UA-Platform-Version',
+  'UA-Platform',
+  'UA',
 ];
 
 const express = require('express');

@@ -99,7 +99,12 @@
     border: 1px hsl(300, 24%, 55%) solid;
     border-radius: 2px;
     background: linear-gradient(hsl(300, 24%, 95%), hsl(300, 24%, 90%));
-    color: color: hsl(300, 24%, 30%);
+    color: hsl(300, 24%, 20%);
+  }
+
+  a {
+    color: hsl(300, 24%, 50%);
+    font-weight: 500;
   }
 </style>
 <header>
@@ -116,12 +121,12 @@
     <fieldset>
       <legend>Available hints</legend>
       <div><input type="checkbox" id="ua-arch" name="uach" value="UA-Arch"><label for="ua-arch"><tt>UA-Arch</tt></label></div>
-      <div><input type="checkbox" id="ua-model" name="uach" value="UA-Model"><label for="ua-model"><tt>UA-Model</tt></label></div>
-      <div><input type="checkbox" id="ua-platform" name="uach" value="UA-Platform"><label for="ua-platform"><tt>UA-Platform</tt></label></div>
-      <div><input type="checkbox" id="ua-platform-version" name="uach" value="UA-Platform-Version"><label for="ua-platform-version"><tt>UA-Platform-Version</tt></label></div>
-      <div><input type="checkbox" id="ua" name="uach" value="UA"><label for="ua"><tt>UA</tt></label></div>
       <div><input type="checkbox" id="ua-full-version" name="uach" value="UA-Full-Version"><label for="ua-full-version"><tt>UA-Full-Version</tt></label></div>
       <div><input type="checkbox" id="ua-mobile" name="uach" value="UA-Mobile"><label for="ua-mobile"><tt>UA-Mobile</tt></label></div>
+      <div><input type="checkbox" id="ua-model" name="uach" value="UA-Model"><label for="ua-model"><tt>UA-Model</tt></label></div>
+      <div><input type="checkbox" id="ua-platform-version" name="uach" value="UA-Platform-Version"><label for="ua-platform-version"><tt>UA-Platform-Version</tt></label></div>
+      <div><input type="checkbox" id="ua-platform" name="uach" value="UA-Platform"><label for="ua-platform"><tt>UA-Platform</tt></label></div>
+      <div><input type="checkbox" id="ua" name="uach" value="UA"><label for="ua"><tt>UA</tt></label></div>
     </fieldset>
     <button type="submit">🔄 Send</button>
   </form>
