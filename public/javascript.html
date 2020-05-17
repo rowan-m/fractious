@@ -73,11 +73,11 @@
 
     pre {
       display: block;
-      overflow: scroll;
+      overflow: auto;
       padding: 0.8rem;
       margin: 0;
     }
-
+    
     label {
       display: inline-block;
       margin: 0.1rem;
@@ -110,14 +110,17 @@
     </nav>
   </header>
   <main>
-    <h2><tt>navigator.userAgentData.brands</tt></h2>
+    <h2>Brands</h2>
+    <pre class="input">&gt; console.log(navigator.userAgentData.brands);</pre>
     <pre class="brands" disabled>[…]</pre>
-    <h2><tt>navigator.userAgentData.mobile</tt></h2>
+    <h2>Mobile-ness</h2>
+    <pre class="input">&gt; console.log(navigator.userAgentData.mobile);</pre>
     <pre class="mobile" disabled>[…]</pre>
-    <h2><tt>navigator.userAgentData.getHighEntropyValues()</tt></h2>
-    <pre class="high-entropy" disabled>navigator.userAgentData
+    <h2>Full User Agent</h2>
+    <pre class="input">&gt; navigator.userAgentData
   .getHighEntropyValues(["architecture", "model", "platform", "platformVersion", "uaFullVersion"])
-  .then(ua => { […] });</pre>
+  .then(ua => { console.log(ua) });</pre>
+    <pre class="high-entropy" disabled></pre>
   </main>
   <footer>
     <p>🚩 Enable <tt>chrome://flags/#enable-experimental-web-platform-features</tt>.</p>
@@ -135,6 +138,6 @@
     navigator.userAgentData
       .getHighEntropyValues(["architecture", "model", "platform", "platformVersion", "uaFullVersion"])
       .then(ua => {
-        highEntropyText.textContent += "\n\n" + JSON.stringify(ua, null, "  ");
+        highEntropyText.textContent = JSON.stringify(ua, null, "  ");
       });
   </script>
