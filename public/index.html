@@ -108,7 +108,13 @@
 </footer>
 <script>
   'use strict';
-  
+  navigator.userAgentData.getHighEntropyValues(['uaFullVersion']).then((ua) => { console.log(ua.uaFullVersion); });
+  let uaFv = null;
+  (async () => {
+    uaFv = await navigator.userAgentData.getHighEntropyValues(['uaFullVersion']);
+    
+  });
+  console.log(uaFv);
   const resText = document.querySelector('.response');
   const reqText = document.querySelector('.request');
   
