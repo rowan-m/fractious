@@ -104,27 +104,15 @@
 </style>
 <header>
   <h1>User-Agent 👀 Client Hints</h1>
-  <nav><a href="/">[via headers]</a> <a href="/">[via JavaScript]</a></nav>
+  <nav><a href="/">[via headers]</a> <a href="/javascript.html">[via JavaScript]</a></nav>
 </header>
 <main>
-  <h2>[Response] Server asked for:</h2>
-  <pre class="response" disabled>[…]</pre>
-  <h2>[Subsequent Request] Client sent:</h2>
-  <pre class="request" disabled>[…]</pre>
-  <h2>Server should ask for:</h2>
-  <form method="get" action="/">
-    <fieldset>
-      <legend>Available hints</legend>
-      <div><input type="checkbox" id="ua-arch" name="uach" value="UA-Arch"><label for="ua-arch"><tt>UA-Arch</tt></label></div>
-      <div><input type="checkbox" id="ua-model" name="uach" value="UA-Model"><label for="ua-model"><tt>UA-Model</tt></label></div>
-      <div><input type="checkbox" id="ua-platform" name="uach" value="UA-Platform"><label for="ua-platform"><tt>UA-Platform</tt></label></div>
-      <div><input type="checkbox" id="ua-platform-version" name="uach" value="UA-Platform-Version"><label for="ua-platform-version"><tt>UA-Platform-Version</tt></label></div>
-      <div><input type="checkbox" id="ua" name="uach" value="UA"><label for="ua"><tt>UA</tt></label></div>
-      <div><input type="checkbox" id="ua-full-version" name="uach" value="UA-Full-Version"><label for="ua-full-version"><tt>UA-Full-Version</tt></label></div>
-      <div><input type="checkbox" id="ua-mobile" name="uach" value="UA-Mobile"><label for="ua-mobile"><tt>UA-Mobile</tt></label></div>
-    </fieldset>
-    <button type="submit">🔄 Send</button>
-  </form>
+  <h2><tt>navigator.userAgentData.brands</tt></h2>
+  <pre class="brands" disabled>[…]</pre>
+  <h2><tt>navigator.userAgentData.mobile</tt></h2>
+  <pre class="mobile" disabled>[…]</pre>
+  <h2><tt>navigator.userAgentData.getHighEntropyValues(['uaFullVersion']).then((ua) => {  });</tt></h2>
+  <pre class="mobile" disabled>[…]</pre>
 </main>
 <footer>
   <p>🚩 Enable <tt>chrome://flags/#enable-experimental-web-platform-features</tt>.</p>
@@ -132,29 +120,9 @@
 </footer>
 <script>
   'use strict';
-  const resText = document.querySelector('.response');
-  const reqText = document.querySelector('.request');
+  const brandsText = document.querySelector('.brands');  
+  brandsText.textContent = JSON.stringify(navigator.userAgentData.brands, null, '  ');
   
-  const activeHeaders = new URLSearchParams(document.location.search);
-  for(var header of activeHeaders.values()) {
-    const checkbox = document.querySelector(`input[value=${header}]`);
-    if (checkbox) {
-      checkbox.checked = true;
-    }
-  }
-  
-  fetch('/show-headers.json' + document.location.search)
-  .then((res) => {
-      if (res.status === 200) {
-        res.json().then((data) => {
-          resText.textContent = 'Accept-CH: ' + data['Accept-CH'];
-          
-          let secChText = '';
-          for (const header in data['Sec-CH']) {
-            secChText += `Sec-CH-${header}: ${data['Sec-CH'][header]}\n`;
-          }
-          reqText.textContent = secChText;
-        });
-      }
-  });
+  const mobileText = document.querySelector('.mobile');  
+  mobileText.textContent = JSON.stringify(navigator.userAgentData.mobile, null, '  ');
 </script>
