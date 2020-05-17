@@ -128,7 +128,7 @@
     <h2>Mobile-ness</h2>
     <pre class="input">console.log(navigator.userAgentData.mobile);</pre>
     <pre class="mobile" disabled>[…]</pre>
-    <h2>Full User Agent</h2>
+    <h2>Full User-Agent</h2>
     <pre class="input">navigator.userAgentData
   .getHighEntropyValues(["architecture", "model", "platform", "platformVersion", "uaFullVersion"])
   .then(ua => { console.log(ua) });</pre>
@@ -144,7 +144,7 @@
     brandsText.textContent = JSON.stringify(navigator.userAgentData.brands, null, "  ");
 
     const mobileText = document.querySelector(".mobile");
-    mobileText.textContent = JSON.stringify(navigator.userAgentData.mobile, null, "  ");
+    mobileText.textContent = (navigator.userAgentData.mobile) ? 'true' : 'false';
 
     const highEntropyText = document.querySelector(".high-entropy");
     navigator.userAgentData
