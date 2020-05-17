@@ -64,7 +64,7 @@
     overflow: scroll;
     color: #444;
     background: oldlace;
-    padding: 2vw;
+    padding: 1rem;
   }
   
   fieldset {
@@ -72,11 +72,13 @@
   }
   
   div {
-    padding: 2vw;
+    padding: 1rem;
+    display: inline-block;
   }
   
   button {
-    margin: 2vw;
+    margin: 1rem;
+    padding: 1reml
   }
 </style>
 <header>
@@ -108,13 +110,6 @@
 </footer>
 <script>
   'use strict';
-  navigator.userAgentData.getHighEntropyValues(['uaFullVersion']).then((ua) => { console.log(ua.uaFullVersion); });
-  let uaFv = null;
-  (async () => {
-    uaFv = await navigator.userAgentData.getHighEntropyValues(['uaFullVersion']);
-    
-  });
-  console.log(uaFv);
   const resText = document.querySelector('.response');
   const reqText = document.querySelector('.request');
   
