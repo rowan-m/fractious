@@ -98,9 +98,18 @@
     padding: 0.5rem;
     border: 1px hsl(300, 24%, 55%) solid;
     border-radius: 2px;
-    background: hsl(300, 24%, 85%);
+    background: linear-gradient(hsl(300, 24%, 95%), hsl(300, 24%, 90%));
     color: color: hsl(300, 24%, 30%);
 
+  }
+  
+  input[type=checkbox] {
+    margin: 1rem;
+    padding: 0.5rem;
+    border: 1px hsl(300, 24%, 55%) solid;
+    border-radius: 2px;
+    background: linear-gradient(hsl(300, 24%, 95%), hsl(300, 24%, 90%));
+    color: color: hsl(300, 24%, 30%);
   }
 </style>
 <header>
@@ -124,7 +133,7 @@
       <div><input type="checkbox" id="ua-full-version" name="uach" value="UA-Full-Version"><label for="ua-full-version"><tt>UA-Full-Version</tt></label></div>
       <div><input type="checkbox" id="ua-mobile" name="uach" value="UA-Mobile"><label for="ua-mobile"><tt>UA-Mobile</tt></label></div>
     </fieldset>
-    <button type="submit">▶️ Send</button>
+    <button type="submit">🔄 Send</button>
   </form>
 </main>
 <footer>
