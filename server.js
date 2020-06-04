@@ -30,26 +30,30 @@ app.use(function (req, res, next) {
 });
 
 app.get('/', (req, res) => {
+  let header = '[not set]';
   
-  if () {}
-  let rawCH = [];
-  
-  if (typeof req.query.uach === 'string') {
-    rawCH = [req.query.uach];
-  } else if (Array.isArray(req.query.uach)) {
-    rawCH = req.query.uach;
-  }
-  
-  const acceptCH = [];
-  
-  rawCH.forEach((uach) => {
-    if (_HINTS.indexOf(uach) >= 0) {
-      acceptCH.push(uach);
+  if (req.query.noheader != 'noheader') {
+    let rawCH = [];
+    
+    if (typeof req.query.uach === 'string') {
+      rawCH = [req.query.uach];
+    } else if (Array.isArray(req.query.uach)) {
+      rawCH = req.query.uach;
     }
-  });
 
-  res.set('Accept-CH', acceptCH.join(', '));
-  res.render('index', { 'Accept-CH': acceptCH.join(', ') });
+    const acceptCH = [];
+
+    rawCH.forEach((uach) => {
+      if (_HINTS.indexOf(uach) >= 0) {
+        acceptCH.push(uach);
+      }
+    });
+
+    res.set('Accept-CH', acceptCH.join(', '));
+    header = 'Accept-CH: ' + acceptCH.join(', ');
+  }
+
+  res.render('index', { header: header });
 });
 
 app.get('/show-headers.json', (req, res) => {

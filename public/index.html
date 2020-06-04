@@ -113,7 +113,7 @@
 </header>
 <main>
   <h2>[Response] Server asked for:</h2>
-  <pre class="response" disabled>Accept-CH: {{Accept-CH}}</pre>
+  <pre class="response" disabled>{{header}}</pre>
   <h2>[Subsequent Request] Client sent:</h2>
   <pre class="request" disabled>[…]</pre>
   <h2>Server should ask for:</h2>
@@ -128,7 +128,7 @@
       <div><input type="checkbox" id="ua-platform" name="uach" value="UA-Platform"><label for="ua-platform"><tt>UA-Platform</tt></label></div>
       <div><input type="checkbox" id="ua" name="uach" value="UA"><label for="ua"><tt>UA</tt></label></div>
     </fieldset>
-    <div><input type="checkbox" id="no-header" name="no-header" value="no-header"><label for="no-header">Do <em>not</em> send <tt>Accept-CH</tt></label></div>
+    <div><input type="checkbox" id="noheader" name="noheader" value="noheader"><label for="noheader">Do <em>not</em> send <tt>Accept-CH</tt></label></div>
     <button type="submit">🔄 Send</button>
   </form>
 </main>
