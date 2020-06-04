@@ -22,7 +22,7 @@ app.use(function (req, res, next) {
   res.redirect(301, 'https://' + req.headers.host + req.url);
 });
 
-app.use(function (req, res, next) {
+app.get('/', (req, res) => {
   let rawCH = [];
   
   if (typeof req.query.uach === 'string') {
@@ -39,12 +39,8 @@ app.use(function (req, res, next) {
     }
   });
 
-  res.set('Accept-CH', acceptCH.join(', '));    res.set('Strict-Transport-Security', 'max-age=63072000; inlcudeSubdomains; preload');
-  return next();
-});
-
-app.get('/', (req, res) => {
-
+  res.set('Accept-CH', acceptCH.join(', '));
+  
   res.sendFile(__dirname + '/public/index.html');
 });
 
