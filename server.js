@@ -16,6 +16,8 @@ app.engine('html', mustacheExpress());
  
 app.set('view engine', 'html');
 app.set('views', __dirname + '/public');
+app.set('view cache', false);
+
 
 app.enable('trust proxy');
 app.use(function (req, res, next) {
