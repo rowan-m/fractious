@@ -118,7 +118,7 @@
   <pre class="request" disabled>[…]</pre>
   <h2>Server should ask for:</h2>
   <form method="get" action="/">
-    <fieldset>
+    <fieldset class="hints">
       <legend>Available hints</legend>
       <div><input type="checkbox" id="ua-arch" name="uach" value="UA-Arch"><label for="ua-arch"><tt>UA-Arch</tt></label></div>
       <div><input type="checkbox" id="ua-full-version" name="uach" value="UA-Full-Version"><label for="ua-full-version"><tt>UA-Full-Version</tt></label></div>
@@ -138,9 +138,7 @@
 </footer>
 <script>
   'use strict';
-  const reqText = document.querySelector('.request');
-  const headerToggle = document.querySelector('#noheader');
-  
+
   const activeHeaders = new URLSearchParams(document.location.search);
   for(var header of activeHeaders.values()) {
     const checkbox = document.querySelector(`input[value=${header}]`);
@@ -148,8 +146,18 @@
       checkbox.checked = true;
     }
   }
+
+  const availHints = document.querySelector('.hints');
+  const headerToggle = document.querySelector('#noheader');
   
-  debugger;
+  function toggleHeader() {
+    availHints.disabled = (headerToggle.checked) ? true : false
+  }
+  
+  toggleHeader();
+  headerToggle.addEventListener('change', toggleHeader);
+  
+  // debugger;
   fetch('/show-headers.json' + document.location.search)
   .then((res) => {
       if (res.status === 200) {
@@ -158,7 +166,7 @@
           for (const header in data['Sec-CH']) {
             secChText += `Sec-CH-${header}: ${data['Sec-CH'][header]}\n`;
           }
-          reqText.textContent = secChText;
+          document.querySelector('.request').textContent = secChText;
         });
       }
   });
