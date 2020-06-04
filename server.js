@@ -1,4 +1,3 @@
-// Valid hints prefixed with 
 const _HINTS = [
   'UA-Arch',
   'UA-Full-Version',
@@ -11,6 +10,12 @@ const _HINTS = [
 
 const express = require('express');
 const app = express();
+
+const mustacheExpress = require('mustache-express');
+app.engine('html', mustacheExpress());
+ 
+app.set('view engine', 'html');
+app.set('views', __dirname + '/public');
 
 app.enable('trust proxy');
 app.use(function (req, res, next) {
@@ -40,8 +45,7 @@ app.get('/', (req, res) => {
   });
 
   res.set('Accept-CH', acceptCH.join(', '));
-  
-  res.sendFile(__dirname + '/public/index.html');
+  res.render('index', { 'Accept-CH': acceptCH.join(', ') });
 });
 
 app.get('/show-headers.json', (req, res) => {

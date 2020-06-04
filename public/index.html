@@ -113,7 +113,7 @@
 </header>
 <main>
   <h2>[Response] Server asked for:</h2>
-  <pre class="response" disabled>[…]</pre>
+  <pre class="response" disabled>Accept-CH: {{Accept-CH}}</pre>
   <h2>[Subsequent Request] Client sent:</h2>
   <pre class="request" disabled>[…]</pre>
   <h2>Server should ask for:</h2>
@@ -137,7 +137,6 @@
 </footer>
 <script>
   'use strict';
-  const resText = document.querySelector('.response');
   const reqText = document.querySelector('.request');
   
   const activeHeaders = new URLSearchParams(document.location.search);
@@ -153,8 +152,6 @@
   .then((res) => {
       if (res.status === 200) {
         res.json().then((data) => {
-          resText.textContent = 'Accept-CH: ' + data['Accept-CH'];
-          
           let secChText = '';
           for (const header in data['Sec-CH']) {
             secChText += `Sec-CH-${header}: ${data['Sec-CH'][header]}\n`;
