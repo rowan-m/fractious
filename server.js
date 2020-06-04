@@ -30,6 +30,8 @@ app.use(function (req, res, next) {
 });
 
 app.get('/', (req, res) => {
+  
+  if () {}
   let rawCH = [];
   
   if (typeof req.query.uach === 'string') {
