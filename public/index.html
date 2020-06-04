@@ -139,6 +139,7 @@
 <script>
   'use strict';
   const reqText = document.querySelector('.request');
+  const headerToggle = document.querySelector('#noheader');
   
   const activeHeaders = new URLSearchParams(document.location.search);
   for(var header of activeHeaders.values()) {
