@@ -12,11 +12,12 @@ const app = express();
 // app.engine('html', mustacheExpress()); 
 // app.set('view engine', 'html');
 // app.set('views', __dirname + '/public');
-
 // app.set('view cache', true);
 
-// Redirect requests to HTTPS by default and set the HSTS header.
-// You will need to disable or modify this if your demo requires plain HTTP
+/*
+ * Redirect requests to HTTPS by default and set the HSTS header.
+ * You will need to disable or modify this if your demo requires plain HTTP
+ */
 app.enable('trust proxy');
 app.use(function (req, res, next) {
   if (req.secure) {
