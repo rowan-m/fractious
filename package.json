@@ -1,7 +1,7 @@
 {
-  "name": "user-agent-client-hints",
+  "name": "sppi-express-template",
   "version": "0.0.1",
-  "description": "User-Agent Client Hints is a new expansion to the Client Hints API.",
+  "description": "Basic template project with Express and optional Mustache.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -14,7 +14,7 @@
     "node": "12.x"
   },
   "repository": {
-    "url": "https://glitch.com/edit/#!/user-agent-client-hints"
+    "url": "https://glitch.com/edit/#!/sppi-express-template"
   },
   "license": "Apache-2.0",
   "keywords": [
