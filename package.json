@@ -4,7 +4,8 @@
   "description": "Basic template project with Express and optional Mustache.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "start:dev": "NODE_ENV=development PORT=8080 node server.js"
   },
   "dependencies": {
     "express": "^4.17.1",
@@ -18,8 +19,6 @@
   },
   "license": "Apache-2.0",
   "keywords": [
-    "useragent",
-    "clienthints",
-    "web.dev"
+    "demo"
   ]
 }
