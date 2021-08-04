@@ -6,11 +6,16 @@ const app = express();
  * Personal preference is just to "upgrade" existing HTML files with templated variables
  * Enabling the view cache after the demo is published
  */
-const mustacheExpress = require('mustache-express');
-app.engine('html', mustacheExpress());
-app.set('view engine', 'html');
-app.set('views', __dirname + '/public');
+// const mustacheExpress = require('mustache-express');
+// app.engine('html', mustacheExpress());
+// app.set('view engine', 'html');
+// app.set('views', __dirname + '/public');
 
+
+/*
+ * Glitch appears to run in "development" mode, but this is useful if you're moving the code elsewhere
+ * Could also enable by default when the code is stable for performance
+ */
 if (app.get('env') === 'production') {
   app.set('view cache', true);
 }
@@ -46,10 +51,13 @@ app.use(function (req, res, next) {
 // By default, fall back to serving from the `public` directory
 app.use(express.static('public'));
 
-// Cache static files in production
-if (app.get('env') === 'production') {
-  app.use(express.static('public', { maxAge: '1d' }));
-}
+/*
+ * Cache static files in production
+ * Again, could turn this on by default when code is stable for Glitch
+ */
+// if (app.get('env') === 'production') {
+//   app.use(express.static('public', { maxAge: '1d' }));
+// }
 
 const listener = app.listen(process.env.PORT, function () {
   console.log('Your app is listening on port ' + listener.address().port);
