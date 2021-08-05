@@ -2,14 +2,14 @@ const express = require('express');
 const app = express();
 
 /*
- * If you need basic templating, you can enable Mustache here
+ * If you need basic templating, Mustache is enabled
  * Personal preference is just to "upgrade" existing HTML files with templated variables
- * Enabling the view cache after the demo is published
+ * Enable the view cache after the demo is published
  */
-// const mustacheExpress = require('mustache-express');
-// app.engine('html', mustacheExpress());
-// app.set('view engine', 'html');
-// app.set('views', __dirname + '/public');
+const mustacheExpress = require('mustache-express');
+app.engine('html', mustacheExpress());
+app.set('view engine', 'html');
+app.set('views', __dirname + '/public');
 
 
 /*
