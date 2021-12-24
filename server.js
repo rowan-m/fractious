@@ -36,8 +36,18 @@ app.use(function (req, res, next) {
   // Set the HSTS header if we're already on HTTPS
   if (req.secure) {
     res.set('Strict-Transport-Security', 'max-age=63072000; inlcudeSubdomains; preload');
-    res.set('Content-Security-Policy', `https: 'unsafe-inline'; object-src 'none'; base-uri 'none';`);
+    res.set('Content-Security-Policy',
+            `script-src https: 'unsafe-inline'; ` +
+            `object-src 'none'; ` +
+            `base-uri 'none'; ` +
+            `frame-ancestors 'self' *; ` +
+            `require-trusted-types-for 'script';`
+           );
     res.set('X-Content-Type-Options', 'nosniff');
+    res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.set('Cross-Origin-Resource-Policy', 'same-origin');
+    res.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    res.set('Cross-Origin-Embedder-Policy', 'require-corp');
     return next();
   }
 
