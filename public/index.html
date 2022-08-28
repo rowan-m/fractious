@@ -538,11 +538,9 @@
     }
 
     async updateHistory() {
-      // history.replaceState(null, 'Fractious',
-      //   `/#x=${this.config.center.x}&y=${this.config.center.y}&i=${this.config.iterations}&h=${this.config.hue.toFixed(3)}&s=${this.config.huestep.toFixed(3)}&z=${this.config.zoom}`
-      // );
       const path = `?x=${this.config.center.x}&y=${this.config.center.y}&i=${this.config.iterations}&h=${this.config.hue.toFixed(3)}&s=${this.config.huestep.toFixed(3)}&z=${this.config.zoom}`;
-      location.replace('/' + path);
+      // location.replace('/' + path);
+      // history.replaceState(null, 'Fractious', '/' + path);
       document.querySelector('meta[name="twitter:player"]').content = 'https://fractious.glitch.me/embed.html' + path;
     }
 

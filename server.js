@@ -69,7 +69,7 @@ app.get('/', (req, res) => {
   console.log(req.originalUrl);
   console.log(req.path);
   // const params = (window.location.search) ? window.location.search : window.location.hash.substring(1);
-  const urlParams = new URLSearchParams(req.originalUrl);
+  // const urlParams = new URLSearchParams(req.originalUrl);
   // urlParams.forEach(function (value, key) {
   //   switch (key) {
   //     case 'x':
