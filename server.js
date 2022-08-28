@@ -66,30 +66,32 @@ app.get('/', (req, res) => {
         hue: 0.6,
         huestep: 1.0,
   };
-  const params = (window.location.search) ? window.location.search : window.location.hash.substring(1);
-  const urlParams = new URLSearchParams(params);
-  urlParams.forEach(function (value, key) {
-    switch (key) {
-      case 'x':
-        this.config.center.x = parseFloat(value);
-        break;
-      case 'y':
-        this.config.center.y = parseFloat(value);
-        break;
-      case 'i':
-        this.config.iterations = parseInt(value);
-        break;
-      case 'h':
-        this.config.hue = parseFloat(value);
-        break;
-      case 's':
-        this.config.huestep = parseFloat(value);
-        break;
-      case 'z':
-        this.config.zoom = Math.max(Math.exp(-25), parseFloat(value));
-        break;
-    }
-  }, this);
+  console.log(req.originalUrl);
+  console.log(req.path);
+  // const params = (window.location.search) ? window.location.search : window.location.hash.substring(1);
+  const urlParams = new URLSearchParams(req.originalUrl);
+  // urlParams.forEach(function (value, key) {
+  //   switch (key) {
+  //     case 'x':
+  //       this.config.center.x = parseFloat(value);
+  //       break;
+  //     case 'y':
+  //       this.config.center.y = parseFloat(value);
+  //       break;
+  //     case 'i':
+  //       this.config.iterations = parseInt(value);
+  //       break;
+  //     case 'h':
+  //       this.config.hue = parseFloat(value);
+  //       break;
+  //     case 's':
+  //       this.config.huestep = parseFloat(value);
+  //       break;
+  //     case 'z':
+  //       this.config.zoom = Math.max(Math.exp(-25), parseFloat(value));
+  //       break;
+  //   }
+  // }, this);
   res.render('index');
 });
 
