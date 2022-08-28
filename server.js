@@ -66,33 +66,31 @@ app.get('/', (req, res) => {
         hue: 0.6,
         huestep: 1.0,
   };
-  console.log(req.originalUrl);
-  console.log(req.path);
-  // const params = (window.location.search) ? window.location.search : window.location.hash.substring(1);
-  // const urlParams = new URLSearchParams(req.originalUrl);
-  // urlParams.forEach(function (value, key) {
-  //   switch (key) {
-  //     case 'x':
-  //       this.config.center.x = parseFloat(value);
-  //       break;
-  //     case 'y':
-  //       this.config.center.y = parseFloat(value);
-  //       break;
-  //     case 'i':
-  //       this.config.iterations = parseInt(value);
-  //       break;
-  //     case 'h':
-  //       this.config.hue = parseFloat(value);
-  //       break;
-  //     case 's':
-  //       this.config.huestep = parseFloat(value);
-  //       break;
-  //     case 'z':
-  //       this.config.zoom = Math.max(Math.exp(-25), parseFloat(value));
-  //       break;
-  //   }
-  // }, this);
-  res.render('index');
+  const urlParams = new URLSearchParams(req.originalUrl.substring(2));
+  urlParams.forEach(function (value, key) {
+    switch (key) {
+      case 'x':
+        config.center.x = parseFloat(value);
+        break;
+      case 'y':
+        config.center.y = parseFloat(value);
+        break;
+      case 'i':
+        config.iterations = parseInt(value, 10);
+        break;
+      case 'h':
+        config.hue = parseFloat(value);
+        break;
+      case 's':
+        config.huestep = parseFloat(value);
+        break;
+      case 'z':
+        config.zoom = Math.max(Math.exp(-25), parseFloat(value));
+        break;
+    }
+  }, this);
+  const path = `?x=${config.center.x}&y=${config.center.y}&i=${config.iterations}&h=${config.hue.toFixed(3)}&s=${config.huestep.toFixed(3)}&z=${config.zoom}`;
+  res.render('index', {path: path});
 });
 
 // By default, fall back to serving from the `public` directory

@@ -11,7 +11,7 @@
 <meta name="twitter:site" content="@rowan_m" />
 <meta name="twitter:creator" content="@rowan_m" />
 <meta name="twitter:description" content="Explore the Mandelbrot fractal right in your timeline. 👆" />
-<meta name="twitter:player" content="https://fractious.glitch.me/embed.html" />
+<meta name="twitter:player" content="https://fractious.glitch.me/embed.html{{ path }}" />
 <meta name="twitter:player:width" content="480" />
 <meta name="twitter:player:height" content="480" />
 <meta name="twitter:image" content="https://cdn.glitch.global/a4472519-9458-49b7-809d-5a003de34a56/fractious-player.png?v=1661632887735" />
@@ -393,7 +393,7 @@
             this.config.center.y = parseFloat(value);
             break;
           case 'i':
-            this.config.iterations = parseInt(value);
+            this.config.iterations = parseInt(value, 10);
             break;
           case 'h':
             this.config.hue = parseFloat(value);
@@ -541,7 +541,7 @@
       const path = `?x=${this.config.center.x}&y=${this.config.center.y}&i=${this.config.iterations}&h=${this.config.hue.toFixed(3)}&s=${this.config.huestep.toFixed(3)}&z=${this.config.zoom}`;
       // location.replace('/' + path);
       history.replaceState({config: this.config}, 'Fractious', '/' + path);
-      document.querySelector('meta[name="twitter:player"]').content = 'https://fractious.glitch.me/embed.html' + path;
+      // document.querySelector('meta[name="twitter:player"]').content = 'https://fractious.glitch.me/embed.html' + path;
     }
 
     handleResize(e) {
@@ -636,7 +636,7 @@
           this.config.zoom = Math.exp( (isNaN(val)) ? 1 : Math.max(-25, val) );
           break;
         case 'iterations':
-          val = parseInt(e.target.value);
+          val = parseInt(e.target.value, 10);
 
           if (isNaN(val) || val < 1) {
             val = 1;
@@ -663,8 +663,8 @@
 
     handleWheel(e) {
       this.scrolltime = performance.now();
-      const ydist = parseInt(e.deltaY);
-      const ymax = parseInt(this.cvs.getBoundingClientRect().height);
+      const ydist = parseInt(e.deltaY, 10);
+      const ymax = parseInt(this.cvs.getBoundingClientRect().height, 10);
       this.config.zoom = Math.max(Math.exp(-25), this.config.zoom * (ydist + ymax) / ymax);
 
       if (!this.scrolling) {
