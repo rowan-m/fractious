@@ -16,9 +16,9 @@ app.set('views', __dirname + '/public');
  * Glitch appears to run in "development" mode, but this is useful if you're moving the code elsewhere
  * Could also enable by default when the code is stable for performance
  */
-if (app.get('env') === 'production') {
+// if (app.get('env') === 'production') {
   app.set('view cache', false);
-}
+// }
 
 // Allow server to run correctly behind a proxy
 app.enable('trust proxy');
@@ -35,7 +35,7 @@ app.use(function (req, res, next) {
 
   // Set the HSTS header if we're already on HTTPS
   if (req.secure) {
-    res.set('Strict-Transport-Security', 'max-age=63072000; inlcudeSubdomains; preload');
+    res.set('Strict-Transport-Security', 'max-age=63072000; includeSubdomains; preload');
     // res.set('Content-Security-Policy',
     //         `script-src https: 'unsafe-inline'; ` +
     //         `object-src 'none'; ` +

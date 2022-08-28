@@ -1,0 +1,23 @@
+{
+  "dir": "ltr",
+  "lang": "en",
+  "name": "Fractious",
+  "short_name": "Fractious",
+  "scope": "/",
+  "display": "standalone",
+  "start_url": "https://fractious.glitch.me/",
+  "background_color": "#3e5c89",
+  "theme_color": "#3e5c89",
+  "description": "Explore fractals in the Mandelbrot set.",
+  "orientation": "any",
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "icons": [
+            {
+            "src": "https://cdn.glitch.com/a4472519-9458-49b7-809d-5a003de34a56%2Ffractious-icon.png?v=1625866021581",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+  ],
+  "screenshots": []
+}
