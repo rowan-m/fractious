@@ -3,19 +3,6 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="https://cdn.glitch.com/a4472519-9458-49b7-809d-5a003de34a56%2Ffractious-icon.png?v=1625866021581">
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#3d5b88">
-
-<meta name="twitter:card" content="player" />
-<meta name="twitter:title" content="Fractious" />
-<meta name="twitter:site" content="@rowan_m" />
-<meta name="twitter:creator" content="@rowan_m" />
-<meta name="twitter:description" content="Explore the Mandelbrot fractal right in your timeline. 👆" />
-<meta name="twitter:player" content="https://fractious.glitch.me/embed.html" />
-<meta name="twitter:player:width" content="480" />
-<meta name="twitter:player:height" content="480" />
-<meta name="twitter:image" content="https://cdn.glitch.global/a4472519-9458-49b7-809d-5a003de34a56/fractious-player.png?v=1661632887735" />
-
 <title>Fractious</title>
 <style>
   :root {
@@ -32,11 +19,7 @@
   }
 
   header {
-    background-color: rgba(0, 0, 0, .2);
-    color: oldlace;
-    display: flex;
-    justify-content: space-between;
-    padding: .2rem .4rem .1rem .4rem;
+    display: none;
   }
 
   h1 {
@@ -99,114 +82,17 @@
   }
 
   .stats {
-    background-color: rgba(0, 0, 0, .2);
-    color: oldlace;
-    padding: 0rem .4rem .2rem .4rem;
-  }
-
-  .stats>form {
-    display: flex;
-    flex-flow: row wrap;
-    font-family: monospace;
-  }
-
-  .stats label {
-    border: 1px solid oldlace;
-    padding: .2rem .1rem .2rem .1rem;
-    margin: .1rem .1rem 0 0;
-    font-size: var(--font-size);
-  }
-
-  .stats input {
-    color: oldlace;
-    background-color: rgba(0, 0, 0, 0.2);
-    border: none;
-    font-family: monospace;
-    font-size: var(--font-size);
-  }
-
-  input[name="centerx"],
-  input[name="centery"],
-  input[name="zoom"] {
-    width: 22ch;
-  }
-
-  input[name="iterations"] {
-    width: 6ch;
-  }
-
-  input[name="hue"],
-  input[name="huestep"] {
-    width: 8ch;
+    display: none;
   }
 
   footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    display: none;
   }
-
-  .controls {
-    position: relative;
-    background-color: rgba(0, 0, 0, 0.2);
-  }
-
-  .controls form {
-    display: flex;
-    flex-flow: row wrap;
-    justify-content: space-evenly;
-    align-items: center;
-    align-content: center;
-  }
-
-  .controls fieldset {
-    display: flex;
-    flex-flow: column nowrap;
-    align-items: center;
-    align-content: center;
-    margin: 0.5rem;
-    font-size: 16px;
-    border: none;
-    padding: 0;
-  }
-
-  .icon {
-    display: inline-block;
-    margin: .3rem;
-    user-select: none;
-  }
-
-  .controls button,
-  .controls a {
-    font-size: 28px;
-    padding: 0;
-    margin: 0;
-    background: none;
-    border: none;
-    text-shadow: -2px -2px 4px rgba(0, 0, 0, .5);
-    border: 1px solid rgba(255, 166, 0, 0);
-    user-select: none;
-  }
-
-  .controls button:active,
-  .controls a {
-    transform: translate(1px, 1px);
-    text-shadow: 0px 0px 4px rgba(0, 0, 0, .5);
-  }
-
-  .controls button:focus,
-  .controls a {
-    border: 1px solid rgba(255, 166, 0, 0.5);
-    border-radius: 4px;
-    outline: none;
-  }
-  
-  .fullscreen {}
 </style>
 <header>
   <h1>Fractious</h1>
   <section>
+    <a href="https://glitch.com/edit/#!/fractious">⏫ Full version</a>
     <a href="https://glitch.com/edit/#!/fractious">🧑‍💻 Code</a>
     <a href="https://twitter.com/rowan_m">🐦 @rowan_m</a>
   </section>
@@ -261,9 +147,6 @@
         <button type="button" class="incdec" name="dechuestep">🔽</button>
       </fieldset>
       <fieldset>
-        <button type="button" class="fullscreen">⏫</button>
-      </fieldset>
-      <fieldset>
         <a href="#" class="saveimage">🖼️</a>
       </fieldset>
       <fieldset>
@@ -279,22 +162,6 @@
     location.protocol = 'https:';
   }
 
-  document.querySelector('.fullscreen').addEventListener('click', e => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else if (document.exitFullscreen) {
-      document.exitFullscreen();
-    }
-  });
-  
-  document.documentElement.addEventListener('fullscreenchange', (e) => {
-    if (!document.fullscreenElement) {
-      document.querySelector('.fullscreen').textContent = '⏫';
-    } else if (document.exitFullscreen) {
-      document.querySelector('.fullscreen').textContent = '⏬';
-    }
-  });
-  
   document.querySelector('.saveimage').addEventListener('click', e => {
     const d = new Date();
     const timestamp = '' + d.getFullYear() + d.getMonth() + d.getDay() + d.getHours() + d.getMinutes() + d.getSeconds();
@@ -433,8 +300,7 @@
 
         this.gl.useProgram(this.mandelTexProg);
         this.initUniforms();
-        this.updateFromUrl();
-        this.updateHistory();
+        // this.updateFromUrl();
 
         this.handleResize(null);
 
@@ -442,20 +308,20 @@
         document.addEventListener('keydown', this.handleKeyDown, {passive: true});
         document.addEventListener('keyup', this.handleKeyUp, {passive: true});
 
-        document.querySelectorAll('.incdec').forEach(butt => {
-          butt.addEventListener('pointerdown', this.handleButtDown, {passive: true});
-          butt.addEventListener('pointerup', this.handleButtUp, {passive: true});
-          butt.addEventListener('pointerout', this.handleButtUp, {passive: true});
-          butt.addEventListener('contextmenu', e => {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-          });
-        });
+        // document.querySelectorAll('.incdec').forEach(butt => {
+        //   butt.addEventListener('pointerdown', this.handleButtDown, {passive: true});
+        //   butt.addEventListener('pointerup', this.handleButtUp, {passive: true});
+        //   butt.addEventListener('pointerout', this.handleButtUp, {passive: true});
+        //   butt.addEventListener('contextmenu', e => {
+        //     e.preventDefault();
+        //     e.stopPropagation();
+        //     return false;
+        //   });
+        // });
 
-        for (const [stat, input] of Object.entries(this.stats)) {
-          input.addEventListener('change', this.handleChange);
-        }
+        // for (const [stat, input] of Object.entries(this.stats)) {
+        //   input.addEventListener('change', this.handleChange);
+        // }
 
         document.querySelector('.render-area').addEventListener('wheel', this.handleWheel, {passive: true});
         document.querySelector('.render-area').addEventListener('pointerdown', this.handlePanStart, {passive: true});
@@ -541,9 +407,7 @@
       // history.replaceState(null, 'Fractious',
       //   `/#x=${this.config.center.x}&y=${this.config.center.y}&i=${this.config.iterations}&h=${this.config.hue.toFixed(3)}&s=${this.config.huestep.toFixed(3)}&z=${this.config.zoom}`
       // );
-      const path = `#x=${this.config.center.x}&y=${this.config.center.y}&i=${this.config.iterations}&h=${this.config.hue.toFixed(3)}&s=${this.config.huestep.toFixed(3)}&z=${this.config.zoom}`;
-      location.replace('/' + path);
-      document.querySelector('meta[name="twitter:player"]').content = 'https://fractious.glitch.me/embed.html' + path;
+      // location.replace(`/embed.html#x=${this.config.center.x}&y=${this.config.center.y}&i=${this.config.iterations}&h=${this.config.hue.toFixed(3)}&s=${this.config.huestep.toFixed(3)}&z=${this.config.zoom}`);
     }
 
     handleResize(e) {
@@ -570,7 +434,7 @@
       if (!this.rendering) {
         window.requestAnimationFrame(this.render);
         if (performance.now() - this.reqt > 200) {
-          this.updateStats();
+          // this.updateStats();
           this.reqt = performance.now();
         }
       }
@@ -881,13 +745,13 @@
     }
   }
 
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then(function (registration) { });
-    });
-  }
+  // if ('serviceWorker' in navigator) {
+  //   window.addEventListener('load', function () {
+  //     navigator.serviceWorker
+  //       .register('/sw.js')
+  //       .then(function (registration) { });
+  //   });
+  // }
   
   const frac = new Fractious();
   frac.start();

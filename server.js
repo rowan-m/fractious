@@ -17,7 +17,7 @@ app.set('views', __dirname + '/public');
  * Could also enable by default when the code is stable for performance
  */
 if (app.get('env') === 'production') {
-  app.set('view cache', true);
+  app.set('view cache', false);
 }
 
 // Allow server to run correctly behind a proxy
@@ -36,18 +36,18 @@ app.use(function (req, res, next) {
   // Set the HSTS header if we're already on HTTPS
   if (req.secure) {
     res.set('Strict-Transport-Security', 'max-age=63072000; inlcudeSubdomains; preload');
-    res.set('Content-Security-Policy',
-            `script-src https: 'unsafe-inline'; ` +
-            `object-src 'none'; ` +
-            `base-uri 'none'; ` +
-            `frame-ancestors 'self' *; ` +
-            `require-trusted-types-for 'script';`
-           );
-    res.set('X-Content-Type-Options', 'nosniff');
-    res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.set('Cross-Origin-Resource-Policy', 'same-origin');
-    res.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-    res.set('Cross-Origin-Embedder-Policy', 'require-corp');
+    // res.set('Content-Security-Policy',
+    //         `script-src https: 'unsafe-inline'; ` +
+    //         `object-src 'none'; ` +
+    //         `base-uri 'none'; ` +
+    //         `frame-ancestors 'self' *; ` +
+    //         `require-trusted-types-for 'script';`
+    //        );
+    // res.set('X-Content-Type-Options', 'nosniff');
+    // res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // res.set('Cross-Origin-Resource-Policy', 'same-origin');
+    // res.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    // res.set('Cross-Origin-Embedder-Policy', 'require-corp');
     return next();
   }
 
@@ -56,9 +56,42 @@ app.use(function (req, res, next) {
 });
 
 // TODO - if you need any server-side routes, add them here
-// app.get('/', (req, res) => {
-//   res.render('index');
-// });
+app.get('/', (req, res) => {
+  const config = {
+        aspect: 1,
+        center: { x: -1.89999, y: 0 },
+        iterations: 256,
+        resolution: 1,
+        zoom: Math.exp(2),
+        hue: 0.6,
+        huestep: 1.0,
+  };
+  const params = (window.location.search) ? window.location.search : window.location.hash.substring(1);
+  const urlParams = new URLSearchParams(params);
+  urlParams.forEach(function (value, key) {
+    switch (key) {
+      case 'x':
+        this.config.center.x = parseFloat(value);
+        break;
+      case 'y':
+        this.config.center.y = parseFloat(value);
+        break;
+      case 'i':
+        this.config.iterations = parseInt(value);
+        break;
+      case 'h':
+        this.config.hue = parseFloat(value);
+        break;
+      case 's':
+        this.config.huestep = parseFloat(value);
+        break;
+      case 'z':
+        this.config.zoom = Math.max(Math.exp(-25), parseFloat(value));
+        break;
+    }
+  }, this);
+  res.render('index');
+});
 
 // By default, fall back to serving from the `public` directory
 app.use(express.static('public'));
@@ -68,7 +101,7 @@ app.use(express.static('public'));
  * Could also enable by default when the code is stable for performance
  */
 if (app.get('env') === 'production') {
-  app.use(express.static('public', { maxAge: '1d' }));
+  app.use(express.static('public', { maxAge: '1s' }));
 }
 
 const listener = app.listen(process.env.PORT, function () {
