@@ -14,7 +14,7 @@
 <meta name="twitter:player" content="https://fractious.glitch.me/embed.html{{ path }}" />
 <meta name="twitter:player:width" content="480" />
 <meta name="twitter:player:height" content="480" />
-<meta name="twitter:image" content="https://cdn.glitch.global/e5633e1d-4006-4147-8bf9-a79c842695b3/fractious-20227112847.png?v=1661733006888" />
+<meta name="twitter:image" content="https://cdn.glitch.global/e5633e1d-4006-4147-8bf9-a79c842695b3/fractious-preview.jpg?v=1661733231025" />
 
 <title>Fractious</title>
 <style>
@@ -879,13 +879,13 @@
     }
   }
 
-  // if ('serviceWorker' in navigator) {
-  //   window.addEventListener('load', function () {
-  //     navigator.serviceWorker
-  //       .register('/sw.js')
-  //       .then(function (registration) { });
-  //   });
-  // }
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then(function (registration) { });
+    });
+  }
   
   const frac = new Fractious();
   frac.start();

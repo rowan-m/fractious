@@ -17,7 +17,7 @@ app.set('views', __dirname + '/public');
  * Could also enable by default when the code is stable for performance
  */
 // if (app.get('env') === 'production') {
-  app.set('view cache', false);
+  app.set('view cache', true);
 // }
 
 // Allow server to run correctly behind a proxy
@@ -101,7 +101,7 @@ app.use(express.static('public'));
  * Could also enable by default when the code is stable for performance
  */
 if (app.get('env') === 'production') {
-  app.use(express.static('public', { maxAge: '1s' }));
+  app.use(express.static('public', { maxAge: '1h' }));
 }
 
 const listener = app.listen(process.env.PORT, function () {
