@@ -415,7 +415,6 @@
         fetch('sampler.vert.glsl'),
         fetch('sampler.frag.glsl'),
       ]).then(async ([mandelvert, mandlefrag, samplervert, samplerfrag]) => {
-        debugger;
         this.gl.attachShader(this.mandelTexProg, this.createShader(await mandelvert.text(), this.gl.VERTEX_SHADER));
         this.gl.attachShader(this.mandelTexProg, this.createShader(await mandlefrag.text(), this.gl.FRAGMENT_SHADER));
         this.gl.linkProgram(this.mandelTexProg);
@@ -546,6 +545,7 @@
     }
 
     handleResize(e) {
+      debugger;
       this.w = Math.floor(this.cvs.getBoundingClientRect().width * window.devicePixelRatio / this.config.resolution);
       this.h = Math.floor(this.cvs.getBoundingClientRect().height * window.devicePixelRatio / this.config.resolution);
       this.cvs.width = this.w;
