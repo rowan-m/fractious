@@ -1,4 +1,4 @@
-var cacheName = 'fractious-v20220829a';
+var cacheName = 'fractious-v20220913a';
 
 // Cache a very basic selection of resources
 self.addEventListener('install', (event) => {
