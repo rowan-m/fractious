@@ -351,13 +351,13 @@
     setup() {
       this.cvs = document.querySelector('canvas');
       this.gl = this.cvs.getContext('webgl2', {
-        alpha: false,
+        // alpha: false,
         antialias: false,
         depth: false,
-        // desynchronized: false,
-        // failIfMajorPerformanceCaveat: true,
+        desynchronized: false,
+        failIfMajorPerformanceCaveat: true,
         powerPreference: 'high-performance',
-        // premultipliedAlpha: false,
+        premultipliedAlpha: true,
         preserveDrawingBuffer: true,
         stencil: false,
       });
@@ -545,7 +545,6 @@
     }
 
     handleResize(e) {
-      debugger;
       this.w = Math.floor(this.cvs.getBoundingClientRect().width * window.devicePixelRatio / this.config.resolution);
       this.h = Math.floor(this.cvs.getBoundingClientRect().height * window.devicePixelRatio / this.config.resolution);
       this.cvs.width = this.w;

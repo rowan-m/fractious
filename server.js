@@ -17,7 +17,7 @@ app.set('views', __dirname + '/public');
  * Could also enable by default when the code is stable for performance
  */
 // if (app.get('env') === 'production') {
-  // app.set('view cache', true);
+  app.set('view cache', false);
 // }
 
 // Allow server to run correctly behind a proxy
