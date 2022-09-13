@@ -415,6 +415,7 @@
         fetch('sampler.vert.glsl'),
         fetch('sampler.frag.glsl'),
       ]).then(async ([mandelvert, mandlefrag, samplervert, samplerfrag]) => {
+        debugger;
         this.gl.attachShader(this.mandelTexProg, this.createShader(await mandelvert.text(), this.gl.VERTEX_SHADER));
         this.gl.attachShader(this.mandelTexProg, this.createShader(await mandlefrag.text(), this.gl.FRAGMENT_SHADER));
         this.gl.linkProgram(this.mandelTexProg);
