@@ -351,21 +351,19 @@
     setup() {
       this.cvs = document.querySelector('canvas');
       this.gl = this.cvs.getContext('webgl2', {
-        // alpha: false,
+        alpha: false,
         antialias: false,
         depth: false,
-        desynchronized: false,
+        desynchronized: true,
         failIfMajorPerformanceCaveat: true,
         powerPreference: 'high-performance',
         premultipliedAlpha: true,
-        preserveDrawingBuffer: true,
+        preserveDrawingBuffer: false,
         stencil: false,
       });
 
       this.mandelTexProg = this.gl.createProgram();
       this.samplerProg = this.gl.createProgram();
-      // this.gl.enable(this.gl.BLEND);
-      // this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
       this.gl.disable(this.gl.DEPTH_TEST);
 
       this.stats = {
