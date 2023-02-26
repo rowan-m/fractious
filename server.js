@@ -1,12 +1,21 @@
-const express = require('express');
+// const express = require('express');
+import express from 'express';
+
 const app = express();
+
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /*
  * If you need basic templating, Mustache is enabled
  * Personal preference is just to "upgrade" existing HTML files with templated variables
  * Enable the view cache after the demo is published
  */
-const mustacheExpress = require('mustache-express');
+// const mustacheExpress = require('mustache-express');
+import mustacheExpress from 'mustache-express';
 app.engine('html', mustacheExpress());
 app.set('view engine', 'html');
 app.set('views', __dirname + '/public');
