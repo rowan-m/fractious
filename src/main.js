@@ -69,6 +69,11 @@ async function run() {
   let screenshotRequested = false;
   let lastX = 0;
   let lastY = 0;
+  
+  // Multi-touch state
+  const pointers = new Map();
+  let prevDiff = -1;
+  let prevCenter = null;
 
   const uniformBufferSize = 32;
   const uniformBuffer = device.createBuffer({
@@ -348,30 +353,97 @@ async function run() {
   const crosshair = document.getElementById('crosshair');
 
   canvas.addEventListener('pointerdown', e => {
-    isDragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     canvas.setPointerCapture(e.pointerId);
-    crosshair.style.opacity = '1';
+    
+    if (pointers.size === 1) {
+        isDragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        crosshair.style.opacity = '1';
+    } else if (pointers.size === 2) {
+        isDragging = true; // Still dragging/interacting
+        const points = Array.from(pointers.values());
+        const dx = points[0].x - points[1].x;
+        const dy = points[0].y - points[1].y;
+        prevDiff = Math.hypot(dx, dy);
+        prevCenter = {
+            x: (points[0].x + points[1].x) / 2,
+            y: (points[0].y + points[1].y) / 2
+        };
+    }
     needsRender = true;
   });
 
   canvas.addEventListener('pointermove', e => {
-    if (!isDragging) return;
-    const dx = e.clientX - lastX;
-    const dy = e.clientY - lastY;
-    lastX = e.clientX;
-    lastY = e.clientY;
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    const aspect = canvas.width / canvas.height;
+    // Calculate aspect and scales common to both cases
+    const aspect = canvas.clientWidth / canvas.clientHeight;
     const widthComplex = 2.0 * zoom * aspect;
     const heightComplex = 2.0 * zoom;
+    const scaleX = widthComplex / canvas.clientWidth;
+    const scaleY = heightComplex / canvas.clientHeight;
 
-    const scaleX = widthComplex / canvas.width;
-    const scaleY = heightComplex / canvas.height;
+    if (pointers.size === 2) {
+        // Multi-touch: Pinch Zoom + Pan
+        const points = Array.from(pointers.values());
+        
+        // 1. Calculate new difference (Zoom)
+        const dx = points[0].x - points[1].x;
+        const dy = points[0].y - points[1].y;
+        const curDiff = Math.hypot(dx, dy);
 
-    offsetX -= dx * scaleX;
-    offsetY += dy * scaleY;
+        if (prevDiff > 0) {
+            // Zoom factor: if distance increases, we want to zoom in (decrease targetZoom)
+            // Wait, usually: distance increase -> zoom IN -> view gets smaller in complex units?
+            // No, distance increase -> we are spreading fingers -> we want to see LESS area (Zoom IN)? 
+            // Actually, in maps: spread fingers -> zoom IN -> scale gets LARGER (view covers LESS world).
+            // Here 'zoom' is the viewport radius. So spread fingers -> zoom should DECREASE.
+            
+            // factor > 1 means spread.
+            const factor = curDiff / prevDiff; 
+            // If factor = 2 (double distance), we want zoom to be half.
+            targetZoom /= factor; 
+        }
+        prevDiff = curDiff;
+
+        // 2. Calculate new center (Pan)
+        const curCenter = {
+            x: (points[0].x + points[1].x) / 2,
+            y: (points[0].y + points[1].y) / 2
+        };
+
+        if (prevCenter) {
+            const moveX = curCenter.x - prevCenter.x;
+            const moveY = curCenter.y - prevCenter.y;
+            
+            // Pan logic is inverted: moving finger right (positive dx) means looking left (negative coord change)
+            offsetX -= moveX * scaleX;
+            offsetY += moveY * scaleY;
+        }
+        prevCenter = curCenter;
+
+    } else if (pointers.size === 1) {
+        // Single-touch: Pan only
+        if (!isDragging) return;
+        
+        // We use the movement of this specific event
+        // Note: e.movementX/Y can be unreliable across browsers/devices mixed with other events
+        // so we track lastX/Y for the single pointer case manually or use the delta from the map update?
+        // Since we updated the map above, let's use the explicit delta from 'lastX' which we update.
+        // BUT for multi-touch switching to single touch, 'lastX' might be stale.
+        // Ideally, we just use the delta of the current pointer.
+        
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        offsetX -= dx * scaleX;
+        offsetY += dy * scaleY;
+    }
 
     centerX = add_coord(refX, offsetX);
     centerY = add_coord(refY, offsetY);
@@ -380,11 +452,30 @@ async function run() {
     needsRender = true;
   });
 
-  canvas.addEventListener('pointerup', e => {
-    isDragging = false;
-    crosshair.style.opacity = '0';
+  function handlePointerUp(e) {
+    pointers.delete(e.pointerId);
+    
+    if (pointers.size < 2) {
+        prevDiff = -1;
+        prevCenter = null;
+    }
+    
+    if (pointers.size === 1) {
+        // Reset lastX/Y for the remaining single pointer to prevent jumping
+        const point = pointers.values().next().value;
+        lastX = point.x;
+        lastY = point.y;
+    } else if (pointers.size === 0) {
+        isDragging = false;
+        crosshair.style.opacity = '0';
+    }
     needsRender = true;
-  });
+  }
+
+  canvas.addEventListener('pointerup', handlePointerUp);
+  canvas.addEventListener('pointercancel', handlePointerUp);
+  canvas.addEventListener('pointerout', handlePointerUp);
+  canvas.addEventListener('pointerleave', handlePointerUp);
 
   canvas.addEventListener('wheel', e => {
     e.preventDefault();
