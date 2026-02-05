@@ -29,6 +29,7 @@ async function run() {
     device,
     format,
     alphaMode: 'premultiplied',
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
   });
 
   // Parse URL parameters
@@ -65,6 +66,7 @@ async function run() {
   let isInteracting = false;
   let interactionTimeout;
   let needsRender = true;
+  let screenshotRequested = false;
   let lastX = 0;
   let lastY = 0;
 
@@ -319,6 +321,19 @@ async function run() {
     passEncoder.end();
 
     device.queue.submit([commandEncoder.finish()]);
+
+    if (screenshotRequested) {
+        screenshotRequested = false;
+        const d = new Date();
+        const timestamp = "" + d.getFullYear() + (d.getMonth() + 1).toString().padStart(2, '0') + d.getDate().toString().padStart(2, '0') + 
+                          d.getHours().toString().padStart(2, '0') + d.getMinutes().toString().padStart(2, '0') + d.getSeconds().toString().padStart(2, '0');
+        
+        const link = document.createElement('a');
+        link.download = `fractious-${timestamp}.png`;
+        link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+        link.click();
+    }
+
     requestAnimationFrame(frame);
   }
 
@@ -503,14 +518,8 @@ async function run() {
   });
 
   document.getElementById('btn-screenshot').onclick = () => {
-    const d = new Date();
-    const timestamp = "" + d.getFullYear() + (d.getMonth() + 1).toString().padStart(2, '0') + d.getDate().toString().padStart(2, '0') + 
-                      d.getHours().toString().padStart(2, '0') + d.getMinutes().toString().padStart(2, '0') + d.getSeconds().toString().padStart(2, '0');
-    
-    const link = document.createElement('a');
-    link.download = `fractious-${timestamp}.png`;
-    link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
-    link.click();
+    screenshotRequested = true;
+    needsRender = true;
   };
 
   updateUI();
