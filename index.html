@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="https://rowan.fyi/made/fractious/assets/icon-144x144.png">
+<link rel="manifest" href="https://rowan.fyi/made/fractious/manifest.json">
+<meta name="theme-color" content="#3d5b88">
+<meta name="description" content="Explore infinite fractals in the Mandelbrot set. Discover beautiful downloadable images and share locations with friends—all with simple, fun controls.">
+
+<meta property="og:url" content="https://rowan.fyi/made/fractious/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Fractious">
+<meta property="og:description" content="Explore infinite fractals in the Mandelbrot set. Discover beautiful downloadable images and share locations with friends—all with simple, fun controls.">
+<meta property="og:image" content="https://rowan.fyi/made/fractious/assets/Screenshot%202023-04-16%2013.03.29.jpg">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:creator" content="@rowan_m">
+<meta name="twitter:title" content="Fractious">
+<meta name="twitter:description" content="Explore infinite fractals in the Mandelbrot set. Discover beautiful downloadable images and share locations with friends—all with simple, fun controls.">
+<meta name="twitter:image" content="https://rowan.fyi/made/fractious/assets/Screenshot%202023-04-16%2013.03.29.jpg">
+
+<title>Fractious</title>
+<style>
+  :root {
+    --font-size: 0.7rem;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    font-size: var(--font-size);
+    overflow: hidden;
+    background-color: black;
+  }
+
+  header {
+    background-color: rgba(0, 0, 0, 0.2);
+    color: oldlace;
+    display: flex;
+    justify-content: space-between;
+    padding: 0.2rem 0.4rem 0.1rem 0.4rem;
+  }
+
+  h1 {
+    font-size: var(--font-size);
+    font-weight: 100;
+    margin: 0;
+    padding: 0;
+  }
+
+  .version {
+    font-style: italic;
+    font-weight: 100;
+    color: silver;
+  }
+
+  a {
+    color: palegoldenrod;
+  }
+
+  .render-area {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    user-select: none;
+    touch-action: none;
+    z-index: -1;
+  }
+
+  canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+
+  .pin {
+    position: absolute;
+    width: 0px;
+    height: 0px;
+    top: 50%;
+    left: 50%;
+    right: 50%;
+    display: flex;
+    justify-content: center;
+    align-content: flex-end;
+  }
+
+  .pinpoint {
+    position: relative;
+    display: inline-block;
+    align-self: flex-end;
+    font-size: 28px;
+    text-shadow: -2px -2px 4px rgba(0, 0, 0, 0.8);
+    user-select: none;
+    touch-action: none;
+    transition:
+      opacity 100ms ease,
+      transform 100ms ease-in;
+    opacity: 0.001;
+    transform: translateY(-40px);
+  }
+
+  .pinpoint.moving {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .stats {
+    background-color: rgba(0, 0, 0, 0.2);
+    color: oldlace;
+    padding: 0rem 0.4rem 0.2rem 0.4rem;
+  }
+
+  .stats > form {
+    display: flex;
+    flex-flow: row wrap;
+    font-family: monospace;
+  }
+
+  .stats label {
+    border: 1px solid oldlace;
+    padding: 0.2rem 0.1rem 0.2rem 0.1rem;
+    margin: 0.1rem 0.1rem 0 0;
+    font-size: var(--font-size);
+  }
+
+  .stats input {
+    color: oldlace;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: none;
+    font-family: monospace;
+    font-size: var(--font-size);
+  }
+
+  input[name="centerx"],
+  input[name="centery"],
+  input[name="zoom"] {
+    width: 22ch;
+  }
+
+  input[name="hue"],
+  input[name="huestep"] {
+    width: 8ch;
+  }
+
+  footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+
+  .controls {
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+
+  .controls form {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-evenly;
+    align-items: center;
+    align-content: center;
+  }
+
+  .controls fieldset {
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: center;
+    align-content: center;
+    margin: 0.5rem;
+    font-size: 16px;
+    border: none;
+    padding: 0;
+  }
+
+  .icon {
+    display: inline-block;
+    margin: 0.3rem;
+    user-select: none;
+  }
+
+  .controls button,
+  .controls a {
+    font-size: 28px;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: none;
+    text-shadow: -2px -2px 4px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 166, 0, 0);
+    user-select: none;
+    text-decoration: none;
+  }
+
+  .controls button:focus,
+  .controls button:hover,
+  .controls a:hover {
+    border: 1px solid rgba(255, 166, 0, 0.5);
+    border-radius: 4px;
+    outline: none;
+  }
+</style>
+<header>
+  <h1>Fractious</h1>
+  <div>
+    <span class="version">v20260108a</span>
+    <a href="https://github.com/rowan-m/rowan-fyi/tree/main/public/made/fractious">🧑‍💻 Code</a>
+    <a href="https://bsky.app/profile/rowan.fyi">🦋 rowan.fyi</a>
+    <a href="https://mastodon.social/@rowan_m">🦣 rowan_m@mastodon.social</a>
+  </div>
+</header>
+<main>
+  <div class="render-area">
+    <canvas height="512" width="512" draggable="false" id="fractal"></canvas>
+  </div>
+  <div class="pin">
+    <span class="pinpoint" id="crosshair">📍</span>
+  </div>
+  <nav class="stats">
+    <form>
+      <label>📍x:<input type="number" name="centerx" step=".1" id="c_re"/></label>
+      <label>📍y:<input type="number" name="centery" step=".1" id="c_im" /></label>
+      <label>🔎<input type="number" name="zoom" step=".1" id="zoom" /></label>
+      <label>🎨<input type="number" name="hue" step=".1" id="hue" /></label>
+      <label>🌈<input type="number" name="huestep" step=".1" id="huestep" /></label>
+    </form>
+  </nav>
+</main>
+<footer>
+  <nav class="controls">
+    <form>
+      <fieldset>
+        <button type="button" class="incdec" name="incy" title="Move up" id="btn-up">🔼</button>
+        <span>
+          <button type="button" class="incdec" name="decx" title="Move left" id="btn-left">◀️</button>
+          <span class="icon">📍</span>
+          <button type="button" class="incdec" name="incx" title="Move right" id="btn-right">▶️</button>
+        </span>
+        <button type="button" class="incdec" name="decy" title="Move down" id="btn-down">🔽</button>
+      </fieldset>
+      <fieldset>
+        <button type="button" class="incdec" name="inczoom" title="Zoom in" id="btn-zoom-in">🔼</button>
+        <span class="icon">🔎</span>
+        <button type="button" class="incdec" name="deczoom" title="Zoom out" id="btn-zoom-out">🔽</button>
+      </fieldset>
+      <fieldset>
+        <button type="button" class="incdec" name="inchuestep" title="Increase colour cycling" id="btn-cycle-in">🔼</button>
+        <span>
+          <button type="button" class="incdec" name="dechue" title="Shift colours" id="btn-hue-left">◀️</button>
+          <span class="icon">🎨</span>
+          <button type="button" class="incdec" name="inchue" title="Shift colours" id="btn-hue-right">▶️</button>
+        </span>
+        <button type="button" class="incdec" name="dechuestep" title="Decrease colour cycling" id="btn-cycle-out">🔽</button>
+      </fieldset>
+      <fieldset>
+        <button type="button" class="fullscreen" title="Toggle fullscreen display" id="btn-fullscreen">⏫</button>
+      </fieldset>
+      <fieldset>
+        <button type="button" class="fullscreen" title="Download screenshot" id="btn-screenshot">🖼️</button>
+      </fieldset>
+      <fieldset>
+        <a href="." class="" title="Reset">🔁</a>
+      </fieldset>
+    </form>
+  </nav>
+</footer>
+<script type="module" src="src/main.js"></script>

@@ -1,2 +1,5 @@
-/.firebase
-/node_modules
+.firebase/
+.firebaserc
+*.code-workspace
+dist
+node_modules
