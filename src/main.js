@@ -4,12 +4,10 @@ import shaderCode from './renderer/shader.wgsl?raw';
 async function run() {
   await init();
   init_hooks();
-  // console.log("Wasm initialized in main thread");
 
   // Initialize Worker
   const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
 
-  const canvas = document.getElementById('fractal');
   if (!navigator.gpu) {
     console.error("WebGPU not supported");
     document.body.innerHTML = "WebGPU not supported in this browser.";
@@ -21,9 +19,11 @@ async function run() {
     console.error("No WebGPU adapter found");
     return;
   }
+
   const device = await adapter.requestDevice();
-  const context = canvas.getContext('webgpu');
   const format = navigator.gpu.getPreferredCanvasFormat();
+  const canvas = document.getElementById('fractal');
+  const context = canvas.getContext('webgpu');
 
   context.configure({
     device,
@@ -182,8 +182,6 @@ async function run() {
       if (type === 'result') {
           const { orbit, refX: newRefX, refY: newRefY, iter: newIter } = payload;
           
-          // console.log("Worker returned reference for", newRefX, newRefY);
-
           // Update state with confirmed calculation
           refX = newRefX;
           refY = newRefY;
@@ -226,10 +224,6 @@ async function run() {
     if (isCalculating) return;
     isCalculating = true;
 
-    // console.log("Optimize reference...", centerX, centerY, iter);
-    // elDouble.c_re.textContent = "Optimizing..."; // This property doesn't exist on input, removed
-
-    const scale = 1.0 / zoom;
     const aspect = canvas.width / canvas.height;
 
     worker.postMessage({
@@ -343,7 +337,7 @@ async function run() {
   }
 
   const observer = new ResizeObserver(entries => {
-    for (const entry of entries) {
+    for (const {} of entries) {
       // Just trigger a render, the frame loop handles the sizing logic
       needsRender = true;
     }
@@ -360,7 +354,7 @@ async function run() {
         isDragging = true;
         lastX = e.clientX;
         lastY = e.clientY;
-        crosshair.style.opacity = '1';
+        crosshair.classList.add('moving');
     } else if (pointers.size === 2) {
         isDragging = true; // Still dragging/interacting
         const points = Array.from(pointers.values());
@@ -467,7 +461,7 @@ async function run() {
         lastY = point.y;
     } else if (pointers.size === 0) {
         isDragging = false;
-        crosshair.style.opacity = '0';
+        crosshair.classList.remove('moving');
     }
     needsRender = true;
   }
@@ -525,7 +519,6 @@ async function run() {
   // Footer button listeners
   const moveStep = 0.1;
   document.getElementById('btn-up').onclick = () => {
-    const aspect = canvas.width / canvas.height;
     const dy = moveStep * zoom;
     centerY = add_coord(centerY, dy.toString());
     refY = centerY;
@@ -533,7 +526,6 @@ async function run() {
     needsRender = true;
   };
   document.getElementById('btn-down').onclick = () => {
-    const aspect = canvas.width / canvas.height;
     const dy = -moveStep * zoom;
     centerY = add_coord(centerY, dy.toString());
     refY = centerY;
