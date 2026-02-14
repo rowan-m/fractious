@@ -138,7 +138,8 @@
 
   input[name="centerx"],
   input[name="centery"],
-  input[name="zoom"] {
+  input[name="zoom"],
+  input[name="rotation"] {
     width: 22ch;
   }
 
@@ -226,6 +227,7 @@
       <label>📍x:<input type="number" name="centerx" step=".1" id="c_re"/></label>
       <label>📍y:<input type="number" name="centery" step=".1" id="c_im" /></label>
       <label>🔎<input type="number" name="zoom" step=".1" id="zoom" /></label>
+      <label>🔄<input type="number" name="rotation" step="1" id="rotation" /></label>
       <label>🎨<input type="number" name="hue" step=".01" id="hue" /></label>
       <label>🌈<input type="number" name="huestep" step=".1" id="huestep" /></label>
     </form>
@@ -247,6 +249,11 @@
         <button type="button" class="incdec" name="inczoom" title="Zoom in" id="btn-zoom-in">🔼</button>
         <span class="icon">🔎</span>
         <button type="button" class="incdec" name="deczoom" title="Zoom out" id="btn-zoom-out">🔽</button>
+      </fieldset>
+      <fieldset>
+        <button type="button" class="incdec" name="incrotate" title="Rotate clockwise" id="btn-rotate-cw">🔼</button>
+        <span class="icon">🔄</span>
+        <button type="button" class="incdec" name="decrotate" title="Rotate counter-clockwise" id="btn-rotate-ccw">🔽</button>
       </fieldset>
       <fieldset>
         <button type="button" class="incdec" name="inchuestep" title="Increase colour cycling" id="btn-cycle-in">🔼</button>

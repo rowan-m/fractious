@@ -39,6 +39,7 @@ async function run() {
   const urlZoom = params.get('zoom');
   const urlHue = params.get('h');
   const urlHueStep = params.get('s');
+  const urlRotation = params.get('r');
 
   // State
   let refX = urlX || "-1.7";
@@ -47,6 +48,7 @@ async function run() {
   let centerY = refY;
 
   let zoom = urlZoom ? parseFloat(urlZoom) : 2.0;
+  let rotation = urlRotation ? parseFloat(urlRotation) : 0.0;
   let targetZoom = zoom;
   let iter = 200;
   // Calculate initial iter based on zoom immediately
@@ -73,6 +75,7 @@ async function run() {
   // Multi-touch state
   const pointers = new Map();
   let prevDiff = -1;
+  let prevAngle = null;
   let prevCenter = null;
 
   const uniformBufferSize = 32;
@@ -111,6 +114,7 @@ async function run() {
     c_re: document.getElementById('c_re'),
     c_im: document.getElementById('c_im'),
     zoom: document.getElementById('zoom'),
+    rotation: document.getElementById('rotation'),
     hue: document.getElementById('hue'),
     hueStep: document.getElementById('huestep'),
   };
@@ -120,6 +124,7 @@ async function run() {
     params.set('x', centerX);
     params.set('y', centerY);
     params.set('zoom', zoom);
+    params.set('r', rotation.toFixed(3));
     params.set('h', hue.toFixed(3));
     params.set('s', hueStep.toFixed(3));
     window.history.replaceState({}, '', `?${params.toString()}`);
@@ -134,6 +139,10 @@ async function run() {
     }
     if (document.activeElement !== elDouble.zoom) {
         elDouble.zoom.value = zoom.toExponential(2);
+    }
+    if (document.activeElement !== elDouble.rotation) {
+        const deg = (rotation * 180 / Math.PI) % 360;
+        elDouble.rotation.value = deg.toFixed(1);
     }
     if (document.activeElement !== elDouble.hue) {
         elDouble.hue.value = hue.toFixed(3);
@@ -297,6 +306,7 @@ async function run() {
     dv.setUint32(16, renderIter, true);
     dv.setFloat32(20, hue, true);
     dv.setFloat32(24, hueStep, true);
+    dv.setFloat32(28, rotation, true);
 
     device.queue.writeBuffer(uniformBuffer, 0, uniformData);
 
@@ -361,6 +371,7 @@ async function run() {
         const dx = points[0].x - points[1].x;
         const dy = points[0].y - points[1].y;
         prevDiff = Math.hypot(dx, dy);
+        prevAngle = Math.atan2(dy, dx);
         prevCenter = {
             x: (points[0].x + points[1].x) / 2,
             y: (points[0].y + points[1].y) / 2
@@ -381,27 +392,32 @@ async function run() {
     const scaleY = heightComplex / canvas.clientHeight;
 
     if (pointers.size === 2) {
-        // Multi-touch: Pinch Zoom + Pan
+        // Multi-touch: Pinch Zoom + Pan + Rotate
         const points = Array.from(pointers.values());
         
-        // 1. Calculate new difference (Zoom)
+        // 1. Calculate new difference (Zoom) and Angle (Rotation)
         const dx = points[0].x - points[1].x;
         const dy = points[0].y - points[1].y;
         const curDiff = Math.hypot(dx, dy);
+        const curAngle = Math.atan2(dy, dx);
 
         if (prevDiff > 0) {
             // Zoom factor: if distance increases, we want to zoom in (decrease targetZoom)
-            // Wait, usually: distance increase -> zoom IN -> view gets smaller in complex units?
-            // No, distance increase -> we are spreading fingers -> we want to see LESS area (Zoom IN)? 
-            // Actually, in maps: spread fingers -> zoom IN -> scale gets LARGER (view covers LESS world).
-            // Here 'zoom' is the viewport radius. So spread fingers -> zoom should DECREASE.
-            
-            // factor > 1 means spread.
             const factor = curDiff / prevDiff; 
-            // If factor = 2 (double distance), we want zoom to be half.
             targetZoom /= factor; 
+            
+            // Rotation
+            if (prevAngle !== null) {
+                let delta = curAngle - prevAngle;
+                // Normalize delta
+                if (delta > Math.PI) delta -= 2 * Math.PI;
+                else if (delta < -Math.PI) delta += 2 * Math.PI;
+                
+                rotation += delta;
+            }
         }
         prevDiff = curDiff;
+        prevAngle = curAngle;
 
         // 2. Calculate new center (Pan)
         const curCenter = {
@@ -413,9 +429,16 @@ async function run() {
             const moveX = curCenter.x - prevCenter.x;
             const moveY = curCenter.y - prevCenter.y;
             
-            // Pan logic is inverted: moving finger right (positive dx) means looking left (negative coord change)
-            offsetX -= moveX * scaleX;
-            offsetY += moveY * scaleY;
+            const s = scaleY;
+            const c = Math.cos(rotation);
+            const sn = Math.sin(rotation);
+            
+            // Rotate movement vector to match complex plane orientation
+            const dCx = (moveX * c + moveY * sn) * s;
+            const dCy = (moveY * c - moveX * sn) * s;
+            
+            offsetX -= dCx;
+            offsetY += dCy;
         }
         prevCenter = curCenter;
 
@@ -423,20 +446,20 @@ async function run() {
         // Single-touch: Pan only
         if (!isDragging) return;
         
-        // We use the movement of this specific event
-        // Note: e.movementX/Y can be unreliable across browsers/devices mixed with other events
-        // so we track lastX/Y for the single pointer case manually or use the delta from the map update?
-        // Since we updated the map above, let's use the explicit delta from 'lastX' which we update.
-        // BUT for multi-touch switching to single touch, 'lastX' might be stale.
-        // Ideally, we just use the delta of the current pointer.
-        
         const dx = e.clientX - lastX;
         const dy = e.clientY - lastY;
         lastX = e.clientX;
         lastY = e.clientY;
 
-        offsetX -= dx * scaleX;
-        offsetY += dy * scaleY;
+        const s = scaleY;
+        const c = Math.cos(rotation);
+        const sn = Math.sin(rotation);
+        
+        const dCx = (dx * c + dy * sn) * s;
+        const dCy = (dy * c - dx * sn) * s;
+
+        offsetX -= dCx;
+        offsetY += dCy;
     }
 
     centerX = add_coord(refX, offsetX);
@@ -451,6 +474,7 @@ async function run() {
     
     if (pointers.size < 2) {
         prevDiff = -1;
+        prevAngle = null;
         prevCenter = null;
     }
     
@@ -505,6 +529,17 @@ async function run() {
         updateUI(); // Revert to valid value
     }
   });
+
+  elDouble.rotation.addEventListener('change', () => {
+    const deg = parseFloat(elDouble.rotation.value);
+    if (!isNaN(deg)) {
+        rotation = deg * Math.PI / 180;
+        interact();
+        needsRender = true;
+    } else {
+        updateUI();
+    }
+  });
   
   elDouble.hue.addEventListener('change', () => {
     const v = parseFloat(elDouble.hue.value);
@@ -556,6 +591,17 @@ async function run() {
   };
   document.getElementById('btn-zoom-out').onclick = () => {
     targetZoom *= 1.5;
+    interact();
+    needsRender = true;
+  };
+
+  document.getElementById('btn-rotate-cw').onclick = () => {
+    rotation += Math.PI / 12; // 15 degrees
+    interact();
+    needsRender = true;
+  };
+  document.getElementById('btn-rotate-ccw').onclick = () => {
+    rotation -= Math.PI / 12;
     interact();
     needsRender = true;
   };

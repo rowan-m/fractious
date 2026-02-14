@@ -5,6 +5,7 @@ struct Uniforms {
   iter: u32,
   hue: f32,
   huestep: f32,
+  rotation: f32,
 };
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -47,7 +48,16 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   // Correction for aspect ratio
   var c_delta = uv;
   c_delta.x = c_delta.x * uniforms.aspect_ratio;
-  c_delta = c_delta * uniforms.zoom + uniforms.center; // This is delta_0
+  
+  // Rotation
+  let cos_r = cos(uniforms.rotation);
+  let sin_r = sin(uniforms.rotation);
+  let rotated = vec2<f32>(
+      c_delta.x * cos_r - c_delta.y * sin_r,
+      c_delta.x * sin_r + c_delta.y * cos_r
+  );
+
+  c_delta = rotated * uniforms.zoom + uniforms.center; // This is delta_0
   
   var delta = vec2<f32>(0.0, 0.0);
   
