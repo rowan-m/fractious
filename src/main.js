@@ -54,9 +54,8 @@ async function run() {
   // Calculate initial iter based on zoom immediately
   if (zoom) {
       const logZoom = Math.log10(zoom);
-      iter = Math.floor((5000 + 1500 * Math.abs(logZoom)) * 1.5);
+      iter = Math.floor((200 + 150 * Math.abs(logZoom)) * 1.5);
   }
-  let renderIter = iter;
   let hue = urlHue ? parseFloat(urlHue) : 0.6;
   let hueStep = urlHueStep ? parseFloat(urlHueStep) : 1.0;
 
@@ -179,7 +178,7 @@ async function run() {
     // Note: centerX/Y are already updated in interact()
 
     const logZoom = Math.log10(zoom);
-    iter = Math.floor((5000 + 1500 * Math.abs(logZoom)) * 1.5);
+    iter = Math.floor((200 + 150 * Math.abs(logZoom)) * 1.5);
 
     updateReference();
   }, 500);
@@ -214,7 +213,7 @@ async function run() {
           device.queue.writeBuffer(referenceOrbitBuffer, 0, orbit);
           createBindGroup();
 
-          renderIter = newIter;
+          iter = newIter;
           updateUI();
           updateURL();
           needsRender = true;
@@ -298,6 +297,10 @@ async function run() {
 
     const uniformData = new ArrayBuffer(uniformBufferSize);
     const dv = new DataView(uniformData);
+
+    let renderIter = iter;
+    // Capping iterations during interaction causes deep zoom artifacts.
+    // We rely on resolution scaling (targetScale) for performance.
 
     dv.setFloat32(0, offsetX, true);
     dv.setFloat32(4, offsetY, true);
