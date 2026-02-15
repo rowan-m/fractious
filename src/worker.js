@@ -20,18 +20,36 @@ self.onmessage = async (e) => {
             
             // Calculate precision dynamically
             // Scale is roughly the radius of the view. Smaller scale = deeper zoom = more bits needed.
-            let bits = Math.ceil(-Math.log2(scale)) + 64;
-            if (bits < 64) bits = 64;
+            let bits = Math.ceil(-Math.log2(scale)) + 128;
+            if (bits < 128) bits = 128;
             if (bits > 4096) bits = 4096; // Safety cap
             const prec = bits;
 
-            // 1. Find best anchor
-            const anchorResult = find_best_anchor(centerX, centerY, scale, aspect, iter, prec);
-            const refX = anchorResult[0];
-            const refY = anchorResult[1];
+            // 1. Find best anchor with expanded search limit
+            // Search deeper to detect if we are near a structure that needs more iterations
+            const searchLimit = Math.max(iter * 3, 5000);
+            
+            const anchor = find_best_anchor(centerX, centerY, scale, aspect, searchLimit, prec);
+            const refX = anchor.x;
+            const refY = anchor.y;
+            
+            // If the anchor needs more iterations than currently requested, upgrade.
+            let calcIter = Math.max(iter, anchor.iter);
+            
+            // If the anchor hit the search limit, it's likely "in the set" or a very deep structure.
+            // We should boost the iterations significantly to try and resolve it.
+            if (anchor.iter >= searchLimit) {
+                calcIter = Math.floor(searchLimit * 1.5);
+            } else if (calcIter > iter) {
+                 // Moderate boost if we just found something deeper than expected
+                calcIter = Math.floor(calcIter * 1.25);
+            }
+            
+            // Hard cap to prevent GPU timeouts
+            calcIter = Math.min(calcIter, 2500000);
 
             // 2. Calculate orbit
-            const orbit = calculate_reference(refX, refY, iter, prec);
+            const orbit = calculate_reference(refX, refY, calcIter, prec);
             
             // Transfer the orbit array as a Transferable object for performance
             const orbitF32 = new Float32Array(orbit);
@@ -42,7 +60,7 @@ self.onmessage = async (e) => {
                     orbit: orbitF32,
                     refX,
                     refY,
-                    iter
+                    iter: calcIter // Return the potentially upgraded iter
                 }
             }, [orbitF32.buffer]);
 

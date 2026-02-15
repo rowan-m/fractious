@@ -54,7 +54,7 @@ async function run() {
   // Calculate initial iter based on zoom immediately
   if (zoom) {
       const logZoom = Math.log10(zoom);
-      iter = Math.floor((200 + 150 * Math.abs(logZoom)) * 1.5);
+      iter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
   }
   let hue = urlHue ? parseFloat(urlHue) : 0.6;
   let hueStep = urlHueStep ? parseFloat(urlHueStep) : 1.0;
@@ -178,7 +178,7 @@ async function run() {
     // Note: centerX/Y are already updated in interact()
 
     const logZoom = Math.log10(zoom);
-    iter = Math.floor((200 + 150 * Math.abs(logZoom)) * 1.5);
+    iter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
 
     updateReference();
   }, 500);
@@ -263,7 +263,25 @@ async function run() {
     }
 
     // Dynamic Resolution Logic
-    const targetScale = (isInteracting || isDragging) ? 0.25 : 1.0;
+    // Target ~40 million ops per frame for smooth interaction
+    const maxOps = 40000000;
+    const currentPixels = canvas.clientWidth * canvas.clientHeight;
+    
+    let targetScale = 1.0;
+    
+    if (isInteracting || isDragging) {
+        // Estimate cost
+        const costPerPixel = iter; 
+        // Ideal pixels = maxOps / costPerPixel
+        const idealPixels = maxOps / (costPerPixel || 1);
+        
+        targetScale = Math.sqrt(idealPixels / currentPixels);
+        
+        // Clamp scale to keep it usable but performant
+        // 0.1 is very blocky (1/100 pixels), but better than freezing
+        targetScale = Math.max(0.1, Math.min(0.5, targetScale));
+    }
+
     const dpr = window.devicePixelRatio || 1;
     // Check if we need to resize
     // We compare canvas width with what it *should* be
@@ -298,7 +316,6 @@ async function run() {
     const uniformData = new ArrayBuffer(uniformBufferSize);
     const dv = new DataView(uniformData);
 
-    let renderIter = iter;
     // Capping iterations during interaction causes deep zoom artifacts.
     // We rely on resolution scaling (targetScale) for performance.
 
@@ -306,7 +323,7 @@ async function run() {
     dv.setFloat32(4, offsetY, true);
     dv.setFloat32(8, zoom, true);
     dv.setFloat32(12, aspect, true);
-    dv.setUint32(16, renderIter, true);
+    dv.setUint32(16, iter, true);
     dv.setFloat32(20, hue, true);
     dv.setFloat32(24, hueStep, true);
     dv.setFloat32(28, rotation, true);

@@ -19,6 +19,15 @@ macro_rules! console_log {
 
 // Precision is now dynamic
 
+#[wasm_bindgen]
+pub struct Anchor {
+    #[wasm_bindgen(getter_with_clone)]
+    pub x: String,
+    #[wasm_bindgen(getter_with_clone)]
+    pub y: String,
+    pub iter: u32,
+}
+
 fn to_fbig(d: DBig, prec: usize) -> FBig {
     // Correct way: d.to_binary().value().with_precision(prec).value()
     d.to_binary().value().with_precision(prec).value()
@@ -100,7 +109,7 @@ pub fn sub_coord(val1: String, val2: String) -> f64 {
 
 // Return tuple [x_str, y_str]
 #[wasm_bindgen]
-pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64, max_iter: u32, prec: u32) -> Vec<String> {
+pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64, max_iter: u32, prec: u32) -> Anchor {
     let prec = prec as usize;
     let center_x = DBig::from_str(&cx_str).unwrap_or_else(|_| DBig::ZERO);
     let center_y = DBig::from_str(&cy_str).unwrap_or_else(|_| DBig::ZERO);
@@ -118,9 +127,9 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
     let f4: FBig = FBig::from(4).with_precision(prec).value();
     let f2: FBig = FBig::from(2).with_precision(prec).value();
     
-    // 3x3 Grid Search (-1..=1) - Reduced from 5x5 for performance
-    for oy_i in -1..=1 {
-        for ox_i in -1..=1 {
+    // 5x5 Grid Search (-2..=2)
+    for oy_i in -2..=2 {
+        for ox_i in -2..=2 {
             // Check Center? (0,0) is included.
             
             let ox = ox_i as f64;
@@ -175,5 +184,9 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
         if best_iter >= max_iter { break; }
     }
     
-    vec![best_dbig.0.to_string(), best_dbig.1.to_string()]
+    Anchor {
+        x: best_dbig.0.to_string(),
+        y: best_dbig.1.to_string(),
+        iter: best_iter,
+    }
 }
