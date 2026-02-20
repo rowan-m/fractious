@@ -134,18 +134,22 @@
     border: none;
     font-family: monospace;
     font-size: var(--font-size);
+    max-width: 20vw;
   }
 
   input[name="centerx"],
-  input[name="centery"],
-  input[name="zoom"],
-  input[name="rotation"] {
-    width: 22ch;
+  input[name="centery"] {
+    width: 17ch;
   }
-
+  
+  input[name="zoom"] {
+    width: 10ch;
+  }
+  
   input[name="hue"],
-  input[name="huestep"] {
-    width: 8ch;
+  input[name="huestep"],
+  input[name="rotation"] {
+    width: 7ch;
   }
 
   footer {
@@ -229,7 +233,7 @@
       <label>🔎<input type="number" name="zoom" step=".1" id="zoom" /></label>
       <label>🔄<input type="number" name="rotation" step="1" id="rotation" /></label>
       <label>🎨<input type="number" name="hue" step=".01" id="hue" /></label>
-      <label>🌈<input type="number" name="huestep" step=".1" id="huestep" /></label>
+      <label>🌈<input type="number" name="huestep" step=".01" id="huestep" /></label>
     </form>
   </nav>
 </main>
