@@ -13,12 +13,6 @@ extern "C" {
     fn log(s: &str);
 }
 
-macro_rules! console_log {
-    ($($t:tt)*) => (log(&format!($($t)*)))
-}
-
-// Precision is now dynamic
-
 #[wasm_bindgen]
 pub struct Anchor {
     #[wasm_bindgen(getter_with_clone)]
@@ -36,7 +30,6 @@ fn to_fbig(d: DBig, prec: usize) -> FBig {
 #[wasm_bindgen]
 pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, prec: u32) -> Vec<f64> {
     let prec = prec as usize;
-    // console_log!("Rust: Reference calc start (Dashu). Prec: {}. Iter: {}", prec, max_iter);
     
     // Parse decimal strings directly to DBig
     let cx_d = DBig::from_str(&c_re_str).unwrap_or_else(|_| DBig::ZERO);
@@ -85,7 +78,6 @@ pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, pr
         orbit.push(0.0);
     }
     
-    // console_log!("Rust: Reference calc done.");
     orbit
 }
 
