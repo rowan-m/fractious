@@ -36,7 +36,7 @@ async function run() {
   const params = new URLSearchParams(window.location.search);
   const urlX = params.get('x');
   const urlY = params.get('y');
-  const urlZoom = params.get('zoom');
+  const urlZoom = params.get('z');
   const urlHue = params.get('h');
   const urlHueStep = params.get('s');
   const urlRotation = params.get('r');
@@ -123,7 +123,7 @@ async function run() {
     const params = new URLSearchParams(window.location.search);
     params.set('x', centerX);
     params.set('y', centerY);
-    params.set('zoom', (-Math.log10(zoom)).toFixed(3));
+    params.set('z', (-Math.log10(zoom)).toFixed(3));
     params.set('r', rotation.toFixed(3));
     params.set('h', hue.toFixed(3));
     params.set('s', hueStep.toFixed(3));
