@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fractious-cache-v20260228a';
+const CACHE_NAME = 'fractious-cache-v20260228b';
 
 self.addEventListener('install', (event) => {
   // Activate immediately without waiting for other tabs to close

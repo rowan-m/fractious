@@ -518,7 +518,7 @@ async function run() {
 
   canvas.addEventListener('wheel', e => {
     e.preventDefault();
-    const factor = e.deltaY > 0 ? 1.1 : 1.0 / 1.1;
+    const factor = e.deltaY > 0 ? 1.05 : 1.0 / 1.05;
     targetZoom *= factor;
     interact();
     needsRender = true;
@@ -628,12 +628,12 @@ async function run() {
   };
 
   document.getElementById('btn-cycle-in').onclick = () => {
-    hueStep *= 1.1;
+    hueStep += 0.05;
     updateURL();
     needsRender = true;
   };
   document.getElementById('btn-cycle-out').onclick = () => {
-    hueStep /= 1.1;
+    hueStep -= 0.05;
     updateURL();
     needsRender = true;
   };
