@@ -1,0 +1,103 @@
+{
+  "dir": "ltr",
+  "lang": "en",
+  "name": "Fractious",
+  "short_name": "Fractious",
+  "scope": ".",
+  "display": "standalone",
+  "start_url": ".",
+  "background_color": "#3e5c89",
+  "theme_color": "#3e5c89",
+  "description": "Explore infinite fractals in the Mandelbrot set. Discover beautiful downloadable images and share locations with friends—all with simple, fun controls.",
+  "categories": ["education", "entertainment"],
+  "orientation": "any",
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "./img/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./img/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./img/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./img/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "./img/narrow1.jpg",
+      "sizes": "1080x2400",
+      "type": "image/jpg",
+      "platform": "narrow",
+      "label": "☝ Drag and zoom on any touchscreen device for quick, intuitive navigation."
+    },
+    {
+      "src": "./img/wide1.jpg",
+      "sizes": "2256x1446",
+      "type": "image/jpg",
+      "platform": "wide",
+      "label": "✨ The iconic Mandelbrot fractal ready for you to dive in."
+    },
+    {
+      "src": "./img/wide2.jpg",
+      "sizes": "2256x1446",
+      "type": "image/jpg",
+      "platform": "wide",
+      "label": "🔎 Adjust deep zoom and iterations to discover amazing microscopic details."
+    },
+    {
+      "src": "./img/narrow2.jpg",
+      "sizes": "1080x2400",
+      "type": "image/jpg",
+      "platform": "narrow",
+      "label": "🌈 Adjust the colour and palette for even more image variation."
+    },
+    {
+      "src": "./img/narrow3.jpg",
+      "sizes": "1080x2400",
+      "type": "image/jpg",
+      "platform": "narrow",
+      "label": "🔥 Discover images that no-one else has seen before—there are infinite combinations!"
+    }
+  ]
+}
