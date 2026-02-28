@@ -6,8 +6,8 @@
   "scope": ".",
   "display": "standalone",
   "start_url": ".",
-  "background_color": "#3e5c89",
-  "theme_color": "#3e5c89",
+  "background_color": "#3d5b88",
+  "theme_color": "#3d5b88",
   "description": "Explore infinite fractals in the Mandelbrot set. Discover beautiful downloadable images and share locations with friends—all with simple, fun controls.",
   "categories": ["education", "entertainment"],
   "orientation": "any",
@@ -67,35 +67,35 @@
     {
       "src": "./img/narrow1.jpg",
       "sizes": "1080x2400",
-      "type": "image/jpg",
+      "type": "image/jpeg",
       "platform": "narrow",
       "label": "☝ Drag and zoom on any touchscreen device for quick, intuitive navigation."
     },
     {
       "src": "./img/wide1.jpg",
       "sizes": "2256x1446",
-      "type": "image/jpg",
+      "type": "image/jpeg",
       "platform": "wide",
       "label": "✨ The iconic Mandelbrot fractal ready for you to dive in."
     },
     {
       "src": "./img/wide2.jpg",
       "sizes": "2256x1446",
-      "type": "image/jpg",
+      "type": "image/jpeg",
       "platform": "wide",
       "label": "🔎 Adjust deep zoom and iterations to discover amazing microscopic details."
     },
     {
       "src": "./img/narrow2.jpg",
       "sizes": "1080x2400",
-      "type": "image/jpg",
+      "type": "image/jpeg",
       "platform": "narrow",
       "label": "🌈 Adjust the colour and palette for even more image variation."
     },
     {
       "src": "./img/narrow3.jpg",
       "sizes": "1080x2400",
-      "type": "image/jpg",
+      "type": "image/jpeg",
       "platform": "narrow",
       "label": "🔥 Discover images that no-one else has seen before—there are infinite combinations!"
     }
