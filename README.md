@@ -1,48 +1,46 @@
 # Fractious
 
-A WebGL-based viewer for the Mandelbrot set. This is cobbled together from a variety of sources
+A deep-zooming viewer for the Mandelbrot set hosted at https://fractious-deep.web.app/.
 
-The core shader implementation comes from:
-<http://blog.hvidtfeldts.net/index.php/2012/07/double-precision-in-opengl-and-webgl/>
-by <https://twitter.com/syntopiadk>
+The architecture combines :
+- **Rust & WebAssembly** for calculating high-precision reference orbits on the CPU (using the `dashu` arbitrary-precision crate).
+- **WebGPU** then renders via a `f32` fragment shader.
+- **Web Workers** for offloading the heavy math from the UI thread.
 
-With an updated version from:
-<https://gist.github.com/LMLB/4242936fe79fb9de803c20d1196db8f3>
-by <https://github.com/LMLB>
+Ping <https://bsky.app/profile/rowan.fyi> or <https://mastodon.social/@rowan_m> with questions.
 
-In turn, these are based on a Fortran-based implementation for arbitrary floating point numbers:
-<https://www.davidhbailey.com/dhbsoftware/>
-by <https://twitter.com/math_scholar>
+## Running the app locally
 
-Rendered to a simple `webgl2` context from:
-<https://gist.github.com/strangerintheq/27b8fc4e53432d8b9284364713ce8608>
-by <https://twitter.com/stranger_intheq>
+This project uses [Vite](https://vitejs.dev/) as a build tool and dev server, and `wasm-pack` to compile the Rust code to WebAssembly.
 
-Buried in the shader is a version of this colouring method:
-by <https://twitter.com/iquilezles>
+Before the initial run, ensure you have Node.js and Rust installed. Then, install the npm dependencies:
 
-🐦 Ping <https://twitter.com/rowan_m> with questions.
-
-## Running the demo locally
-
-Before the initial run, you will need to download the dependencies from from
-[npm](https://docs.npmjs.com/). In this directory, run:
-
-```
-npm ci
+```bash
+npm install
 ```
 
-Start the server using:
+### Build the WebAssembly Module
 
+You need to compile the Rust arbitrary-precision math library into a WebAssembly module before the app will work:
+
+```bash
+npm run build:wasm
 ```
-npm start
+
+### Start the Development Server
+
+Start the local Vite development server:
+
+```bash
+npm run dev
 ```
 
-The server will run on a random port which will be shown in the console.
+The server will run on a local port (usually `http://localhost:5173/`), which will be printed in your console.
 
-If you're developing, then there is a task to start the server in development
-mode on port 8080.
+### Build for Production
 
-```
-npm run start:dev
+To create an optimized production build (output to the `dist/` directory):
+
+```bash
+npm run build
 ```
