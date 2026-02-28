@@ -47,7 +47,8 @@ async function run() {
   let centerX = refX;
   let centerY = refY;
 
-  let zoom = urlZoom ? parseFloat(urlZoom) : 2.0;
+  // Zoom is stored as raw scale internally, but presented as -log10(zoom) (Zoom Level)
+  let zoom = urlZoom ? Math.pow(10, -parseFloat(urlZoom)) : 2.0;
   let rotation = urlRotation ? parseFloat(urlRotation) : 0.0;
   let targetZoom = zoom;
   let iter = 200;
@@ -122,7 +123,7 @@ async function run() {
     const params = new URLSearchParams(window.location.search);
     params.set('x', centerX);
     params.set('y', centerY);
-    params.set('zoom', zoom);
+    params.set('zoom', (-Math.log10(zoom)).toFixed(3));
     params.set('r', rotation.toFixed(3));
     params.set('h', hue.toFixed(3));
     params.set('s', hueStep.toFixed(3));
@@ -137,7 +138,7 @@ async function run() {
         elDouble.c_im.value = centerY.substring(0, 15);
     }
     if (document.activeElement !== elDouble.zoom) {
-        elDouble.zoom.value = zoom.toExponential(2);
+        elDouble.zoom.value = (-Math.log10(zoom)).toFixed(2);
     }
     if (document.activeElement !== elDouble.rotation) {
         const deg = (rotation * 180 / Math.PI) % 360;
@@ -539,10 +540,10 @@ async function run() {
   });
 
   elDouble.zoom.addEventListener('change', () => {
-    const newZoom = parseFloat(elDouble.zoom.value);
-    if (!isNaN(newZoom) && newZoom > 0) {
-        zoom = newZoom;
-        targetZoom = newZoom;
+    const level = parseFloat(elDouble.zoom.value);
+    if (!isNaN(level)) {
+        zoom = Math.pow(10, -level);
+        targetZoom = zoom;
         interact();
         needsRender = true;
     } else {
