@@ -109,104 +109,88 @@ pub fn sub_coord(val1: String, val2: String) -> f64 {
 
 // Return tuple [x_str, y_str]
 #[wasm_bindgen]
-pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64, max_iter: u32, prec: u32) -> Anchor {
+pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64, max_iter: u32, prec: u32, abort_flag: Option<js_sys::Int32Array>) -> Anchor {
     let prec = prec as usize;
     let center_x = DBig::from_str(&cx_str).unwrap_or_else(|_| DBig::ZERO);
     let center_y = DBig::from_str(&cy_str).unwrap_or_else(|_| DBig::ZERO);
     
-    let cx_f64 = center_x.to_f64().value();
-    let cy_f64 = center_y.to_f64().value();
+    // Scale is the vertical span (approx).
+    // Multiply x-step by aspect to cover wide screen
+    let step_y = DBig::from_str(&(scale * 0.22).to_string()).unwrap_or_else(|_| DBig::ZERO);
+    let step_x = DBig::from_str(&(scale * 0.22 * aspect).to_string()).unwrap_or_else(|_| DBig::ZERO);
     
-    let step_x_f64 = scale * 0.22 * aspect;
-    let step_y_f64 = scale * 0.22;
+    let f4: FBig = FBig::from(4).with_precision(prec).value();
+    let f2: FBig = FBig::from(2).with_precision(prec).value();
     
-    let mut best_iter_f64 = 0;
-    let mut best_ox_i = 0;
-    let mut best_oy_i = 0;
+    let mut best_iter = 0;
+    let mut best_cx = center_x.clone();
+    let mut best_cy = center_y.clone();
     
-    // Evaluate in center-out order to prefer center if tied
+    // 3x3 Grid Search: Center-out order
     let offsets = [
         (0, 0),
         (-1, 0), (1, 0), (0, -1), (0, 1),
         (-1, -1), (1, -1), (-1, 1), (1, 1),
-        (-2, 0), (2, 0), (0, -2), (0, 2),
-        (-2, -1), (-2, 1), (2, -1), (2, 1),
-        (-1, -2), (1, -2), (-1, 2), (1, 2),
-        (-2, -2), (2, -2), (-2, 2), (2, 2),
     ];
     
     for &(ox_i, oy_i) in offsets.iter() {
-        let cx = cx_f64 + (ox_i as f64) * step_x_f64;
-        let cy = cy_f64 + (oy_i as f64) * step_y_f64;
-        
-        let mut zx = 0.0;
-        let mut zy = 0.0;
-        let mut i = 0;
-        
-        while i < max_iter {
-            let zx2 = zx * zx;
-            let zy2 = zy * zy;
-            if zx2 + zy2 > 4.0 {
+        if let Some(ref flag) = abort_flag {
+            if flag.get_index(0) != 0 {
                 break;
             }
-            let new_zx = zx2 - zy2 + cx;
-            let new_zy = 2.0 * zx * zy + cy;
+        }
+
+        let dx_val = DBig::from_str(&(ox_i as f64).to_string()).unwrap_or_else(|_| DBig::ZERO);
+        let dy_val = DBig::from_str(&(oy_i as f64).to_string()).unwrap_or_else(|_| DBig::ZERO);
+        
+        let cx_probe = &center_x + (&step_x * dx_val);
+        let cy_probe = &center_y + (&step_y * dy_val);
+        
+        let cx = to_fbig(cx_probe.clone(), prec);
+        let cy = to_fbig(cy_probe.clone(), prec);
+        
+        let mut zx = FBig::ZERO.with_precision(prec).value();
+        let mut zy = FBig::ZERO.with_precision(prec).value();
+        
+        let mut i = 0;
+        while i < max_iter {
+            if i % 1000 == 0 {
+                if let Some(ref flag) = abort_flag {
+                    if flag.get_index(0) != 0 {
+                        break;
+                    }
+                }
+            }
+
+            let zx2 = (&zx * &zx).with_precision(prec).value();
+            let zy2 = (&zy * &zy).with_precision(prec).value();
+            
+            if &zx2 + &zy2 > f4 {
+                break;
+            }
+            
+            let new_zx = (&zx2 - &zy2 + &cx).with_precision(prec).value();
+            let new_zy = ((&zx * &zy) * &f2 + &cy).with_precision(prec).value();
+            
             zx = new_zx;
             zy = new_zy;
             i += 1;
         }
         
-        if i > best_iter_f64 {
-            best_iter_f64 = i;
-            best_ox_i = ox_i;
-            best_oy_i = oy_i;
+        if i > best_iter {
+            best_iter = i;
+            best_cx = cx_probe;
+            best_cy = cy_probe;
+            
             if i >= max_iter {
                 break; 
             }
         }
     }
     
-    // Scale is the vertical span (approx).
-    // Multiply x-step by aspect to cover wide screen
-    let step_y_dbig = DBig::from_str(&(scale * 0.22).to_string()).unwrap_or_else(|_| DBig::ZERO);
-    let step_x_dbig = DBig::from_str(&(scale * 0.22 * aspect).to_string()).unwrap_or_else(|_| DBig::ZERO);
-    
-    let dx_val = DBig::from_str(&(best_ox_i as f64).to_string()).unwrap_or_else(|_| DBig::ZERO);
-    let dy_val = DBig::from_str(&(best_oy_i as f64).to_string()).unwrap_or_else(|_| DBig::ZERO);
-    
-    let best_cx = &center_x + (&step_x_dbig * dx_val);
-    let best_cy = &center_y + (&step_y_dbig * dy_val);
-    
-    // Evaluate the single chosen point using BigFloat to get its true iteration count
-    let cx_big = to_fbig(best_cx.clone(), prec);
-    let cy_big = to_fbig(best_cy.clone(), prec);
-    
-    let mut zx_big = FBig::ZERO.with_precision(prec).value();
-    let mut zy_big = FBig::ZERO.with_precision(prec).value();
-    
-    let f4: FBig = FBig::from(4).with_precision(prec).value();
-    let f2: FBig = FBig::from(2).with_precision(prec).value();
-    
-    let mut true_iter = 0;
-    while true_iter < max_iter {
-        let zx2 = (&zx_big * &zx_big).with_precision(prec).value();
-        let zy2 = (&zy_big * &zy_big).with_precision(prec).value();
-        
-        if &zx2 + &zy2 > f4 {
-            break;
-        }
-        
-        let new_zx = (&zx2 - &zy2 + &cx_big).with_precision(prec).value();
-        let new_zy = ((&zx_big * &zy_big) * &f2 + &cy_big).with_precision(prec).value();
-        
-        zx_big = new_zx;
-        zy_big = new_zy;
-        true_iter += 1;
-    }
-    
     Anchor {
         x: best_cx.to_string(),
         y: best_cy.to_string(),
-        iter: true_iter,
+        iter: best_iter,
     }
 }

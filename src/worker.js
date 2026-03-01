@@ -31,7 +31,7 @@ self.onmessage = async (e) => {
             // Search deeper to detect if we are near a structure that needs more iterations
             const searchLimit = Math.max(iter * 3, 5000);
             
-            const anchor = find_best_anchor(centerX, centerY, scale, aspect, searchLimit, prec);
+            const anchor = find_best_anchor(centerX, centerY, scale, aspect, searchLimit, prec, abortArray);
             const refX = anchor.x;
             const refY = anchor.y;
             
