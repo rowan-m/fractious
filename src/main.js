@@ -115,6 +115,7 @@ async function run() {
     c_im: document.getElementById('c_im'),
     zoom: document.getElementById('zoom'),
     rotation: document.getElementById('rotation'),
+    iterations: document.getElementById('iterations'),
     hue: document.getElementById('hue'),
     hueStep: document.getElementById('huestep'),
   };
@@ -144,6 +145,7 @@ async function run() {
         const deg = (rotation * 180 / Math.PI) % 360;
         elDouble.rotation.value = deg.toFixed(1);
     }
+    elDouble.iterations.value = iter;
     if (document.activeElement !== elDouble.hue) {
         elDouble.hue.value = hue.toFixed(3);
     }
