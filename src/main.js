@@ -575,6 +575,8 @@ async function run() {
   });
 
   function handlePointerUp(e) {
+    if (!pointers.has(e.pointerId)) return;
+    
     pointers.delete(e.pointerId);
     
     if (pointers.size < 2) {
