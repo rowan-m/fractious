@@ -85,22 +85,18 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     delta = two_xn_delta + delta_sq + c_delta;
     
     let next_i = i + 1u;
-    if (next_i < arrayLength(&reference_orbit)) {
-       let xn_next = reference_orbit[next_i];
-       zn = xn_next + delta;
-       zn_sq = dot(zn, zn);
-       if (zn_sq > 4.0) {
-           i = next_i; 
-           break;
-       }
-    } else {
-       break;
+    let xn_next = reference_orbit[next_i];
+    zn = xn_next + delta;
+    zn_sq = dot(zn, zn);
+    if (zn_sq > 4.0) {
+        i = next_i; 
+        break;
     }
     
-    i = i + 1u;
+    i = next_i;
   }
   
-  if (i >= uniforms.iter || i + 1u >= arrayLength(&reference_orbit)) {
+  if (i >= uniforms.iter) {
     return vec4<f32>(0.0, 0.0, 0.0, 1.0);
   }
   
