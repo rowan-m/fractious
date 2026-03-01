@@ -116,6 +116,7 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
     
     // Scale is the vertical span (approx).
     // Multiply x-step by aspect to cover wide screen
+    // Dense Grid: Step 0.22 allows 5 points (-2 to 2) to cover approx -0.44 to 0.44 (90% view)
     let step_y = DBig::from_str(&(scale * 0.22).to_string()).unwrap_or_else(|_| DBig::ZERO);
     let step_x = DBig::from_str(&(scale * 0.22 * aspect).to_string()).unwrap_or_else(|_| DBig::ZERO);
     
@@ -126,11 +127,15 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
     let mut best_cx = center_x.clone();
     let mut best_cy = center_y.clone();
     
-    // 3x3 Grid Search: Center-out order
-    let offsets = [
+    // 5x5 Grid Search: Center-out spiral order for maximum stability
+    let offsets: [(i32, i32); 25] = [
         (0, 0),
         (-1, 0), (1, 0), (0, -1), (0, 1),
         (-1, -1), (1, -1), (-1, 1), (1, 1),
+        (-2, 0), (2, 0), (0, -2), (0, 2),
+        (-2, -1), (-2, 1), (2, -1), (2, 1),
+        (-1, -2), (1, -2), (-1, 2), (1, 2),
+        (-2, -2), (2, -2), (-2, 2), (2, 2),
     ];
     
     for &(ox_i, oy_i) in offsets.iter() {
