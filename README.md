@@ -9,6 +9,8 @@ The architecture combines :
 
 Ping <https://bsky.app/profile/rowan.fyi> or <https://mastodon.social/@rowan_m> with questions.
 
+![Screenshot of Mandelbrot set rendered in Fractious](public/img/preview.jpg)
+
 ## Running the app locally
 
 This project uses [Vite](https://vitejs.dev/) as a build tool and dev server, and `wasm-pack` to compile the Rust code to WebAssembly.
