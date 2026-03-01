@@ -28,7 +28,7 @@ fn to_fbig(d: DBig, prec: usize) -> FBig {
 }
 
 #[wasm_bindgen]
-pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, prec: u32) -> Vec<f64> {
+pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, prec: u32) -> Vec<f32> {
     let prec = prec as usize;
     
     // Parse decimal strings directly to DBig
@@ -52,8 +52,8 @@ pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, pr
         // Output f64: use to_f64() -> value()
         let zx_f64 = zx.to_f64().value();
         let zy_f64 = zy.to_f64().value();
-        orbit.push(zx_f64);
-        orbit.push(zy_f64);
+        orbit.push(zx_f64 as f32);
+        orbit.push(zy_f64 as f32);
         
         let zx2 = (&zx * &zx).with_precision(prec).value();
         let zy2 = (&zy * &zy).with_precision(prec).value();

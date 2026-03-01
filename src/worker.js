@@ -51,18 +51,15 @@ self.onmessage = async (e) => {
             // 2. Calculate orbit
             const orbit = calculate_reference(refX, refY, calcIter, prec);
             
-            // Transfer the orbit array as a Transferable object for performance
-            const orbitF32 = new Float32Array(orbit);
-
             self.postMessage({
                 type: 'result',
                 payload: {
-                    orbit: orbitF32,
+                    orbit: orbit,
                     refX,
                     refY,
                     iter: calcIter // Return the potentially upgraded iter
                 }
-            }, [orbitF32.buffer]);
+            }, [orbit.buffer]);
 
         } catch (error) {
             console.error("Worker error:", error);
