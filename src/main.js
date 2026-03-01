@@ -6,7 +6,56 @@ async function run() {
   init_hooks();
 
   // Initialize Worker
-  const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+  let worker;
+  function initWorker() {
+      if (worker) {
+          worker.terminate();
+      }
+      worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+      
+      worker.onmessage = (e) => {
+          const { type, payload, error } = e.data;
+          if (type === 'result') {
+              const { orbit, refX: newRefX, refY: newRefY, iter: newIter } = payload;
+              
+              refX = newRefX;
+              refY = newRefY;
+              
+              offsetX = sub_coord(centerX, refX);
+              offsetY = sub_coord(centerY, refY);
+
+              const requiredSize = orbit.byteLength;
+              if (requiredSize > referenceOrbitSize) {
+                referenceOrbitBuffer.destroy();
+                referenceOrbitSize = requiredSize;
+                referenceOrbitBuffer = device.createBuffer({
+                    size: referenceOrbitSize,
+                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+                });
+              }
+
+              device.queue.writeBuffer(referenceOrbitBuffer, 0, orbit);
+              createBindGroup();
+
+              iter = newIter;
+              updateUI();
+              updateURL();
+              isPendingCalculation = false;
+              requestRender();
+              
+              elDouble.c_re.textContent = ""; 
+
+          } else if (type === 'error') {
+              console.error("Worker error:", error);
+              isPendingCalculation = false;
+          }
+          
+          isCalculating = false;
+          needUpdateRef = false;
+      };
+  }
+  
+  initWorker();
 
   if (!navigator.gpu) {
     console.error("WebGPU not supported");
@@ -68,6 +117,15 @@ async function run() {
   let isInteracting = false;
   let interactionTimeout;
   let needsRender = true;
+  let isFrameScheduled = false;
+
+  function requestRender() {
+      needsRender = true;
+      if (!isFrameScheduled) {
+          isFrameScheduled = true;
+          requestAnimationFrame(frame);
+      }
+  }
   let screenshotRequested = false;
   let lastX = 0;
   let lastY = 0;
@@ -182,54 +240,12 @@ async function run() {
 
   let isCalculating = false;
 
-  worker.onmessage = (e) => {
-      const { type, payload, error } = e.data;
-      if (type === 'result') {
-          const { orbit, refX: newRefX, refY: newRefY, iter: newIter } = payload;
-          
-          // Update state with confirmed calculation
-          refX = newRefX;
-          refY = newRefY;
-          
-          // Recalculate offset relative to the *new* reference
-          // Because centerX might have changed slightly while worker was running?
-          // Ideally, we treat the worker's refX/Y as the truth for the orbit buffer.
-          offsetX = sub_coord(centerX, refX);
-          offsetY = sub_coord(centerY, refY);
-
-          const requiredSize = orbit.byteLength;
-          if (requiredSize > referenceOrbitSize) {
-            referenceOrbitBuffer.destroy();
-            referenceOrbitSize = requiredSize;
-            referenceOrbitBuffer = device.createBuffer({
-                size: referenceOrbitSize,
-                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-            });
-          }
-
-          device.queue.writeBuffer(referenceOrbitBuffer, 0, orbit);
-          createBindGroup();
-
-          iter = newIter;
-          updateUI();
-          updateURL();
-          isPendingCalculation = false;
-          needsRender = true;
-          
-          elDouble.c_re.textContent = ""; // Clear optimizing text if any
-
-      } else if (type === 'error') {
-          console.error("Worker error:", error);
-          isPendingCalculation = false;
-      }
-      
-      isCalculating = false;
-      needUpdateRef = false;
-  };
-
   function updateReference() {
-    if (isCalculating) return;
+    if (isCalculating) {
+        initWorker(); // Interrupt stale calculation
+    }
     isCalculating = true;
+    needUpdateRef = false;
 
     const aspect = canvas.width / canvas.height;
     const logZoom = Math.log10(zoom);
@@ -255,10 +271,10 @@ async function run() {
     clearTimeout(interactionTimeout);
     interactionTimeout = setTimeout(() => {
       isInteracting = false;
-      needsRender = true;
+      requestRender();
     }, 300);
     commitAndRecalc();
-    needsRender = true;
+    requestRender();
   }
 
   let offscreenTexture = null;
@@ -280,6 +296,8 @@ async function run() {
   let totalPasses = 1;
 
   function frame() {
+    isFrameScheduled = false;
+
     if (needUpdateRef) {
       updateReference();
     }
@@ -323,7 +341,6 @@ async function run() {
     }
 
     if (currentPass >= totalPasses && !needUpdateRef && !screenshotRequested) {
-        requestAnimationFrame(frame);
         return;
     }
 
@@ -415,13 +432,18 @@ async function run() {
         link.click();
     }
 
-    requestAnimationFrame(frame);
+    if (currentPass < totalPasses || needUpdateRef || screenshotRequested) {
+        if (!isFrameScheduled) {
+            isFrameScheduled = true;
+            requestAnimationFrame(frame);
+        }
+    }
   }
 
   const observer = new ResizeObserver(entries => {
     for (const {} of entries) {
       // Just trigger a render, the frame loop handles the sizing logic
-      needsRender = true;
+      requestRender();
     }
   });
   observer.observe(canvas);
@@ -449,7 +471,7 @@ async function run() {
             y: (points[0].y + points[1].y) / 2
         };
     }
-    needsRender = true;
+    requestRender();
   });
 
   canvas.addEventListener('pointermove', e => {
@@ -538,7 +560,7 @@ async function run() {
     centerY = add_coord(refY, offsetY);
     updateUI();
     interact();
-    needsRender = true;
+    requestRender();
   });
 
   function handlePointerUp(e) {
@@ -559,7 +581,7 @@ async function run() {
         isDragging = false;
         crosshair.classList.remove('moving');
     }
-    needsRender = true;
+    requestRender();
   }
 
   canvas.addEventListener('pointerup', handlePointerUp);
@@ -572,7 +594,7 @@ async function run() {
     const factor = e.deltaY > 0 ? 1.05 : 1.0 / 1.05;
     targetZoom *= factor;
     interact();
-    needsRender = true;
+    requestRender();
   }, { passive: false });
 
   // Handle manual input changes
@@ -580,14 +602,14 @@ async function run() {
     centerX = elDouble.c_re.value;
     refX = centerX; // Update reference for high precision
     updateReference();
-    needsRender = true;
+    requestRender();
   });
 
   elDouble.c_im.addEventListener('change', () => {
     centerY = elDouble.c_im.value;
     refY = centerY;
     updateReference();
-    needsRender = true;
+    requestRender();
   });
 
   elDouble.zoom.addEventListener('change', () => {
@@ -596,7 +618,7 @@ async function run() {
         zoom = Math.pow(10, -level);
         targetZoom = zoom;
         interact();
-        needsRender = true;
+        requestRender();
     } else {
         updateUI(); // Revert to valid value
     }
@@ -607,7 +629,7 @@ async function run() {
     if (!isNaN(deg)) {
         rotation = deg * Math.PI / 180;
         interact();
-        needsRender = true;
+        requestRender();
     } else {
         updateUI();
     }
@@ -615,12 +637,12 @@ async function run() {
   
   elDouble.hue.addEventListener('change', () => {
     const v = parseFloat(elDouble.hue.value);
-    if(!isNaN(v)) { hue = v; updateURL(); needsRender = true; } else { updateUI(); }
+    if(!isNaN(v)) { hue = v; updateURL(); requestRender(); } else { updateUI(); }
   });
 
   elDouble.hueStep.addEventListener('change', () => {
     const v = parseFloat(elDouble.hueStep.value);
-    if(!isNaN(v)) { hueStep = v; updateURL(); needsRender = true; } else { updateUI(); }
+    if(!isNaN(v)) { hueStep = v; updateURL(); requestRender(); } else { updateUI(); }
   });
 
   // Footer button listeners
@@ -630,14 +652,14 @@ async function run() {
     centerY = add_coord(centerY, dy.toString());
     refY = centerY;
     updateReference();
-    needsRender = true;
+    requestRender();
   };
   document.getElementById('btn-down').onclick = () => {
     const dy = -moveStep * zoom;
     centerY = add_coord(centerY, dy.toString());
     refY = centerY;
     updateReference();
-    needsRender = true;
+    requestRender();
   };
   document.getElementById('btn-left').onclick = () => {
     const aspect = canvas.width / canvas.height;
@@ -645,7 +667,7 @@ async function run() {
     centerX = add_coord(centerX, dx.toString());
     refX = centerX;
     updateReference();
-    needsRender = true;
+    requestRender();
   };
   document.getElementById('btn-right').onclick = () => {
     const aspect = canvas.width / canvas.height;
@@ -653,50 +675,50 @@ async function run() {
     centerX = add_coord(centerX, dx.toString());
     refX = centerX;
     updateReference();
-    needsRender = true;
+    requestRender();
   };
 
   document.getElementById('btn-zoom-in').onclick = () => {
     targetZoom /= 1.5;
     interact();
-    needsRender = true;
+    requestRender();
   };
   document.getElementById('btn-zoom-out').onclick = () => {
     targetZoom *= 1.5;
     interact();
-    needsRender = true;
+    requestRender();
   };
 
   document.getElementById('btn-rotate-cw').onclick = () => {
     rotation += Math.PI / 12; // 15 degrees
     interact();
-    needsRender = true;
+    requestRender();
   };
   document.getElementById('btn-rotate-ccw').onclick = () => {
     rotation -= Math.PI / 12;
     interact();
-    needsRender = true;
+    requestRender();
   };
 
   document.getElementById('btn-cycle-in').onclick = () => {
     hueStep += 0.05;
     updateURL();
-    needsRender = true;
+    requestRender();
   };
   document.getElementById('btn-cycle-out').onclick = () => {
     hueStep -= 0.05;
     updateURL();
-    needsRender = true;
+    requestRender();
   };
   document.getElementById('btn-hue-left').onclick = () => {
     hue -= 0.05;
     updateURL();
-    needsRender = true;
+    requestRender();
   };
   document.getElementById('btn-hue-right').onclick = () => {
     hue += 0.05;
     updateURL();
-    needsRender = true;
+    requestRender();
   };
 
   const btnFullscreen = document.getElementById('btn-fullscreen');
@@ -720,12 +742,12 @@ async function run() {
 
   document.getElementById('btn-screenshot').onclick = () => {
     screenshotRequested = true;
-    needsRender = true;
+    requestRender();
   };
 
   updateUI();
   updateReference();
-  requestAnimationFrame(frame);
+  requestRender();
 }
 
 run();
