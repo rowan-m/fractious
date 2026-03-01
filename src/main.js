@@ -29,7 +29,7 @@ async function run() {
     device,
     format,
     alphaMode: 'premultiplied',
-    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC | GPUTextureUsage.COPY_DST,
   });
 
   // Parse URL parameters
@@ -177,12 +177,6 @@ async function run() {
 
   // Update Reference Orbit with Auto-Commit
   const commitAndRecalc = debounce(() => {
-    // Current logical center
-    // Note: centerX/Y are already updated in interact()
-
-    const logZoom = Math.log10(zoom);
-    iter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
-
     updateReference();
   }, 500);
 
@@ -219,12 +213,14 @@ async function run() {
           iter = newIter;
           updateUI();
           updateURL();
+          isPendingCalculation = false;
           needsRender = true;
           
           elDouble.c_re.textContent = ""; // Clear optimizing text if any
 
       } else if (type === 'error') {
           console.error("Worker error:", error);
+          isPendingCalculation = false;
       }
       
       isCalculating = false;
@@ -236,6 +232,8 @@ async function run() {
     isCalculating = true;
 
     const aspect = canvas.width / canvas.height;
+    const logZoom = Math.log10(zoom);
+    const requestedIter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
 
     worker.postMessage({
         type: 'calculate_reference',
@@ -244,13 +242,16 @@ async function run() {
             centerY,
             scale: zoom,
             aspect,
-            iter
+            iter: requestedIter
         }
     });
   }
 
+  let isPendingCalculation = false;
+
   function interact() {
     isInteracting = true;
+    isPendingCalculation = true;
     clearTimeout(interactionTimeout);
     interactionTimeout = setTimeout(() => {
       isInteracting = false;
@@ -260,38 +261,56 @@ async function run() {
     needsRender = true;
   }
 
+  let offscreenTexture = null;
+  let offscreenTextureView = null;
+
+  function resizeOffscreenTexture(w, h) {
+      if (offscreenTexture && offscreenTexture.width === w && offscreenTexture.height === h) return;
+      if (offscreenTexture) offscreenTexture.destroy();
+      if (w === 0 || h === 0) return;
+      offscreenTexture = device.createTexture({
+          size: [w, h, 1],
+          format,
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC,
+      });
+      offscreenTextureView = offscreenTexture.createView();
+  }
+
+  let currentPass = 0;
+  let totalPasses = 1;
+
   function frame() {
     if (needUpdateRef) {
       updateReference();
     }
 
-    // Dynamic Resolution Logic
-    // Target ~40 million ops per frame for smooth interaction
-    const maxOps = 40000000;
-    const currentPixels = canvas.clientWidth * canvas.clientHeight;
-    
-    let targetScale = 1.0;
-    
-    if (isInteracting || isDragging) {
-        // Estimate cost
-        const costPerPixel = iter; 
-        // Ideal pixels = maxOps / costPerPixel
-        const idealPixels = maxOps / (costPerPixel || 1);
-        
-        targetScale = Math.sqrt(idealPixels / currentPixels);
-        
-        // Clamp scale to keep it usable but performant
-        // 0.1 is very blocky (1/100 pixels), but better than freezing
-        targetScale = Math.max(0.1, Math.min(0.5, targetScale));
+    if (needsRender) {
+        currentPass = 0;
+        needsRender = false;
     }
 
     const dpr = window.devicePixelRatio || 1;
-    // Check if we need to resize
-    // We compare canvas width with what it *should* be
-    // canvas.clientWidth is the CSS width in pixels
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
+    const currentPixels = (width * dpr) * (height * dpr);
     
+    // Dynamic Resolution & Progressive Rendering Logic
+    // Allow much larger maxOps for progressive rendering to speed it up
+    const interactionMaxOps = 40000000;
+    const progressiveMaxOps = 200000000;
+    let targetScale = 1.0;
+    
+    // Stay in interactive (low res) mode if we are dragging, interacting, or waiting for a calculation to finish
+    if (isInteracting || isDragging || isCalculating || isPendingCalculation) {
+        const idealPixels = interactionMaxOps / (iter || 1);
+        targetScale = Math.sqrt(idealPixels / currentPixels);
+        targetScale = Math.min(0.5, targetScale); // Unconstrained lower bound
+        totalPasses = 1;
+    } else {
+        const totalOps = currentPixels * iter;
+        totalPasses = Math.max(1, Math.ceil(totalOps / progressiveMaxOps));
+    }
+
     if (width > 0 && height > 0) {
         const targetWidth = Math.max(1, Math.min(Math.floor(width * dpr * targetScale), device.limits.maxTextureDimension2D));
         const targetHeight = Math.max(1, Math.min(Math.floor(height * dpr * targetScale), device.limits.maxTextureDimension2D));
@@ -299,28 +318,25 @@ async function run() {
         if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
             canvas.width = targetWidth;
             canvas.height = targetHeight;
-            needsRender = true;
+            currentPass = 0;
         }
     }
 
-    if (!needsRender && !needUpdateRef) {
+    if (currentPass >= totalPasses && !needUpdateRef && !screenshotRequested) {
         requestAnimationFrame(frame);
         return;
     }
-    needsRender = false;
+
+    resizeOffscreenTexture(canvas.width, canvas.height);
 
     // Direct zoom instead of smooth interpolation
     zoom = targetZoom;
     updateUI();
 
-
     const aspect = canvas.width / canvas.height;
 
     const uniformData = new ArrayBuffer(uniformBufferSize);
     const dv = new DataView(uniformData);
-
-    // Capping iterations during interaction causes deep zoom artifacts.
-    // We rely on resolution scaling (targetScale) for performance.
 
     dv.setFloat32(0, offsetX, true);
     dv.setFloat32(4, offsetY, true);
@@ -334,27 +350,60 @@ async function run() {
     device.queue.writeBuffer(uniformBuffer, 0, uniformData);
 
     const commandEncoder = device.createCommandEncoder();
-    const textureView = context.getCurrentTexture().createView();
 
-    const passEncoder = commandEncoder.beginRenderPass({
-      colorAttachments: [{
-        view: textureView,
-        clearValue: { r: 0, g: 0, b: 0, a: 1 },
-        loadOp: 'clear',
-        storeOp: 'store',
-      }],
-    });
+    if (currentPass < totalPasses) {
+        const sliceHeight = Math.ceil(canvas.height / totalPasses);
+        const yOffset = currentPass * sliceHeight;
+        const currentSliceHeight = Math.min(sliceHeight, canvas.height - yOffset);
 
-    passEncoder.setPipeline(pipeline);
-    if (bindGroup) {
-      passEncoder.setBindGroup(0, bindGroup);
-      passEncoder.draw(6);
+        const passEncoder = commandEncoder.beginRenderPass({
+          colorAttachments: [{
+            view: offscreenTextureView,
+            clearValue: { r: 0, g: 0, b: 0, a: 0 },
+            loadOp: currentPass === 0 ? 'clear' : 'load',
+            storeOp: 'store',
+          }],
+        });
+
+        passEncoder.setPipeline(pipeline);
+        passEncoder.setViewport(0, 0, canvas.width, canvas.height, 0, 1);
+        if (currentSliceHeight > 0) {
+            passEncoder.setScissorRect(0, yOffset, canvas.width, currentSliceHeight);
+        }
+
+        if (bindGroup) {
+          passEncoder.setBindGroup(0, bindGroup);
+          passEncoder.draw(6);
+        }
+        passEncoder.end();
+        
+        currentPass++;
     }
-    passEncoder.end();
+
+    const destTexture = context.getCurrentTexture();
+    commandEncoder.copyTextureToTexture(
+      { texture: offscreenTexture },
+      { texture: destTexture },
+      [canvas.width, canvas.height, 1]
+    );
 
     device.queue.submit([commandEncoder.finish()]);
 
-    if (screenshotRequested) {
+    // Snapshot the interactive frame to the background canvas so it stays visible
+    // while the high-res progressive render paints over it transparently.
+    if (totalPasses === 1 && canvas.width > 0 && canvas.height > 0) {
+        const bgCanvas = document.getElementById('fractal-bg');
+        if (bgCanvas) {
+            const bgCtx = bgCanvas.getContext('2d', { alpha: false, desynchronized: true });
+            if (bgCanvas.width !== canvas.width || bgCanvas.height !== canvas.height) {
+                bgCanvas.width = canvas.width;
+                bgCanvas.height = canvas.height;
+            }
+            bgCtx.drawImage(canvas, 0, 0);
+        }
+    }
+
+    if (screenshotRequested && currentPass >= totalPasses) {
         screenshotRequested = false;
         const d = new Date();
         const timestamp = "" + d.getFullYear() + (d.getMonth() + 1).toString().padStart(2, '0') + d.getDate().toString().padStart(2, '0') + 
