@@ -7,17 +7,24 @@ async function run() {
 
   // Initialize Worker
   let worker;
+  let currentAbortArray = null;
+
   function initWorker() {
       if (worker) {
-          worker.terminate();
+          return;
       }
       worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
       
       worker.onmessage = (e) => {
           const { type, payload, error } = e.data;
           if (type === 'result') {
-              const { orbit, refX: newRefX, refY: newRefY, iter: newIter } = payload;
+              const { orbit, refX: newRefX, refY: newRefY, iter: newIter, aborted } = payload;
               
+              if (aborted) {
+                  // Ignore aborted results
+                  return;
+              }
+
               refX = newRefX;
               refY = newRefY;
               
@@ -241,8 +248,8 @@ async function run() {
   let isCalculating = false;
 
   function updateReference() {
-    if (isCalculating) {
-        initWorker(); // Interrupt stale calculation
+    if (isCalculating && currentAbortArray) {
+        Atomics.store(currentAbortArray, 0, 1);
     }
     isCalculating = true;
     needUpdateRef = false;
@@ -251,6 +258,9 @@ async function run() {
     const logZoom = Math.log10(zoom);
     const requestedIter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
 
+    const abortBuffer = new SharedArrayBuffer(4);
+    currentAbortArray = new Int32Array(abortBuffer);
+
     worker.postMessage({
         type: 'calculate_reference',
         payload: {
@@ -258,7 +268,8 @@ async function run() {
             centerY,
             scale: zoom,
             aspect,
-            iter: requestedIter
+            iter: requestedIter,
+            abortBuffer
         }
     });
   }

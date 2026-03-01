@@ -16,7 +16,9 @@ self.onmessage = async (e) => {
         await initialize();
 
         try {
-            const { centerX, centerY, scale, aspect, iter } = payload;
+            const { centerX, centerY, scale, aspect, iter, abortBuffer } = payload;
+            
+            const abortArray = abortBuffer ? new Int32Array(abortBuffer) : null;
             
             // Calculate precision dynamically
             // Scale is roughly the radius of the view. Smaller scale = deeper zoom = more bits needed.
@@ -33,6 +35,11 @@ self.onmessage = async (e) => {
             const refX = anchor.x;
             const refY = anchor.y;
             
+            if (abortArray && Atomics.load(abortArray, 0) === 1) {
+                self.postMessage({ type: 'result', payload: { aborted: true } });
+                return;
+            }
+
             // If the anchor needs more iterations than currently requested, upgrade.
             let calcIter = Math.max(iter, anchor.iter);
             
@@ -49,7 +56,12 @@ self.onmessage = async (e) => {
             calcIter = Math.min(calcIter, 2500000);
 
             // 2. Calculate orbit
-            const orbit = calculate_reference(refX, refY, calcIter, prec);
+            const orbit = calculate_reference(refX, refY, calcIter, prec, abortArray);
+            
+            if (abortArray && Atomics.load(abortArray, 0) === 1) {
+                self.postMessage({ type: 'result', payload: { aborted: true } });
+                return;
+            }
             
             self.postMessage({
                 type: 'result',
