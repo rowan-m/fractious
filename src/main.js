@@ -747,8 +747,11 @@ class Fractious {
         });
 
         document.getElementById('btn-screenshot').onclick = () => {
-            this.state.screenshotRequested = true;
-            this.requestRender();
+          this.state.screenshotRequested = true;
+          if (!this.state.isFrameScheduled) {
+            this.state.isFrameScheduled = true;
+            requestAnimationFrame(this.frame);
+          }
         };
     }
 }
