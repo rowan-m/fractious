@@ -21,13 +21,11 @@ class Fractious {
             targetZoom: 2.0,
             
             isDragging: false,
-            isInteracting: false,
-            interactionTimeout: null,
+            workerBusy: false,
+            isPendingUpdate: true,
+
             needsRender: true,
             isFrameScheduled: false,
-            needUpdateRef: true,
-            isCalculating: false,
-            isPendingCalculation: false,
             screenshotRequested: false,
 
             currentPass: 0,
@@ -245,25 +243,23 @@ class Fractious {
                 this.updateUI();
                 this.updateURL();
                 
-                this.state.isPendingCalculation = false;
+                this.state.isPendingUpdate = false;
                 this.requestRender();
                 this.el.inputs.c_re.textContent = ""; 
             } else if (type === 'error') {
                 console.error("Worker error:", error);
-                this.state.isPendingCalculation = false;
+                this.state.isPendingUpdate = false;
             }
             
-            this.state.isCalculating = false;
-            this.state.needUpdateRef = false;
+            this.state.workerBusy = false;
         };
     }
 
     updateReference() {
-        if (this.state.isCalculating && this.currentAbortArray) {
+        if (this.state.workerBusy && this.currentAbortArray) {
             Atomics.store(this.currentAbortArray, 0, 1);
         }
-        this.state.isCalculating = true;
-        this.state.needUpdateRef = false;
+        this.state.workerBusy = true;
 
         const aspect = this.el.canvas.width / this.el.canvas.height;
         const logZoom = Math.log10(this.config.zoom);
@@ -286,13 +282,7 @@ class Fractious {
     }
 
     interact() {
-        this.state.isInteracting = true;
-        this.state.isPendingCalculation = true;
-        clearTimeout(this.state.interactionTimeout);
-        this.state.interactionTimeout = setTimeout(() => {
-            this.state.isInteracting = false;
-            this.requestRender();
-        }, 300);
+        this.state.isPendingUpdate = true;
         this.commitAndRecalc();
         this.requestRender();
     }
@@ -321,10 +311,6 @@ class Fractious {
     frame() {
         this.state.isFrameScheduled = false;
 
-        if (this.state.needUpdateRef) {
-            this.updateReference();
-        }
-
         if (this.state.needsRender) {
             this.state.currentPass = 0;
             this.state.needsRender = false;
@@ -339,9 +325,9 @@ class Fractious {
         const progressiveMaxOps = 200000000;
         let targetScale = 1.0;
         
-        const { isInteracting, isDragging, isCalculating, isPendingCalculation } = this.state;
+        const { isDragging, workerBusy, isPendingUpdate } = this.state;
 
-        if (isInteracting || isDragging || isCalculating || isPendingCalculation) {
+        if (isDragging || workerBusy || isPendingUpdate) {
             const idealPixels = interactionMaxOps / (this.config.iter || 1);
             targetScale = Math.sqrt(idealPixels / currentPixels);
             targetScale = Math.min(0.5, targetScale);
@@ -362,7 +348,7 @@ class Fractious {
             }
         }
 
-        if (this.state.currentPass >= this.state.totalPasses && !this.state.needUpdateRef && !this.state.screenshotRequested) {
+        if (this.state.currentPass >= this.state.totalPasses && !this.state.screenshotRequested) {
             return;
         }
 
@@ -447,7 +433,7 @@ class Fractious {
             link.click();
         }
 
-        if (this.state.currentPass < this.state.totalPasses || this.state.needUpdateRef || this.state.screenshotRequested) {
+        if (this.state.currentPass < this.state.totalPasses || this.state.screenshotRequested) {
             if (!this.state.isFrameScheduled) {
                 this.state.isFrameScheduled = true;
                 requestAnimationFrame(this.frame);
