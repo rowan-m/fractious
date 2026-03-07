@@ -19,12 +19,10 @@ class Fractious {
             offsetX: 0.0,
             offsetY: 0.0,
             targetZoom: 2.0,
-            
-            isDragging: false,
+
             workerBusy: false,
             isPendingUpdate: true,
 
-            needsRender: true,
             isFrameScheduled: false,
             screenshotRequested: false,
 
@@ -288,7 +286,7 @@ class Fractious {
     }
 
     requestRender() {
-        this.state.needsRender = true;
+        this.state.currentPass = 0;
         if (!this.state.isFrameScheduled) {
             this.state.isFrameScheduled = true;
             requestAnimationFrame(this.frame);
@@ -311,11 +309,6 @@ class Fractious {
     frame() {
         this.state.isFrameScheduled = false;
 
-        if (this.state.needsRender) {
-            this.state.currentPass = 0;
-            this.state.needsRender = false;
-        }
-
         const dpr = window.devicePixelRatio || 1;
         const width = this.el.canvas.clientWidth;
         const height = this.el.canvas.clientHeight;
@@ -325,7 +318,8 @@ class Fractious {
         const progressiveMaxOps = 200000000;
         let targetScale = 1.0;
         
-        const { isDragging, workerBusy, isPendingUpdate } = this.state;
+        const { workerBusy, isPendingUpdate } = this.state;
+        const isDragging = this.state.pointers.size > 0;
 
         if (isDragging || workerBusy || isPendingUpdate) {
             const idealPixels = interactionMaxOps / (this.config.iter || 1);
@@ -446,12 +440,10 @@ class Fractious {
         this.el.canvas.setPointerCapture(e.pointerId);
         
         if (this.state.pointers.size === 1) {
-            this.state.isDragging = true;
             this.state.lastX = e.clientX;
             this.state.lastY = e.clientY;
             this.el.crosshair.classList.add('moving');
         } else if (this.state.pointers.size === 2) {
-            this.state.isDragging = true;
             const points = Array.from(this.state.pointers.values());
             const dx = points[0].x - points[1].x;
             const dy = points[0].y - points[1].y;
@@ -518,8 +510,6 @@ class Fractious {
             this.state.prevCenter = curCenter;
 
         } else if (this.state.pointers.size === 1) {
-            if (!this.state.isDragging) return;
-            
             const dx = e.clientX - this.state.lastX;
             const dy = e.clientY - this.state.lastY;
             this.state.lastX = e.clientX;
@@ -558,7 +548,6 @@ class Fractious {
             this.state.lastX = point.x;
             this.state.lastY = point.y;
         } else if (this.state.pointers.size === 0) {
-            this.state.isDragging = false;
             this.el.crosshair.classList.remove('moving');
         }
         this.requestRender();
