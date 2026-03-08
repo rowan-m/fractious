@@ -461,10 +461,7 @@ class Fractious {
         if (!this.state.pointers.has(e.pointerId)) return;
         this.state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-        const aspect = this.el.canvas.clientWidth / this.el.canvas.clientHeight;
-        const widthComplex = 2.0 * this.config.zoom * aspect;
         const heightComplex = 2.0 * this.config.zoom;
-        const scaleX = widthComplex / this.el.canvas.clientWidth;
         const scaleY = heightComplex / this.el.canvas.clientHeight;
 
         if (this.state.pointers.size === 2) {
