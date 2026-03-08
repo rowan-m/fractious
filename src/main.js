@@ -647,34 +647,35 @@ class Fractious {
     bindButtonEvents() {
         const moveStep = 0.1;
 
-        document.getElementById('btn-up').onclick = () => {
-            const dy = moveStep * this.config.zoom;
+        const moveView = (shiftX, shiftY) => {
+            const c = Math.cos(this.config.rotation);
+            const s = Math.sin(this.config.rotation);
+            const dx = shiftX * c - shiftY * s;
+            const dy = shiftX * s + shiftY * c;
+            
+            this.config.centerX = add_coord(this.config.centerX, dx.toString());
+            this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
             this.config.centerY = add_coord(this.config.centerY, dy.toString());
             this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
             this.navigate();
         };
 
+        document.getElementById('btn-up').onclick = () => {
+            moveView(0, moveStep * this.config.zoom);
+        };
+
         document.getElementById('btn-down').onclick = () => {
-            const dy = -moveStep * this.config.zoom;
-            this.config.centerY = add_coord(this.config.centerY, dy.toString());
-            this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
-            this.navigate();
+            moveView(0, -moveStep * this.config.zoom);
         };
 
         document.getElementById('btn-left').onclick = () => {
             const aspect = this.el.canvas.width / this.el.canvas.height;
-            const dx = -moveStep * this.config.zoom * aspect;
-            this.config.centerX = add_coord(this.config.centerX, dx.toString());
-            this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
-            this.navigate();
+            moveView(-moveStep * this.config.zoom * aspect, 0);
         };
 
         document.getElementById('btn-right').onclick = () => {
             const aspect = this.el.canvas.width / this.el.canvas.height;
-            const dx = moveStep * this.config.zoom * aspect;
-            this.config.centerX = add_coord(this.config.centerX, dx.toString());
-            this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
-            this.navigate();
+            moveView(moveStep * this.config.zoom * aspect, 0);
         };
 
         document.getElementById('btn-zoom-in').onclick = () => {
