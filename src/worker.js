@@ -1,4 +1,4 @@
-import init, { calculate_reference, find_best_anchor } from '../wasm/pkg/wasm.js';
+import init, { calculate_reference, find_best_anchor } from '../wasm/pkg/fractious_lib.js';
 
 let isInitialized = false;
 

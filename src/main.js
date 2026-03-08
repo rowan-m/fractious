@@ -29,6 +29,11 @@ class Fractious {
             currentPass: 0,
             totalPasses: 1,
 
+            dpr: 1,
+            width: 0,
+            height: 0,
+            currentPixels: 0,
+
             pointers: new Map(),
             prevDiff: -1,
             prevAngle: null,
@@ -91,6 +96,7 @@ class Fractious {
         await init();
         init_hooks();
 
+        this.handleResize();
         this.parseURL();
         const gpuReady = await this.initWebGPU();
         if (!gpuReady) return;
@@ -101,6 +107,13 @@ class Fractious {
         this.updateUI();
         this.updateReference();
         this.requestRender();
+    }
+
+    handleResize() {
+        this.state.dpr = window.devicePixelRatio || 1;
+        this.state.width = this.el.canvas.clientWidth;
+        this.state.height = this.el.canvas.clientHeight;
+        this.state.currentPixels = (this.state.width * this.state.dpr) * (this.state.height * this.state.dpr);
     }
 
     parseURL() {
@@ -309,16 +322,12 @@ class Fractious {
     frame() {
         this.state.isFrameScheduled = false;
 
-        const dpr = window.devicePixelRatio || 1;
-        const width = this.el.canvas.clientWidth;
-        const height = this.el.canvas.clientHeight;
-        const currentPixels = (width * dpr) * (height * dpr);
+        const { dpr, width, height, currentPixels, workerBusy, isPendingUpdate } = this.state;
         
         const interactionMaxOps = 40000000;
         const progressiveMaxOps = 200000000;
         let targetScale = 1.0;
         
-        const { workerBusy, isPendingUpdate } = this.state;
         const isDragging = this.state.pointers.size > 0;
 
         if (isDragging || workerBusy || isPendingUpdate) {
@@ -558,7 +567,10 @@ class Fractious {
     bindEvents() {
         const { canvas } = this.el;
         
-        const observer = new ResizeObserver(() => this.requestRender());
+        const observer = new ResizeObserver(() => {
+            this.handleResize();
+            this.requestRender();
+        });
         observer.observe(canvas);
 
         canvas.addEventListener('pointerdown', this.handlePointerDown);
