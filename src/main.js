@@ -66,6 +66,8 @@ class Fractious {
         this.context = null;
         this.format = null;
         this.pipeline = null;
+        this.postPipeline = null;
+        this.sampler = null;
         this.bindGroup = null;
         this.uniformBuffer = null;
         this.referenceOrbitBuffer = null;
@@ -208,6 +210,54 @@ class Fractious {
             vertex: { module, entryPoint: 'vs_main' },
             fragment: { module, entryPoint: 'fs_main', targets: [{ format: this.format }] },
             primitive: { topology: 'triangle-list' },
+        });
+
+        const postShaderCode = `
+        @vertex
+        fn vs_main(@builtin(vertex_index) vertex_index: u32) -> @builtin(position) vec4<f32> {
+            var pos = array<vec2<f32>, 6>(
+                vec2<f32>(-1.0, -1.0), vec2<f32>( 1.0, -1.0), vec2<f32>(-1.0,  1.0),
+                vec2<f32>(-1.0,  1.0), vec2<f32>( 1.0, -1.0), vec2<f32>( 1.0,  1.0)
+            );
+            return vec4<f32>(pos[vertex_index], 0.0, 1.0);
+        }
+
+        @group(0) @binding(0) var tex: texture_2d<f32>;
+        @group(0) @binding(1) var samp: sampler;
+
+        @fragment
+        fn fs_main(@builtin(position) pos: vec4<f32>) -> @location(0) vec4<f32> {
+            let dim = vec2<f32>(textureDimensions(tex));
+            let uv = pos.xy / dim;
+            let dx = 1.0 / dim.x;
+            let dy = 1.0 / dim.y;
+            
+            let c = textureSample(tex, samp, uv).rgb;
+            let t = textureSample(tex, samp, uv + vec2<f32>(0.0, dy)).rgb;
+            let b = textureSample(tex, samp, uv + vec2<f32>(0.0, -dy)).rgb;
+            let l = textureSample(tex, samp, uv + vec2<f32>(-dx, 0.0)).rgb;
+            let r = textureSample(tex, samp, uv + vec2<f32>(dx, 0.0)).rgb;
+            
+            let avg = (t + b + l + r) * 0.25;
+            let diff = length(c - avg);
+            
+            // Smooth out isolated subpixel details (spikes/grit) - tuned to be less aggressive
+            let smoothed = mix(c, avg, smoothstep(0.1, 0.9, diff) * 0.8);
+            return vec4<f32>(smoothed, 1.0);
+        }
+        `;
+
+        const postModule = this.device.createShaderModule({ code: postShaderCode });
+        this.postPipeline = this.device.createRenderPipeline({
+            layout: 'auto',
+            vertex: { module: postModule, entryPoint: 'vs_main' },
+            fragment: { module: postModule, entryPoint: 'fs_main', targets: [{ format: this.format }] },
+            primitive: { topology: 'triangle-list' },
+        });
+
+        this.sampler = this.device.createSampler({
+            magFilter: 'linear',
+            minFilter: 'linear',
         });
 
         return true;
@@ -416,11 +466,26 @@ class Fractious {
         }
 
         const destTexture = this.context.getCurrentTexture();
-        commandEncoder.copyTextureToTexture(
-            { texture: this.offscreenTexture },
-            { texture: destTexture },
-            [this.el.canvas.width, this.el.canvas.height, 1]
-        );
+        const postBindGroup = this.device.createBindGroup({
+            layout: this.postPipeline.getBindGroupLayout(0),
+            entries: [
+                { binding: 0, resource: this.offscreenTextureView },
+                { binding: 1, resource: this.sampler },
+            ],
+        });
+
+        const postPass = commandEncoder.beginRenderPass({
+            colorAttachments: [{
+                view: destTexture.createView(),
+                clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                loadOp: 'clear',
+                storeOp: 'store',
+            }],
+        });
+        postPass.setPipeline(this.postPipeline);
+        postPass.setBindGroup(0, postBindGroup);
+        postPass.draw(6);
+        postPass.end();
 
         this.device.queue.submit([commandEncoder.finish()]);
 
