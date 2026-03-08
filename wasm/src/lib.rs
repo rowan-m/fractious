@@ -50,7 +50,7 @@ pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, pr
     let f4: FBig = FBig::from(4).with_precision(prec).value();
     let f2: FBig = FBig::from(2).with_precision(prec).value();
     
-    for iter_idx in 0..max_iter {
+    for iter_idx in 0..=max_iter {
         if iter_idx % 1000 == 0 {
             if let Some(ref flag) = abort_flag {
                 if flag.get_index(0) != 0 {
@@ -83,7 +83,8 @@ pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, pr
     }
     
     // Pad with 0.0 effectively stopping the reference influence
-    while orbit.len() < (max_iter as usize) * 2 {
+    let required_len = (max_iter as usize + 1) * 2;
+    while orbit.len() < required_len {
         orbit.push(0.0);
         orbit.push(0.0);
     }
