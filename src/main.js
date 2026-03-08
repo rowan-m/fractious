@@ -72,6 +72,8 @@ class Fractious {
         this.offscreenTexture = null;
         this.offscreenTextureView = null;
         this.uniformBufferSize = 32;
+        this.uniformData = new ArrayBuffer(this.uniformBufferSize);
+        this.uniformDataView = new DataView(this.uniformData);
 
         this.frame = this.frame.bind(this);
         this.handlePointerMove = this.handlePointerMove.bind(this);
@@ -113,10 +115,22 @@ class Fractious {
         this.state.refX = this.config.centerX;
         this.state.refY = this.config.centerY;
 
-        if (params.has('z')) this.config.zoom = Math.pow(10, -parseFloat(params.get('z')));
-        if (params.has('r')) this.config.rotation = parseFloat(params.get('r'));
-        if (params.has('h')) this.config.hue = parseFloat(params.get('h'));
-        if (params.has('s')) this.config.hueStep = parseFloat(params.get('s'));
+        if (params.has('z')) {
+            const z = parseFloat(params.get('z'));
+            if (!isNaN(z)) this.config.zoom = Math.pow(10, -z);
+        }
+        if (params.has('r')) {
+            const r = parseFloat(params.get('r'));
+            if (!isNaN(r)) this.config.rotation = r;
+        }
+        if (params.has('h')) {
+            const h = parseFloat(params.get('h'));
+            if (!isNaN(h)) this.config.hue = h;
+        }
+        if (params.has('s')) {
+            const s = parseFloat(params.get('s'));
+            if (!isNaN(s)) this.config.hueStep = s;
+        }
 
         this.state.targetZoom = this.config.zoom;
         
@@ -139,8 +153,8 @@ class Fractious {
 
     updateUI() {
         const inputs = this.el.inputs;
-        if (document.activeElement !== inputs.c_re) inputs.c_re.value = this.config.centerX.substring(0, 15);
-        if (document.activeElement !== inputs.c_im) inputs.c_im.value = this.config.centerY.substring(0, 15);
+        if (document.activeElement !== inputs.c_re) inputs.c_re.value = this.config.centerX;
+        if (document.activeElement !== inputs.c_im) inputs.c_im.value = this.config.centerY;
         if (document.activeElement !== inputs.zoom) inputs.zoom.value = (-Math.log10(this.config.zoom)).toFixed(2);
         
         if (document.activeElement !== inputs.rotation) {
@@ -358,8 +372,7 @@ class Fractious {
         this.updateUI();
 
         const aspect = this.el.canvas.width / this.el.canvas.height;
-        const uniformData = new ArrayBuffer(this.uniformBufferSize);
-        const dv = new DataView(uniformData);
+        const dv = this.uniformDataView;
 
         dv.setFloat32(0, this.state.offsetX, true);
         dv.setFloat32(4, this.state.offsetY, true);
@@ -370,7 +383,7 @@ class Fractious {
         dv.setFloat32(24, this.config.hueStep, true);
         dv.setFloat32(28, this.config.rotation, true);
 
-        this.device.queue.writeBuffer(this.uniformBuffer, 0, uniformData);
+        this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);
 
         const commandEncoder = this.device.createCommandEncoder();
 
