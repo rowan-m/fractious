@@ -441,10 +441,14 @@ class Fractious {
             const timestamp = "" + d.getFullYear() + (d.getMonth() + 1).toString().padStart(2, '0') + d.getDate().toString().padStart(2, '0') + 
                               d.getHours().toString().padStart(2, '0') + d.getMinutes().toString().padStart(2, '0') + d.getSeconds().toString().padStart(2, '0');
             
-            const link = document.createElement('a');
-            link.download = `fractious-${timestamp}.png`;
-            link.href = this.el.canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
-            link.click();
+            this.el.canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = `fractious-${timestamp}.png`;
+                link.href = url;
+                link.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }, "image/png");
         }
 
         if (this.state.currentPass < this.state.totalPasses || this.state.screenshotRequested) {
