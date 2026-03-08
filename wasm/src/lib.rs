@@ -1,6 +1,8 @@
 use wasm_bindgen::prelude::*;
 use dashu::float::{FBig, DBig};
+use dashu::Rational;
 use std::str::FromStr;
+use std::convert::TryFrom;
 
 #[wasm_bindgen]
 pub fn init_hooks() {
@@ -92,8 +94,7 @@ pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, pr
 #[wasm_bindgen]
 pub fn add_coord(val: String, delta: f64) -> String {
     let r_d = DBig::from_str(&val).unwrap_or_else(|_| DBig::ZERO);
-    // Convert f64 -> String -> DBig
-    let d_d = DBig::from_str(&delta.to_string()).unwrap_or_else(|_| DBig::ZERO);
+    let d_d = Rational::try_from(delta).map(DBig::from).unwrap_or(DBig::ZERO);
     
     let res = r_d + d_d;
     res.to_string()
@@ -117,8 +118,8 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
     // Scale is the vertical span (approx).
     // Multiply x-step by aspect to cover wide screen
     // Dense Grid: Step 0.22 allows 5 points (-2 to 2) to cover approx -0.44 to 0.44 (90% view)
-    let step_y = DBig::from_str(&(scale * 0.22).to_string()).unwrap_or_else(|_| DBig::ZERO);
-    let step_x = DBig::from_str(&(scale * 0.22 * aspect).to_string()).unwrap_or_else(|_| DBig::ZERO);
+    let step_y = Rational::try_from(scale * 0.22).map(DBig::from).unwrap_or(DBig::ZERO);
+    let step_x = Rational::try_from(scale * 0.22 * aspect).map(DBig::from).unwrap_or(DBig::ZERO);
     
     let f4: FBig = FBig::from(4).with_precision(prec).value();
     let f2: FBig = FBig::from(2).with_precision(prec).value();
@@ -145,8 +146,8 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
             }
         }
 
-        let dx_val = DBig::from_str(&(ox_i as f64).to_string()).unwrap_or_else(|_| DBig::ZERO);
-        let dy_val = DBig::from_str(&(oy_i as f64).to_string()).unwrap_or_else(|_| DBig::ZERO);
+        let dx_val = DBig::from(ox_i);
+        let dy_val = DBig::from(oy_i);
         
         let cx_probe = &center_x + (&step_x * dx_val);
         let cy_probe = &center_y + (&step_y * dy_val);
