@@ -298,6 +298,17 @@ class Fractious {
         this.requestRender();
     }
 
+    navigate() {
+        this.updateUI();
+        this.interact();
+    }
+
+    appearanceChanged() {
+        this.updateUI();
+        this.updateURL();
+        this.requestRender();
+    }
+
     requestRender() {
         this.state.currentPass = 0;
         if (!this.state.isFrameScheduled) {
@@ -533,8 +544,7 @@ class Fractious {
 
         this.config.centerX = add_coord(this.state.refX, this.state.offsetX);
         this.config.centerY = add_coord(this.state.refY, this.state.offsetY);
-        this.updateUI();
-        this.interact();
+        this.navigate();
     }
 
     handlePointerUp(e) {
@@ -590,16 +600,14 @@ class Fractious {
 
         inputs.c_re.addEventListener('change', () => {
             this.config.centerX = inputs.c_re.value;
-            this.state.refX = this.config.centerX;
-            this.updateReference();
-            this.requestRender();
+            this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
+            this.navigate();
         });
 
         inputs.c_im.addEventListener('change', () => {
             this.config.centerY = inputs.c_im.value;
-            this.state.refY = this.config.centerY;
-            this.updateReference();
-            this.requestRender();
+            this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
+            this.navigate();
         });
 
         inputs.zoom.addEventListener('change', () => {
@@ -607,7 +615,7 @@ class Fractious {
             if (!isNaN(level)) {
                 this.config.zoom = Math.pow(10, -level);
                 this.state.targetZoom = this.config.zoom;
-                this.interact();
+                this.navigate();
             } else this.updateUI();
         });
 
@@ -615,18 +623,18 @@ class Fractious {
             const deg = parseFloat(inputs.rotation.value);
             if (!isNaN(deg)) {
                 this.config.rotation = deg * Math.PI / 180;
-                this.interact();
+                this.appearanceChanged();
             } else this.updateUI();
         });
         
         inputs.hue.addEventListener('change', () => {
             const v = parseFloat(inputs.hue.value);
-            if(!isNaN(v)) { this.config.hue = v; this.updateURL(); this.requestRender(); } else this.updateUI();
+            if(!isNaN(v)) { this.config.hue = v; this.appearanceChanged(); } else this.updateUI();
         });
 
         inputs.hueStep.addEventListener('change', () => {
             const v = parseFloat(inputs.hueStep.value);
-            if(!isNaN(v)) { this.config.hueStep = v; this.updateURL(); this.requestRender(); } else this.updateUI();
+            if(!isNaN(v)) { this.config.hueStep = v; this.appearanceChanged(); } else this.updateUI();
         });
     }
 
@@ -636,79 +644,71 @@ class Fractious {
         document.getElementById('btn-up').onclick = () => {
             const dy = moveStep * this.config.zoom;
             this.config.centerY = add_coord(this.config.centerY, dy.toString());
-            this.state.refY = this.config.centerY;
-            this.updateReference();
-            this.requestRender();
+            this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
+            this.navigate();
         };
 
         document.getElementById('btn-down').onclick = () => {
             const dy = -moveStep * this.config.zoom;
             this.config.centerY = add_coord(this.config.centerY, dy.toString());
-            this.state.refY = this.config.centerY;
-            this.updateReference();
-            this.requestRender();
+            this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
+            this.navigate();
         };
 
         document.getElementById('btn-left').onclick = () => {
             const aspect = this.el.canvas.width / this.el.canvas.height;
             const dx = -moveStep * this.config.zoom * aspect;
             this.config.centerX = add_coord(this.config.centerX, dx.toString());
-            this.state.refX = this.config.centerX;
-            this.updateReference();
-            this.requestRender();
+            this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
+            this.navigate();
         };
 
         document.getElementById('btn-right').onclick = () => {
             const aspect = this.el.canvas.width / this.el.canvas.height;
             const dx = moveStep * this.config.zoom * aspect;
             this.config.centerX = add_coord(this.config.centerX, dx.toString());
-            this.state.refX = this.config.centerX;
-            this.updateReference();
-            this.requestRender();
+            this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
+            this.navigate();
         };
 
         document.getElementById('btn-zoom-in').onclick = () => {
             this.state.targetZoom /= 1.5;
-            this.interact();
+            this.navigate();
         };
 
         document.getElementById('btn-zoom-out').onclick = () => {
             this.state.targetZoom *= 1.5;
-            this.interact();
+            this.navigate();
         };
 
         document.getElementById('btn-rotate-cw').onclick = () => {
             this.config.rotation += Math.PI / 12;
-            this.interact();
+            this.appearanceChanged();
         };
 
         document.getElementById('btn-rotate-ccw').onclick = () => {
             this.config.rotation -= Math.PI / 12;
-            this.interact();
+            this.appearanceChanged();
         };
 
         document.getElementById('btn-cycle-in').onclick = () => {
-            this.config.hueStep += 0.005;
-            this.updateURL();
-            this.interact();
+            this.config.hueStep += 0.05;
+            this.appearanceChanged();
         };
 
         document.getElementById('btn-cycle-out').onclick = () => {
-            this.config.hueStep -= 0.005;
-            this.updateURL();
-            this.interact();
+            this.config.hueStep -= 0.05;
+            this.appearanceChanged();
         };
 
         document.getElementById('btn-hue-left').onclick = () => {
             this.config.hue -= 0.05;
-            this.updateURL();
-            this.interact();
+            this.appearanceChanged();
         };
 
         document.getElementById('btn-hue-right').onclick = () => {
             this.config.hue += 0.05;
-            this.updateURL();
-            this.interact();
+            this.appearanceChanged();
         };
 
         const btnFullscreen = document.getElementById('btn-fullscreen');
