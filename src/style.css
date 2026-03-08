@@ -1,0 +1,195 @@
+:root {
+  --font-size: 0.7rem;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  font-size: var(--font-size);
+  overflow: hidden;
+  background-color: black;
+}
+
+header {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: oldlace;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.2rem 0.4rem 0.1rem 0.4rem;
+}
+
+h1 {
+  font-size: var(--font-size);
+  font-weight: 100;
+  margin: 0;
+  padding: 0;
+}
+
+.version {
+  font-style: italic;
+  font-weight: 100;
+  color: silver;
+}
+
+a {
+  color: palegoldenrod;
+}
+
+.render-area {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  user-select: none;
+  touch-action: none;
+  z-index: -1;
+}
+
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+#fractal-bg {
+  z-index: 0;
+}
+
+.pin {
+  position: absolute;
+  width: 0px;
+  height: 0px;
+  top: 50%;
+  left: 50%;
+  right: 50%;
+  display: flex;
+  justify-content: center;
+  align-content: flex-end;
+}
+
+.pinpoint {
+  position: relative;
+  display: inline-block;
+  align-self: flex-end;
+  font-size: 28px;
+  text-shadow: -2px -2px 4px rgba(0, 0, 0, 0.8);
+  user-select: none;
+  touch-action: none;
+  transition:
+    opacity 100ms ease,
+    transform 100ms ease-in;
+  opacity: 0.001;
+  transform: translateY(-40px);
+}
+
+.pinpoint.moving {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.stats {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: oldlace;
+  padding: 0rem 0.4rem 0.2rem 0.4rem;
+}
+
+.stats > form {
+  display: flex;
+  flex-flow: row wrap;
+  font-family: monospace;
+}
+
+.stats label {
+  border: 1px solid oldlace;
+  padding: 0.2rem 0.1rem 0.2rem 0.1rem;
+  margin: 0.1rem 0.1rem 0 0;
+  font-size: var(--font-size);
+}
+
+.stats input {
+  color: oldlace;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: none;
+  font-family: monospace;
+  font-size: var(--font-size);
+  max-width: 20vw;
+}
+
+input[name="centerx"],
+input[name="centery"] {
+  width: 17ch;
+}
+
+input[name="zoom"] {
+  width: 10ch;
+}
+
+input[name="hue"],
+input[name="huestep"],
+input[name="rotation"],
+input[name="iterations"] {
+  width: 7ch;
+}
+
+footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.controls {
+  position: relative;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.controls form {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-evenly;
+  align-items: center;
+  align-content: center;
+}
+
+.controls fieldset {
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: center;
+  align-content: center;
+  margin: 0.5rem;
+  font-size: 16px;
+  border: none;
+  padding: 0;
+}
+
+.icon {
+  display: inline-block;
+  margin: 0.3rem;
+  user-select: none;
+}
+
+.controls button,
+.controls a {
+  font-size: 28px;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  text-shadow: -2px -2px 4px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 166, 0, 0);
+  user-select: none;
+  text-decoration: none;
+}
+
+.controls button:focus,
+.controls button:hover,
+.controls a:hover {
+  border: 1px solid rgba(255, 166, 0, 0.5);
+  border-radius: 4px;
+  outline: none;
+}

@@ -1,5 +1,6 @@
 import init, { add_coord, init_hooks, sub_coord } from '../wasm/pkg/fractious_lib.js';
 import shaderCode from './renderer/shader.wgsl?raw';
+import './style.css';
 
 class Fractious {
     constructor() {
