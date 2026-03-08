@@ -153,19 +153,17 @@ class Fractious {
     }
 
     updateUI() {
-        const inputs = this.el.inputs;
-        if (document.activeElement !== inputs.c_re) inputs.c_re.value = this.config.centerX;
-        if (document.activeElement !== inputs.c_im) inputs.c_im.value = this.config.centerY;
-        if (document.activeElement !== inputs.zoom) inputs.zoom.value = (-Math.log10(this.config.zoom)).toFixed(2);
+        const setVal = (input, val) => { if (document.activeElement !== input) input.value = val; };
+        const { inputs } = this.el;
         
-        if (document.activeElement !== inputs.rotation) {
-            const deg = (this.config.rotation * 180 / Math.PI) % 360;
-            inputs.rotation.value = deg.toFixed(1);
-        }
+        setVal(inputs.c_re, this.config.centerX);
+        setVal(inputs.c_im, this.config.centerY);
+        setVal(inputs.zoom, (-Math.log10(this.config.zoom)).toFixed(2));
+        setVal(inputs.rotation, ((this.config.rotation * 180 / Math.PI) % 360).toFixed(1));
         
         inputs.iterations.value = this.config.iter;
-        if (document.activeElement !== inputs.hue) inputs.hue.value = this.config.hue.toFixed(3);
-        if (document.activeElement !== inputs.hueStep) inputs.hueStep.value = this.config.hueStep.toFixed(3);
+        setVal(inputs.hue, this.config.hue.toFixed(3));
+        setVal(inputs.hueStep, this.config.hueStep.toFixed(3));
     }
 
     async initWebGPU() {
@@ -591,10 +589,9 @@ class Fractious {
 
         canvas.addEventListener('pointerdown', this.handlePointerDown);
         canvas.addEventListener('pointermove', this.handlePointerMove);
-        canvas.addEventListener('pointerup', this.handlePointerUp);
-        canvas.addEventListener('pointercancel', this.handlePointerUp);
-        canvas.addEventListener('pointerout', this.handlePointerUp);
-        canvas.addEventListener('pointerleave', this.handlePointerUp);
+        ['pointerup', 'pointercancel', 'pointerout', 'pointerleave'].forEach(e => 
+            canvas.addEventListener(e, this.handlePointerUp)
+        );
         canvas.addEventListener('wheel', this.handleWheel, { passive: false });
 
         this.bindInputEvents();
@@ -659,64 +656,34 @@ class Fractious {
             this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
             this.interact(true);
         };
+        
+        const aspect = () => this.el.canvas.width / this.el.canvas.height;
 
-        document.getElementById('btn-up').onclick = () => {
-            moveView(0, moveStep * this.config.zoom);
+        const buttonActions = {
+            'btn-up': () => moveView(0, moveStep * this.config.zoom),
+            'btn-down': () => moveView(0, -moveStep * this.config.zoom),
+            'btn-left': () => moveView(-moveStep * this.config.zoom * aspect(), 0),
+            'btn-right': () => moveView(moveStep * this.config.zoom * aspect(), 0),
+            'btn-zoom-in': () => { this.state.targetZoom /= 1.5; this.interact(true); },
+            'btn-zoom-out': () => { this.state.targetZoom *= 1.5; this.interact(true); },
+            'btn-rotate-cw': () => { this.config.rotation += Math.PI / 12; this.interact(false); },
+            'btn-rotate-ccw': () => { this.config.rotation -= Math.PI / 12; this.interact(false); },
+            'btn-cycle-in': () => { this.config.hueStep += 0.05; this.interact(false); },
+            'btn-cycle-out': () => { this.config.hueStep -= 0.05; this.interact(false); },
+            'btn-hue-left': () => { this.config.hue -= 0.05; this.interact(false); },
+            'btn-hue-right': () => { this.config.hue += 0.05; this.interact(false); },
+            'btn-screenshot': () => {
+                this.state.screenshotRequested = true;
+                if (!this.state.isFrameScheduled) {
+                    this.state.isFrameScheduled = true;
+                    requestAnimationFrame(this.frame);
+                }
+            }
         };
 
-        document.getElementById('btn-down').onclick = () => {
-            moveView(0, -moveStep * this.config.zoom);
-        };
-
-        document.getElementById('btn-left').onclick = () => {
-            const aspect = this.el.canvas.width / this.el.canvas.height;
-            moveView(-moveStep * this.config.zoom * aspect, 0);
-        };
-
-        document.getElementById('btn-right').onclick = () => {
-            const aspect = this.el.canvas.width / this.el.canvas.height;
-            moveView(moveStep * this.config.zoom * aspect, 0);
-        };
-
-        document.getElementById('btn-zoom-in').onclick = () => {
-            this.state.targetZoom /= 1.5;
-            this.interact(true);
-        };
-
-        document.getElementById('btn-zoom-out').onclick = () => {
-            this.state.targetZoom *= 1.5;
-            this.interact(true);
-        };
-
-        document.getElementById('btn-rotate-cw').onclick = () => {
-            this.config.rotation += Math.PI / 12;
-            this.interact(false);
-        };
-
-        document.getElementById('btn-rotate-ccw').onclick = () => {
-            this.config.rotation -= Math.PI / 12;
-            this.interact(false);
-        };
-
-        document.getElementById('btn-cycle-in').onclick = () => {
-            this.config.hueStep += 0.05;
-            this.interact(false);
-        };
-
-        document.getElementById('btn-cycle-out').onclick = () => {
-            this.config.hueStep -= 0.05;
-            this.interact(false);
-        };
-
-        document.getElementById('btn-hue-left').onclick = () => {
-            this.config.hue -= 0.05;
-            this.interact(false);
-        };
-
-        document.getElementById('btn-hue-right').onclick = () => {
-            this.config.hue += 0.05;
-            this.interact(false);
-        };
+        for (const [id, handler] of Object.entries(buttonActions)) {
+            document.getElementById(id).onclick = handler;
+        }
 
         const btnFullscreen = document.getElementById('btn-fullscreen');
         btnFullscreen.onclick = () => {
@@ -727,14 +694,6 @@ class Fractious {
         document.addEventListener('fullscreenchange', () => {
             btnFullscreen.textContent = document.fullscreenElement ? '⏬' : '⏫';
         });
-
-        document.getElementById('btn-screenshot').onclick = () => {
-          this.state.screenshotRequested = true;
-          if (!this.state.isFrameScheduled) {
-            this.state.isFrameScheduled = true;
-            requestAnimationFrame(this.frame);
-          }
-        };
     }
 }
 
