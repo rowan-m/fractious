@@ -78,18 +78,6 @@ class Fractious {
         this.handlePointerDown = this.handlePointerDown.bind(this);
         this.handlePointerUp = this.handlePointerUp.bind(this);
         this.handleWheel = this.handleWheel.bind(this);
-        this.commitAndRecalc = this.debounce(() => this.updateReference(), 32);
-    }
-
-    debounce(func, wait) {
-        let timeout;
-        let cancel = () => clearTimeout(timeout);
-        let wrapped = (...args) => {
-            cancel();
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-        wrapped.cancel = cancel;
-        return wrapped;
     }
 
     async init() {
@@ -292,7 +280,7 @@ class Fractious {
 
     interact() {
         this.state.isPendingUpdate = true;
-        this.commitAndRecalc();
+        this.updateReference();
         this.requestRender();
     }
 
