@@ -293,21 +293,21 @@ class Fractious {
         });
     }
 
-    interact() {
+    interact(needsNewReference = true) {
         this.state.isPendingUpdate = true;
-        this.updateReference();
-        this.requestRender();
-    }
-
-    navigate() {
         this.updateUI();
-        this.interact();
-    }
-
-    appearanceChanged() {
-        this.updateUI();
-        this.updateURL();
         this.requestRender();
+
+        if (needsNewReference) {
+            this.updateReference();
+        } else {
+            this.updateURL();
+            if (this._interactionTimeout) clearTimeout(this._interactionTimeout);
+            this._interactionTimeout = setTimeout(() => {
+                this.state.isPendingUpdate = false;
+                this.requestRender();
+            }, 250);
+        }
     }
 
     requestRender() {
@@ -550,7 +550,7 @@ class Fractious {
 
         this.config.centerX = add_coord(this.state.refX, this.state.offsetX);
         this.config.centerY = add_coord(this.state.refY, this.state.offsetY);
-        this.navigate();
+        this.interact(true);
     }
 
     handlePointerUp(e) {
@@ -607,13 +607,13 @@ class Fractious {
         inputs.c_re.addEventListener('change', () => {
             this.config.centerX = inputs.c_re.value;
             this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
-            this.navigate();
+            this.interact(true);
         });
 
         inputs.c_im.addEventListener('change', () => {
             this.config.centerY = inputs.c_im.value;
             this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
-            this.navigate();
+            this.interact(true);
         });
 
         inputs.zoom.addEventListener('change', () => {
@@ -621,7 +621,7 @@ class Fractious {
             if (!isNaN(level)) {
                 this.config.zoom = Math.pow(10, -level);
                 this.state.targetZoom = this.config.zoom;
-                this.navigate();
+                this.interact(true);
             } else this.updateUI();
         });
 
@@ -629,18 +629,18 @@ class Fractious {
             const deg = parseFloat(inputs.rotation.value);
             if (!isNaN(deg)) {
                 this.config.rotation = deg * Math.PI / 180;
-                this.appearanceChanged();
+                this.interact(false);
             } else this.updateUI();
         });
         
         inputs.hue.addEventListener('change', () => {
             const v = parseFloat(inputs.hue.value);
-            if(!isNaN(v)) { this.config.hue = v; this.appearanceChanged(); } else this.updateUI();
+            if(!isNaN(v)) { this.config.hue = v; this.interact(false); } else this.updateUI();
         });
 
         inputs.hueStep.addEventListener('change', () => {
             const v = parseFloat(inputs.hueStep.value);
-            if(!isNaN(v)) { this.config.hueStep = v; this.appearanceChanged(); } else this.updateUI();
+            if(!isNaN(v)) { this.config.hueStep = v; this.interact(false); } else this.updateUI();
         });
     }
 
@@ -657,7 +657,7 @@ class Fractious {
             this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
             this.config.centerY = add_coord(this.config.centerY, dy.toString());
             this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
-            this.navigate();
+            this.interact(true);
         };
 
         document.getElementById('btn-up').onclick = () => {
@@ -680,42 +680,42 @@ class Fractious {
 
         document.getElementById('btn-zoom-in').onclick = () => {
             this.state.targetZoom /= 1.5;
-            this.navigate();
+            this.interact(true);
         };
 
         document.getElementById('btn-zoom-out').onclick = () => {
             this.state.targetZoom *= 1.5;
-            this.navigate();
+            this.interact(true);
         };
 
         document.getElementById('btn-rotate-cw').onclick = () => {
             this.config.rotation += Math.PI / 12;
-            this.appearanceChanged();
+            this.interact(false);
         };
 
         document.getElementById('btn-rotate-ccw').onclick = () => {
             this.config.rotation -= Math.PI / 12;
-            this.appearanceChanged();
+            this.interact(false);
         };
 
         document.getElementById('btn-cycle-in').onclick = () => {
             this.config.hueStep += 0.05;
-            this.appearanceChanged();
+            this.interact(false);
         };
 
         document.getElementById('btn-cycle-out').onclick = () => {
             this.config.hueStep -= 0.05;
-            this.appearanceChanged();
+            this.interact(false);
         };
 
         document.getElementById('btn-hue-left').onclick = () => {
             this.config.hue -= 0.05;
-            this.appearanceChanged();
+            this.interact(false);
         };
 
         document.getElementById('btn-hue-right').onclick = () => {
             this.config.hue += 0.05;
-            this.appearanceChanged();
+            this.interact(false);
         };
 
         const btnFullscreen = document.getElementById('btn-fullscreen');
