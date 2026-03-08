@@ -688,13 +688,13 @@ class Fractious {
         };
 
         document.getElementById('btn-cycle-in').onclick = () => {
-            this.config.hueStep += 0.05;
+            this.config.hueStep += 0.005;
             this.updateURL();
             this.interact();
         };
 
         document.getElementById('btn-cycle-out').onclick = () => {
-            this.config.hueStep -= 0.05;
+            this.config.hueStep -= 0.005;
             this.updateURL();
             this.interact();
         };
