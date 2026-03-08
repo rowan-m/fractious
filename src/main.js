@@ -73,7 +73,7 @@ class Fractious {
         this.handlePointerDown = this.handlePointerDown.bind(this);
         this.handlePointerUp = this.handlePointerUp.bind(this);
         this.handleWheel = this.handleWheel.bind(this);
-        this.commitAndRecalc = this.debounce(() => this.updateReference(), 500);
+        this.commitAndRecalc = this.debounce(() => this.updateReference(), 100);
     }
 
     debounce(func, wait) {
@@ -454,7 +454,6 @@ class Fractious {
                 y: (points[0].y + points[1].y) / 2
             };
         }
-        this.requestRender();
     }
 
     handlePointerMove(e) {
@@ -527,7 +526,6 @@ class Fractious {
         this.config.centerY = add_coord(this.state.refY, this.state.offsetY);
         this.updateUI();
         this.interact();
-        this.requestRender();
     }
 
     handlePointerUp(e) {
@@ -555,7 +553,6 @@ class Fractious {
         const factor = e.deltaY > 0 ? 1.05 : 1.0 / 1.05;
         this.state.targetZoom *= factor;
         this.interact();
-        this.requestRender();
     }
 
     bindEvents() {
@@ -599,7 +596,6 @@ class Fractious {
                 this.config.zoom = Math.pow(10, -level);
                 this.state.targetZoom = this.config.zoom;
                 this.interact();
-                this.requestRender();
             } else this.updateUI();
         });
 
@@ -608,7 +604,6 @@ class Fractious {
             if (!isNaN(deg)) {
                 this.config.rotation = deg * Math.PI / 180;
                 this.interact();
-                this.requestRender();
             } else this.updateUI();
         });
         
@@ -663,49 +658,45 @@ class Fractious {
         document.getElementById('btn-zoom-in').onclick = () => {
             this.state.targetZoom /= 1.5;
             this.interact();
-            this.requestRender();
         };
 
         document.getElementById('btn-zoom-out').onclick = () => {
             this.state.targetZoom *= 1.5;
             this.interact();
-            this.requestRender();
         };
 
         document.getElementById('btn-rotate-cw').onclick = () => {
             this.config.rotation += Math.PI / 12;
             this.interact();
-            this.requestRender();
         };
 
         document.getElementById('btn-rotate-ccw').onclick = () => {
             this.config.rotation -= Math.PI / 12;
             this.interact();
-            this.requestRender();
         };
 
         document.getElementById('btn-cycle-in').onclick = () => {
             this.config.hueStep += 0.05;
             this.updateURL();
-            this.requestRender();
+            this.interact();
         };
 
         document.getElementById('btn-cycle-out').onclick = () => {
             this.config.hueStep -= 0.05;
             this.updateURL();
-            this.requestRender();
+            this.interact();
         };
 
         document.getElementById('btn-hue-left').onclick = () => {
             this.config.hue -= 0.05;
             this.updateURL();
-            this.requestRender();
+            this.interact();
         };
 
         document.getElementById('btn-hue-right').onclick = () => {
             this.config.hue += 0.05;
             this.updateURL();
-            this.requestRender();
+            this.interact();
         };
 
         const btnFullscreen = document.getElementById('btn-fullscreen');
