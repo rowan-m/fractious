@@ -1,11 +1,19 @@
 import { defineConfig } from 'vite';
 import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   plugins: [
     wasm(),
-    topLevelAwait()
+    topLevelAwait(),
+    VitePWA({
+      injectRegister: 'auto',
+      manifest: false,
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,wasm,wgsl}']
+      }
+    })
   ],
   server: {
     headers: {
