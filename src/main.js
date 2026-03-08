@@ -112,10 +112,10 @@ class Fractious {
 
     parseURL() {
         const params = new URLSearchParams(window.location.search);
-        
+
         if (params.has('x')) this.config.centerX = params.get('x');
         if (params.has('y')) this.config.centerY = params.get('y');
-        
+
         this.state.refX = this.config.centerX;
         this.state.refY = this.config.centerY;
 
@@ -137,7 +137,7 @@ class Fractious {
         }
 
         this.state.targetZoom = this.config.zoom;
-        
+
         if (this.config.zoom) {
             const logZoom = Math.log10(this.config.zoom);
             this.config.iter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
@@ -158,12 +158,12 @@ class Fractious {
     updateUI() {
         const setVal = (input, val) => { if (document.activeElement !== input) input.value = val; };
         const { inputs } = this.el;
-        
+
         setVal(inputs.c_re, this.config.centerX);
         setVal(inputs.c_im, this.config.centerY);
         setVal(inputs.zoom, (-Math.log10(this.config.zoom)).toFixed(2));
         setVal(inputs.rotation, ((this.config.rotation * 180 / Math.PI) % 360).toFixed(1));
-        
+
         inputs.iterations.value = this.config.iter;
         setVal(inputs.hue, this.config.hue.toFixed(3));
         setVal(inputs.hueStep, this.config.hueStep.toFixed(3));
@@ -213,7 +213,7 @@ class Fractious {
             primitive: { topology: 'triangle-list' },
         });
 
-        const postModule = this.device.createShaderModule({ code: postShaderCode });        this.postPipeline = this.device.createRenderPipeline({
+        const postModule = this.device.createShaderModule({ code: postShaderCode }); this.postPipeline = this.device.createRenderPipeline({
             layout: 'auto',
             vertex: { module: postModule, entryPoint: 'vs_main' },
             fragment: { module: postModule, entryPoint: 'fs_main', targets: [{ format: this.format }] },
@@ -241,7 +241,7 @@ class Fractious {
     initWorker() {
         if (this.worker) return;
         this.worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
-        
+
         this.worker.onmessage = (e) => {
             const { type, payload, error } = e.data;
             if (type === 'result') {
@@ -249,7 +249,7 @@ class Fractious {
 
                 this.state.refX = payload.refX;
                 this.state.refY = payload.refY;
-                
+
                 this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
                 this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
 
@@ -268,14 +268,14 @@ class Fractious {
                 this.config.iter = payload.iter;
                 this.updateUI();
                 this.updateURL();
-                
+
                 this.state.isPendingUpdate = false;
                 this.requestRender();
             } else if (type === 'error') {
                 console.error("Worker error:", error);
                 this.state.isPendingUpdate = false;
             }
-            
+
             this.state.workerBusy = false;
         };
     }
@@ -335,7 +335,7 @@ class Fractious {
         if (this.offscreenTexture && this.offscreenTexture.width === w && this.offscreenTexture.height === h) return;
         if (this.offscreenTexture) this.offscreenTexture.destroy();
         if (w === 0 || h === 0) return;
-        
+
         this.offscreenTexture = this.device.createTexture({
             size: [w, h, 1],
             format: this.format,
@@ -348,11 +348,11 @@ class Fractious {
         this.state.isFrameScheduled = false;
 
         const { dpr, width, height, currentPixels, workerBusy, isPendingUpdate } = this.state;
-        
+
         const interactionMaxOps = 40000000;
         const progressiveMaxOps = 200000000;
         let targetScale = 1.0;
-        
+
         const isDragging = this.state.pointers.size > 0;
 
         if (isDragging || workerBusy || isPendingUpdate) {
@@ -368,7 +368,7 @@ class Fractious {
         if (width > 0 && height > 0) {
             const targetWidth = Math.max(1, Math.min(Math.floor(width * dpr * targetScale), this.device.limits.maxTextureDimension2D));
             const targetHeight = Math.max(1, Math.min(Math.floor(height * dpr * targetScale), this.device.limits.maxTextureDimension2D));
-            
+
             if (this.el.canvas.width !== targetWidth || this.el.canvas.height !== targetHeight) {
                 this.el.canvas.width = targetWidth;
                 this.el.canvas.height = targetHeight;
@@ -426,7 +426,7 @@ class Fractious {
                 passEncoder.draw(6);
             }
             passEncoder.end();
-            
+
             this.state.currentPass++;
         }
 
@@ -466,9 +466,9 @@ class Fractious {
         if (this.state.screenshotRequested && this.state.currentPass >= this.state.totalPasses) {
             this.state.screenshotRequested = false;
             const d = new Date();
-            const timestamp = "" + d.getFullYear() + (d.getMonth() + 1).toString().padStart(2, '0') + d.getDate().toString().padStart(2, '0') + 
-                              d.getHours().toString().padStart(2, '0') + d.getMinutes().toString().padStart(2, '0') + d.getSeconds().toString().padStart(2, '0');
-            
+            const timestamp = "" + d.getFullYear() + (d.getMonth() + 1).toString().padStart(2, '0') + d.getDate().toString().padStart(2, '0') +
+                d.getHours().toString().padStart(2, '0') + d.getMinutes().toString().padStart(2, '0') + d.getSeconds().toString().padStart(2, '0');
+
             this.el.canvas.toBlob((blob) => {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -492,7 +492,7 @@ class Fractious {
     handlePointerDown(e) {
         this.state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         this.el.canvas.setPointerCapture(e.pointerId);
-        
+
         if (this.state.pointers.size === 1) {
             this.state.lastX = e.clientX;
             this.state.lastY = e.clientY;
@@ -525,9 +525,9 @@ class Fractious {
             const curAngle = Math.atan2(dy, dx);
 
             if (this.state.prevDiff > 0) {
-                const factor = curDiff / this.state.prevDiff; 
-                this.state.targetZoom /= factor; 
-                
+                const factor = curDiff / this.state.prevDiff;
+                this.state.targetZoom /= factor;
+
                 if (this.state.prevAngle !== null) {
                     let delta = curAngle - this.state.prevAngle;
                     if (delta > Math.PI) delta -= 2 * Math.PI;
@@ -546,14 +546,14 @@ class Fractious {
             if (this.state.prevCenter) {
                 const moveX = curCenter.x - this.state.prevCenter.x;
                 const moveY = curCenter.y - this.state.prevCenter.y;
-                
+
                 const s = scaleY;
                 const c = Math.cos(this.config.rotation);
                 const sn = Math.sin(this.config.rotation);
-                
+
                 const dCx = (moveX * c + moveY * sn) * s;
                 const dCy = (moveY * c - moveX * sn) * s;
-                
+
                 this.state.offsetX -= dCx;
                 this.state.offsetY += dCy;
             }
@@ -568,7 +568,7 @@ class Fractious {
             const s = scaleY;
             const c = Math.cos(this.config.rotation);
             const sn = Math.sin(this.config.rotation);
-            
+
             const dCx = (dx * c + dy * sn) * s;
             const dCy = (dy * c - dx * sn) * s;
 
@@ -584,13 +584,13 @@ class Fractious {
     handlePointerUp(e) {
         if (!this.state.pointers.has(e.pointerId)) return;
         this.state.pointers.delete(e.pointerId);
-        
+
         if (this.state.pointers.size < 2) {
             this.state.prevDiff = -1;
             this.state.prevAngle = null;
             this.state.prevCenter = null;
         }
-        
+
         if (this.state.pointers.size === 1) {
             const point = this.state.pointers.values().next().value;
             this.state.lastX = point.x;
@@ -610,7 +610,7 @@ class Fractious {
 
     bindEvents() {
         const { canvas } = this.el;
-        
+
         const observer = new ResizeObserver(() => {
             this.handleResize();
             this.requestRender();
@@ -619,7 +619,7 @@ class Fractious {
 
         canvas.addEventListener('pointerdown', this.handlePointerDown);
         canvas.addEventListener('pointermove', this.handlePointerMove);
-        ['pointerup', 'pointercancel', 'pointerout', 'pointerleave'].forEach(e => 
+        ['pointerup', 'pointercancel', 'pointerout', 'pointerleave'].forEach(e =>
             canvas.addEventListener(e, this.handlePointerUp)
         );
         canvas.addEventListener('wheel', this.handleWheel, { passive: false });
@@ -659,15 +659,15 @@ class Fractious {
                 this.interact(false);
             } else this.updateUI();
         });
-        
+
         inputs.hue.addEventListener('change', () => {
             const v = parseFloat(inputs.hue.value);
-            if(!isNaN(v)) { this.config.hue = v; this.interact(false); } else this.updateUI();
+            if (!isNaN(v)) { this.config.hue = v; this.interact(false); } else this.updateUI();
         });
 
         inputs.hueStep.addEventListener('change', () => {
             const v = parseFloat(inputs.hueStep.value);
-            if(!isNaN(v)) { this.config.hueStep = v; this.interact(false); } else this.updateUI();
+            if (!isNaN(v)) { this.config.hueStep = v; this.interact(false); } else this.updateUI();
         });
     }
 
@@ -679,14 +679,14 @@ class Fractious {
             const s = Math.sin(this.config.rotation);
             const dx = shiftX * c - shiftY * s;
             const dy = shiftX * s + shiftY * c;
-            
+
             this.config.centerX = add_coord(this.config.centerX, dx.toString());
             this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
             this.config.centerY = add_coord(this.config.centerY, dy.toString());
             this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
             this.interact(true);
         };
-        
+
         const aspect = () => this.el.canvas.width / this.el.canvas.height;
 
         const buttonActions = {
