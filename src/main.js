@@ -78,7 +78,7 @@ class Fractious {
         this.handlePointerDown = this.handlePointerDown.bind(this);
         this.handlePointerUp = this.handlePointerUp.bind(this);
         this.handleWheel = this.handleWheel.bind(this);
-        this.commitAndRecalc = this.debounce(() => this.updateReference(), 100);
+        this.commitAndRecalc = this.debounce(() => this.updateReference(), 32);
     }
 
     debounce(func, wait) {
@@ -239,7 +239,6 @@ class Fractious {
 
                 const requiredSize = payload.orbit.byteLength;
                 if (requiredSize > this.referenceOrbitSize) {
-                    this.referenceOrbitBuffer.destroy();
                     this.referenceOrbitSize = requiredSize;
                     this.referenceOrbitBuffer = this.device.createBuffer({
                         size: this.referenceOrbitSize,
@@ -256,7 +255,6 @@ class Fractious {
                 
                 this.state.isPendingUpdate = false;
                 this.requestRender();
-                this.el.inputs.c_re.textContent = ""; 
             } else if (type === 'error') {
                 console.error("Worker error:", error);
                 this.state.isPendingUpdate = false;
