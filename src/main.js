@@ -450,7 +450,9 @@ class Fractious {
         if (this.state.currentPass < this.state.totalPasses || this.state.screenshotRequested) {
             if (!this.state.isFrameScheduled) {
                 this.state.isFrameScheduled = true;
-                requestAnimationFrame(this.frame);
+                this.device.queue.onSubmittedWorkDone().then(() => {
+                    requestAnimationFrame(this.frame);
+                });
             }
         }
     }
