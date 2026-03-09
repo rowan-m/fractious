@@ -16,7 +16,8 @@
     "lint:security": "eslint src -c eslint.security.config.js",
     "depcruise": "depcruise src",
     "check": "npm run lint && npm run lint:sonar && npm run lint:security && npm run depcruise",
-    "test": "vitest run",
+    "test": "npm run test:wasm && npm run test:web",
+    "test:web": "vitest run",
     "test:wasm": "cd wasm && wasm-pack test --node"
   },
   "devDependencies": {
