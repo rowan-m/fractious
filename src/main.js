@@ -498,14 +498,16 @@ class Fractious {
             this.state.lastY = e.clientY;
             this.el.crosshair.classList.add('moving');
         } else if (this.state.pointers.size === 2) {
-            const points = Array.from(this.state.pointers.values());
-            const dx = points[0].x - points[1].x;
-            const dy = points[0].y - points[1].y;
+            const iter = this.state.pointers.values();
+            const p1 = iter.next().value;
+            const p2 = iter.next().value;
+            const dx = p1.x - p2.x;
+            const dy = p1.y - p2.y;
             this.state.prevDiff = Math.hypot(dx, dy);
             this.state.prevAngle = Math.atan2(dy, dx);
             this.state.prevCenter = {
-                x: (points[0].x + points[1].x) / 2,
-                y: (points[0].y + points[1].y) / 2
+                x: (p1.x + p2.x) / 2,
+                y: (p1.y + p2.y) / 2
             };
         }
     }
@@ -518,9 +520,11 @@ class Fractious {
         const scaleY = heightComplex / this.el.canvas.clientHeight;
 
         if (this.state.pointers.size === 2) {
-            const points = Array.from(this.state.pointers.values());
-            const dx = points[0].x - points[1].x;
-            const dy = points[0].y - points[1].y;
+            const iter = this.state.pointers.values();
+            const p1 = iter.next().value;
+            const p2 = iter.next().value;
+            const dx = p1.x - p2.x;
+            const dy = p1.y - p2.y;
             const curDiff = Math.hypot(dx, dy);
             const curAngle = Math.atan2(dy, dx);
 
@@ -539,8 +543,8 @@ class Fractious {
             this.state.prevAngle = curAngle;
 
             const curCenter = {
-                x: (points[0].x + points[1].x) / 2,
-                y: (points[0].y + points[1].y) / 2
+                x: (p1.x + p2.x) / 2,
+                y: (p1.y + p2.y) / 2
             };
 
             if (this.state.prevCenter) {
