@@ -15,7 +15,9 @@
     "lint:sonar": "eslint src -c eslint.sonar.config.js",
     "lint:security": "eslint src -c eslint.security.config.js",
     "depcruise": "depcruise src",
-    "check": "npm run lint && npm run lint:sonar && npm run lint:security && npm run depcruise"
+    "check": "npm run lint && npm run lint:sonar && npm run lint:security && npm run depcruise",
+    "test": "vitest run",
+    "test:wasm": "cd wasm && wasm-pack test --headless --chrome"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -29,6 +31,7 @@
     "vite-plugin-pwa": "^1.2.0",
     "vite-plugin-top-level-await": "^1.6.0",
     "vite-plugin-wasm": "^3.5.0",
+    "vitest": "^4.0.18",
     "wasm-pack": "^0.14.0"
   }
 }
