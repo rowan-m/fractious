@@ -489,6 +489,17 @@ class Fractious {
         }
     }
 
+    applyRotation(dx, dy, scale) {
+        const c = Math.cos(this.config.rotation);
+        const sn = Math.sin(this.config.rotation);
+
+        const dCx = (dx * c + dy * sn) * scale;
+        const dCy = (dy * c - dx * sn) * scale;
+
+        this.state.offsetX -= dCx;
+        this.state.offsetY += dCy;
+    }
+
     handlePointerDown(e) {
         this.state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
         this.el.canvas.setPointerCapture(e.pointerId);
@@ -547,15 +558,7 @@ class Fractious {
                 const moveX = curCenter.x - this.state.prevCenter.x;
                 const moveY = curCenter.y - this.state.prevCenter.y;
 
-                const s = scaleY;
-                const c = Math.cos(this.config.rotation);
-                const sn = Math.sin(this.config.rotation);
-
-                const dCx = (moveX * c + moveY * sn) * s;
-                const dCy = (moveY * c - moveX * sn) * s;
-
-                this.state.offsetX -= dCx;
-                this.state.offsetY += dCy;
+                this.applyRotation(moveX, moveY, scaleY);
             }
             this.state.prevCenter = curCenter;
 
@@ -565,15 +568,7 @@ class Fractious {
             this.state.lastX = e.clientX;
             this.state.lastY = e.clientY;
 
-            const s = scaleY;
-            const c = Math.cos(this.config.rotation);
-            const sn = Math.sin(this.config.rotation);
-
-            const dCx = (dx * c + dy * sn) * s;
-            const dCy = (dy * c - dx * sn) * s;
-
-            this.state.offsetX -= dCx;
-            this.state.offsetY += dCy;
+            this.applyRotation(dx, dy, scaleY);
         }
 
         this.config.centerX = add_coord(this.state.refX, this.state.offsetX);
