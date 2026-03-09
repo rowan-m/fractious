@@ -155,18 +155,23 @@ class Fractious {
         window.history.replaceState({}, '', `?${params.toString()}`);
     }
 
+    _setVal(input, val) {
+        if (document.activeElement !== input && input.value !== String(val)) {
+            input.value = val;
+        }
+    }
+
     updateUI() {
-        const setVal = (input, val) => { if (document.activeElement !== input) input.value = val; };
         const { inputs } = this.el;
 
-        setVal(inputs.c_re, this.config.centerX);
-        setVal(inputs.c_im, this.config.centerY);
-        setVal(inputs.zoom, (-Math.log10(this.config.zoom)).toFixed(2));
-        setVal(inputs.rotation, ((this.config.rotation * 180 / Math.PI) % 360).toFixed(1));
+        this._setVal(inputs.c_re, this.config.centerX);
+        this._setVal(inputs.c_im, this.config.centerY);
+        this._setVal(inputs.zoom, (-Math.log10(this.config.zoom)).toFixed(2));
+        this._setVal(inputs.rotation, ((this.config.rotation * 180 / Math.PI) % 360).toFixed(1));
 
-        inputs.iterations.value = this.config.iter;
-        setVal(inputs.hue, this.config.hue.toFixed(3));
-        setVal(inputs.hueStep, this.config.hueStep.toFixed(3));
+        this._setVal(inputs.iterations, this.config.iter);
+        this._setVal(inputs.hue, this.config.hue.toFixed(3));
+        this._setVal(inputs.hueStep, this.config.hueStep.toFixed(3));
     }
 
     async initWebGPU() {
