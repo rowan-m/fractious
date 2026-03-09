@@ -209,8 +209,6 @@ mod tests {
     use super::*;
     use wasm_bindgen_test::*;
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
     #[wasm_bindgen_test]
     fn test_add_coord() {
         let val = String::from("1.5");
@@ -287,4 +285,36 @@ mod tests {
         assert_eq!(result, vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
     }
 
+    #[wasm_bindgen_test]
+    fn test_find_best_anchor_center() {
+        let cx = String::from("0");
+        let cy = String::from("0");
+        let scale = 1.0;
+        let aspect = 1.0;
+        let max_iter = 100;
+        let prec = 53;
+        let result = find_best_anchor(cx, cy, scale, aspect, max_iter, prec, None);
+        assert_eq!(result.iter, 100);
+        assert_eq!(result.x, "0");
+        assert_eq!(result.y, "0");
+    }
+
+    #[wasm_bindgen_test]
+    fn test_find_best_anchor_off_center() {
+        // Center is out of bounds, but large step ensures an offset points to the origin
+        let cx = String::from("2.2");
+        let cy = String::from("0");
+        let scale = 10.0;
+        let aspect = 1.0;
+        let max_iter = 100;
+        let prec = 53;
+
+        let result = find_best_anchor(cx, cy, scale, aspect, max_iter, prec, None);
+        // The algorithm stops when it finds any offset that reaches max_iter
+        assert_eq!(result.iter, 100);
+        // Step size is scale * 0.22 = 10.0 * 0.22 = 2.2
+        // Since center is at 2.2, offset (-1, 0) gives x = 2.2 - 2.2 = 0
+        assert_eq!(result.x, "0");
+        assert_eq!(result.y, "0");
+    }
 }
