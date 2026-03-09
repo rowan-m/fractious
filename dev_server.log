@@ -1,0 +1,14 @@
+
+> fractious@0.0.0 dev
+> vite
+
+
+  VITE v7.3.1  ready in 326 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+6:10:42 PM [vite] (client) page reload wasm/pkg/fractious_lib_bg.wasm
+6:10:42 PM [vite] (client) page reload wasm/pkg/fractious_lib.js
+6:10:47 PM [vite] (client) page reload wasm/pkg/fractious_lib_bg.wasm
+6:11:41 PM [vite] (client) page reload src/WorkerManager.js
+6:12:45 PM [vite] (client) page reload src/Renderer.js
