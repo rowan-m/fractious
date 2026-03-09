@@ -172,7 +172,7 @@ class Fractious {
     async initWebGPU() {
         if (!navigator.gpu) {
             console.error("WebGPU not supported");
-            document.body.innerHTML = "WebGPU not supported in this browser.";
+            document.body.textContent = "WebGPU not supported in this browser.";
             return false;
         }
 
