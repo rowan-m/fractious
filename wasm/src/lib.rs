@@ -29,6 +29,15 @@ fn to_fbig(d: DBig, prec: usize) -> FBig {
     d.to_binary().value().with_precision(prec).value()
 }
 
+fn is_aborted(abort_flag: &Option<js_sys::Int32Array>) -> bool {
+    if let Some(flag) = abort_flag {
+        if flag.get_index(0) != 0 {
+            return true;
+        }
+    }
+    false
+}
+
 #[wasm_bindgen]
 pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, prec: u32, abort_flag: Option<js_sys::Int32Array>) -> Vec<f32> {
     let prec = prec as usize;
@@ -50,12 +59,8 @@ pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, pr
     let f4: FBig = FBig::from(4).with_precision(prec).value();
     
     for iter_idx in 0..=max_iter {
-        if iter_idx % 1000 == 0 {
-            if let Some(ref flag) = abort_flag {
-                if flag.get_index(0) != 0 {
-                    break;
-                }
-            }
+        if iter_idx % 1000 == 0 && is_aborted(&abort_flag) {
+            break;
         }
         
         // Output f64: use to_f64() -> value()
@@ -140,10 +145,8 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
     ];
     
     for &(ox_i, oy_i) in offsets.iter() {
-        if let Some(ref flag) = abort_flag {
-            if flag.get_index(0) != 0 {
-                break;
-            }
+        if is_aborted(&abort_flag) {
+            break;
         }
 
         let dx_val = DBig::from(ox_i);
@@ -160,12 +163,8 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
         
         let mut i = 0;
         while i < max_iter {
-            if i % 1000 == 0 {
-                if let Some(ref flag) = abort_flag {
-                    if flag.get_index(0) != 0 {
-                        break;
-                    }
-                }
+            if i % 1000 == 0 && is_aborted(&abort_flag) {
+                break;
             }
 
             let zx2 = (&zx * &zx).with_precision(prec).value();
