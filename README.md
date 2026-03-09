@@ -38,3 +38,9 @@ Various linting and quality checking tools can be invoked via the `check` comman
 ```
 npm run check
 ```
+
+Unit tests for Wasm and JavaScript can be run with the `test` command.
+
+```
+npm run test
+```
