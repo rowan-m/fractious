@@ -731,5 +731,10 @@ class Fractious {
     }
 }
 
-const app = new Fractious();
-app.init();
+export { Fractious };
+
+// Only auto-initialize if we're not running in a test environment
+if (typeof process === 'undefined' || process.env.NODE_ENV !== 'test') {
+    const app = new Fractious();
+    app.init();
+}
