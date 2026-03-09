@@ -11,3 +11,10 @@ wasm-bindgen = "0.2"
 dashu = "0.4"
 console_error_panic_hook = "0.1"
 js-sys = "0.3"
+
+[dev-dependencies]
+criterion = "0.8.2"
+
+[[bench]]
+name = "bench_dashu"
+harness = false

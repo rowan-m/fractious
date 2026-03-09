@@ -48,7 +48,6 @@ pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, pr
     
     // Constant 4.0 and 2.0
     let f4: FBig = FBig::from(4).with_precision(prec).value();
-    let f2: FBig = FBig::from(2).with_precision(prec).value();
     
     for iter_idx in 0..=max_iter {
         if iter_idx % 1000 == 0 {
@@ -72,14 +71,15 @@ pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, pr
             break;
         }
         
-        // new_zx = zx2 - zy2 + cx
-        let new_zx = (&zx2 - &zy2 + &cx).with_precision(prec).value();
+        let mut new_zy = &zx * &zy;
+        new_zy <<= 1;
+        new_zy += &cy;
+        zy = new_zy.with_precision(prec).value();
         
-        // new_zy = 2*zx*zy + cy
-        let new_zy = ((&zx * &zy) * &f2 + &cy).with_precision(prec).value();
-        
-        zx = new_zx;
-        zy = new_zy;
+        let mut new_zx = zx2;
+        new_zx -= &zy2;
+        new_zx += &cx;
+        zx = new_zx.with_precision(prec).value();
     }
     
     // Pad with 0.0 effectively stopping the reference influence
@@ -123,7 +123,6 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
     let step_x = Rational::try_from(scale * 0.22 * aspect).map(DBig::from).unwrap_or(DBig::ZERO);
     
     let f4: FBig = FBig::from(4).with_precision(prec).value();
-    let f2: FBig = FBig::from(2).with_precision(prec).value();
     
     let mut best_iter = 0;
     let mut best_cx = center_x.clone();
@@ -176,11 +175,15 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
                 break;
             }
             
-            let new_zx = (&zx2 - &zy2 + &cx).with_precision(prec).value();
-            let new_zy = ((&zx * &zy) * &f2 + &cy).with_precision(prec).value();
+            let mut new_zy = &zx * &zy;
+            new_zy <<= 1;
+            new_zy += &cy;
+            zy = new_zy.with_precision(prec).value();
             
-            zx = new_zx;
-            zy = new_zy;
+            let mut new_zx = zx2;
+            new_zx -= &zy2;
+            new_zx += &cx;
+            zx = new_zx.with_precision(prec).value();
             i += 1;
         }
         
