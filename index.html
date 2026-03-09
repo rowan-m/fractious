@@ -39,7 +39,7 @@
     <canvas height="512" width="512" draggable="false" id="fractal"></canvas>
   </div>
   <div class="pin">
-    <span class="pinpoint" id="crosshair">📍</span>
+    <span class="pinpoint" id="crosshair" aria-hidden="true">📍</span>
   </div>
   <nav class="stats">
     <form>
@@ -57,41 +57,41 @@
   <nav class="controls">
     <form>
       <fieldset>
-        <button type="button" class="incdec" name="incy" title="Move up" id="btn-up">🔼</button>
+        <button type="button" class="incdec" name="incy" title="Move up" aria-label="Move up" id="btn-up">🔼</button>
         <span>
-          <button type="button" class="incdec" name="decx" title="Move left" id="btn-left">◀️</button>
-          <span class="icon">📍</span>
-          <button type="button" class="incdec" name="incx" title="Move right" id="btn-right">▶️</button>
+          <button type="button" class="incdec" name="decx" title="Move left" aria-label="Move left" id="btn-left">◀️</button>
+          <span class="icon" aria-hidden="true">📍</span>
+          <button type="button" class="incdec" name="incx" title="Move right" aria-label="Move right" id="btn-right">▶️</button>
         </span>
-        <button type="button" class="incdec" name="decy" title="Move down" id="btn-down">🔽</button>
+        <button type="button" class="incdec" name="decy" title="Move down" aria-label="Move down" id="btn-down">🔽</button>
       </fieldset>
       <fieldset>
-        <button type="button" class="incdec" name="inczoom" title="Zoom in" id="btn-zoom-in">🔼</button>
-        <span class="icon">🔎</span>
-        <button type="button" class="incdec" name="deczoom" title="Zoom out" id="btn-zoom-out">🔽</button>
+        <button type="button" class="incdec" name="inczoom" title="Zoom in" aria-label="Zoom in" id="btn-zoom-in">🔼</button>
+        <span class="icon" aria-hidden="true">🔎</span>
+        <button type="button" class="incdec" name="deczoom" title="Zoom out" aria-label="Zoom out" id="btn-zoom-out">🔽</button>
       </fieldset>
       <fieldset>
-        <button type="button" class="incdec" name="incrotate" title="Rotate clockwise" id="btn-rotate-cw">🔼</button>
-        <span class="icon">🔄</span>
-        <button type="button" class="incdec" name="decrotate" title="Rotate counter-clockwise" id="btn-rotate-ccw">🔽</button>
+        <button type="button" class="incdec" name="incrotate" title="Rotate clockwise" aria-label="Rotate clockwise" id="btn-rotate-cw">🔼</button>
+        <span class="icon" aria-hidden="true">🔄</span>
+        <button type="button" class="incdec" name="decrotate" title="Rotate counter-clockwise" aria-label="Rotate counter-clockwise" id="btn-rotate-ccw">🔽</button>
       </fieldset>
       <fieldset>
-        <button type="button" class="incdec" name="inchuestep" title="Increase colour cycling" id="btn-cycle-in">🔼</button>
+        <button type="button" class="incdec" name="inchuestep" title="Increase colour cycling" aria-label="Increase colour cycling" id="btn-cycle-in">🔼</button>
         <span>
-          <button type="button" class="incdec" name="dechue" title="Shift colours" id="btn-hue-left">◀️</button>
-          <span class="icon">🎨</span>
-          <button type="button" class="incdec" name="inchue" title="Shift colours" id="btn-hue-right">▶️</button>
+          <button type="button" class="incdec" name="dechue" title="Shift colours" aria-label="Shift colours left" id="btn-hue-left">◀️</button>
+          <span class="icon" aria-hidden="true">🎨</span>
+          <button type="button" class="incdec" name="inchue" title="Shift colours" aria-label="Shift colours right" id="btn-hue-right">▶️</button>
         </span>
-        <button type="button" class="incdec" name="dechuestep" title="Decrease colour cycling" id="btn-cycle-out">🔽</button>
+        <button type="button" class="incdec" name="dechuestep" title="Decrease colour cycling" aria-label="Decrease colour cycling" id="btn-cycle-out">🔽</button>
       </fieldset>
       <fieldset>
-        <button type="button" class="fullscreen" title="Toggle fullscreen display" id="btn-fullscreen">⏫</button>
+        <button type="button" class="fullscreen" title="Toggle fullscreen display" aria-label="Toggle fullscreen display" id="btn-fullscreen">⏫</button>
       </fieldset>
       <fieldset>
-        <button type="button" class="fullscreen" title="Download screenshot" id="btn-screenshot">🖼️</button>
+        <button type="button" class="fullscreen" title="Download screenshot" aria-label="Download screenshot" id="btn-screenshot">🖼️</button>
       </fieldset>
       <fieldset>
-        <a href="." class="" title="Reset">🔁</a>
+        <a href="." class="" title="Reset" aria-label="Reset">🔁</a>
       </fieldset>
     </form>
   </nav>
