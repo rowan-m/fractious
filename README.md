@@ -11,38 +11,30 @@ Ping <https://bsky.app/profile/rowan.fyi> or <https://mastodon.social/@rowan_m> 
 
 ![Screenshot of Mandelbrot set rendered in Fractious](public/img/preview.jpg)
 
-## Running the app locally
+## Run locally
 
-This project uses [Vite](https://vitejs.dev/) as a build tool and dev server, and `wasm-pack` to compile the Rust code to WebAssembly.
+Make sure you have `npm` and `cargo` installed.
 
-Before the initial run, ensure you have Node.js and Rust installed. Then, install the npm dependencies:
+On first run, install dependencies as per the lock file:
 
-```bash
-npm install
+```
+npm ci
 ```
 
-### Build the WebAssembly Module
+The `build` command will build both the Wasm and web code.
 
-You need to compile the Rust arbitrary-precision math library into a WebAssembly module before the app will work:
-
-```bash
-npm run build:wasm
+```
+npm run build
 ```
 
-### Start the Development Server
+The `dev` command will start the local Vite dev server with hot reloading.
 
-Start the local Vite development server:
-
-```bash
+```
 npm run dev
 ```
 
-The server will run on a local port (usually `http://localhost:5173/`), which will be printed in your console.
+Various linting and quality checking tools can be invoked via the `check` command.
 
-### Build for Production
-
-To create an optimized production build (output to the `dist/` directory):
-
-```bash
-npm run build
+```
+npm run check
 ```
