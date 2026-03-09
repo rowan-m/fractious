@@ -69,14 +69,23 @@ pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, pr
         orbit.push(zx_f64 as f32);
         orbit.push(zy_f64 as f32);
         
-        let zx2 = (&zx * &zx).with_precision(prec).value();
-        let zy2 = (&zy * &zy).with_precision(prec).value();
+        let mut zx2 = zx.clone();
+        zx2 *= &zx;
+        zx2 = zx2.with_precision(prec).value();
+
+        let mut zy2 = zy.clone();
+        zy2 *= &zy;
+        zy2 = zy2.with_precision(prec).value();
         
-        if &zx2 + &zy2 > f4 {
+        // Sum calculation to avoid Approximation allocation (compare to f4 directly)
+        let mut sum2 = zx2.clone();
+        sum2 += &zy2;
+        if sum2 > f4 {
             break;
         }
         
-        let mut new_zy = &zx * &zy;
+        let mut new_zy = zx;
+        new_zy *= &zy;
         new_zy <<= 1;
         new_zy += &cy;
         zy = new_zy.with_precision(prec).value();
@@ -167,14 +176,23 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
                 break;
             }
 
-            let zx2 = (&zx * &zx).with_precision(prec).value();
-            let zy2 = (&zy * &zy).with_precision(prec).value();
+            let mut zx2 = zx.clone();
+            zx2 *= &zx;
+            zx2 = zx2.with_precision(prec).value();
+
+            let mut zy2 = zy.clone();
+            zy2 *= &zy;
+            zy2 = zy2.with_precision(prec).value();
             
-            if &zx2 + &zy2 > f4 {
+            // Sum calculation to avoid Approximation allocation (compare to f4 directly)
+            let mut sum2 = zx2.clone();
+            sum2 += &zy2;
+            if sum2 > f4 {
                 break;
             }
             
-            let mut new_zy = &zx * &zy;
+            let mut new_zy = zx;
+            new_zy *= &zy;
             new_zy <<= 1;
             new_zy += &cy;
             zy = new_zy.with_precision(prec).value();
