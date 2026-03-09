@@ -1,5 +1,7 @@
 .firebase/
 .firebaserc
 *.code-workspace
-dist
-node_modules
+dist/
+node_modules/
+wasm/pkg/
+wasm/target/
