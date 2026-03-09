@@ -201,3 +201,27 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
         iter: best_iter,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    fn test_add_coord() {
+        let val = String::from("1.5");
+        let delta = 0.5;
+        let result = add_coord(val, delta);
+        assert_eq!(result, "2");
+    }
+
+    #[wasm_bindgen_test]
+    fn test_sub_coord() {
+        let val1 = String::from("2.5");
+        let val2 = String::from("1.0");
+        let result = sub_coord(val1, val2);
+        assert_eq!(result, 1.5);
+    }
+}
