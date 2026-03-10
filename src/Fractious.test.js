@@ -57,4 +57,22 @@ describe('Fractious URL parsing', () => {
         expect(config.centerX).toBe('1.5');
         expect(config.centerY).toBe('0.0'); // default
     });
+
+    it('should update URL parameters correctly', () => {
+        vi.stubGlobal('window', { location: { search: '' }, history: { replaceState: vi.fn() } });
+
+        config.centerX = "2.0";
+        config.centerY = "1.0";
+        config.zoom = 0.01;
+        config.rotation = Math.PI;
+        config.hue = 0.5;
+        config.hueStep = 0.1;
+
+        fractious.updateURL();
+
+        expect(window.history.replaceState).toHaveBeenCalledWith(
+            {}, '',
+            '?x=2.0&y=1.0&z=2.000&r=3.142&h=0.500&s=0.100'
+        );
+    });
 });
