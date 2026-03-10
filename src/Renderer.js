@@ -121,9 +121,8 @@ export class Renderer {
         this.offscreenTextureView = this.offscreenTexture.createView();
     }
 
-    render(config, state) {
+    _calculatePassesAndResize(config, state) {
         const { dpr, width, height, currentPixels, workerBusy, isPendingUpdate } = state;
-
         const interactionMaxOps = 40000000;
         const progressiveMaxOps = 200000000;
         let targetScale = 1.0;
@@ -150,15 +149,9 @@ export class Renderer {
                 state.currentPass = 0;
             }
         }
+    }
 
-        if (state.currentPass >= state.totalPasses && !state.screenshotRequested) {
-            return false; // No more passes needed
-        }
-
-        this.resizeOffscreenTexture(this.canvas.width, this.canvas.height);
-
-        config.zoom = state.targetZoom;
-
+    _updateUniforms(config, state) {
         const aspect = this.canvas.width / this.canvas.height;
         const dv = this.uniformDataView;
 
@@ -172,7 +165,9 @@ export class Renderer {
         dv.setFloat32(28, config.rotation, true);
 
         this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);
+    }
 
+    _dispatchDrawCalls(state) {
         const commandEncoder = this.device.createCommandEncoder();
 
         if (state.currentPass < state.totalPasses) {
@@ -229,7 +224,10 @@ export class Renderer {
         postPass.end();
 
         this.device.queue.submit([commandEncoder.finish()]);
+        return true;
+    }
 
+    _updateBackgroundCanvas(state) {
         if (state.totalPasses === 1 && this.canvas.width > 0 && this.canvas.height > 0 && this.bgCanvas) {
             const bgCtx = this.bgCanvas.getContext('2d', { alpha: false, desynchronized: true });
             if (this.bgCanvas.width !== this.canvas.width || this.bgCanvas.height !== this.canvas.height) {
@@ -238,7 +236,9 @@ export class Renderer {
             }
             bgCtx.drawImage(this.canvas, 0, 0);
         }
+    }
 
+    _handleScreenshot(state) {
         if (state.screenshotRequested && state.currentPass >= state.totalPasses) {
             state.screenshotRequested = false;
             const d = new Date();
@@ -254,6 +254,26 @@ export class Renderer {
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
             }, "image/png");
         }
+    }
+
+    render(config, state) {
+        this._calculatePassesAndResize(config, state);
+
+        if (state.currentPass >= state.totalPasses && !state.screenshotRequested) {
+            return false; // No more passes needed
+        }
+
+        this.resizeOffscreenTexture(this.canvas.width, this.canvas.height);
+
+        config.zoom = state.targetZoom;
+
+        this._updateUniforms(config, state);
+
+        const drawSuccess = this._dispatchDrawCalls(state);
+        if (!drawSuccess) return false;
+
+        this._updateBackgroundCanvas(state);
+        this._handleScreenshot(state);
 
         return state.currentPass < state.totalPasses || state.screenshotRequested;
     }
