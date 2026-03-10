@@ -152,7 +152,12 @@ class Fractious {
         params.set('r', this.config.rotation.toFixed(3));
         params.set('h', this.config.hue.toFixed(3));
         params.set('s', this.config.hueStep.toFixed(3));
-        window.history.replaceState({}, '', `?${params.toString()}`);
+
+        // ⚡ Bolt: Only update history if the URL actually changed to prevent expensive browser layout/history recalculations
+        const newSearch = `?${params.toString()}`;
+        if (window.location.search !== newSearch) {
+            window.history.replaceState({}, '', newSearch);
+        }
     }
 
     _setVal(input, val) {
