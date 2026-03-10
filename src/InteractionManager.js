@@ -66,6 +66,52 @@ export class InteractionManager {
         }
     }
 
+    _handlePinchZoom(scaleY) {
+        const iter = this.state.pointers.values();
+        const p1 = iter.next().value;
+        const p2 = iter.next().value;
+        const dx = p1.x - p2.x;
+        const dy = p1.y - p2.y;
+        const curDiff = Math.hypot(dx, dy);
+        const curAngle = Math.atan2(dy, dx);
+
+        if (this.state.prevDiff > 0) {
+            const factor = curDiff / this.state.prevDiff;
+            this.state.targetZoom /= factor;
+
+            if (this.state.prevAngle !== null) {
+                let delta = curAngle - this.state.prevAngle;
+                if (delta > Math.PI) delta -= 2 * Math.PI;
+                else if (delta < -Math.PI) delta += 2 * Math.PI;
+                this.config.rotation += delta;
+            }
+        }
+        this.state.prevDiff = curDiff;
+        this.state.prevAngle = curAngle;
+
+        const curCenter = {
+            x: (p1.x + p2.x) / 2,
+            y: (p1.y + p2.y) / 2
+        };
+
+        if (this.state.prevCenter) {
+            const moveX = curCenter.x - this.state.prevCenter.x;
+            const moveY = curCenter.y - this.state.prevCenter.y;
+
+            this.applyRotation(moveX, moveY, scaleY);
+        }
+        this.state.prevCenter = curCenter;
+    }
+
+    _handlePan(e, scaleY) {
+        const dx = e.clientX - this.state.lastX;
+        const dy = e.clientY - this.state.lastY;
+        this.state.lastX = e.clientX;
+        this.state.lastY = e.clientY;
+
+        this.applyRotation(dx, dy, scaleY);
+    }
+
     handlePointerMove(e) {
         if (!this.state.pointers.has(e.pointerId)) return;
         this.state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -74,48 +120,9 @@ export class InteractionManager {
         const scaleY = heightComplex / this.el.canvas.clientHeight;
 
         if (this.state.pointers.size === 2) {
-            const iter = this.state.pointers.values();
-            const p1 = iter.next().value;
-            const p2 = iter.next().value;
-            const dx = p1.x - p2.x;
-            const dy = p1.y - p2.y;
-            const curDiff = Math.hypot(dx, dy);
-            const curAngle = Math.atan2(dy, dx);
-
-            if (this.state.prevDiff > 0) {
-                const factor = curDiff / this.state.prevDiff;
-                this.state.targetZoom /= factor;
-
-                if (this.state.prevAngle !== null) {
-                    let delta = curAngle - this.state.prevAngle;
-                    if (delta > Math.PI) delta -= 2 * Math.PI;
-                    else if (delta < -Math.PI) delta += 2 * Math.PI;
-                    this.config.rotation += delta;
-                }
-            }
-            this.state.prevDiff = curDiff;
-            this.state.prevAngle = curAngle;
-
-            const curCenter = {
-                x: (p1.x + p2.x) / 2,
-                y: (p1.y + p2.y) / 2
-            };
-
-            if (this.state.prevCenter) {
-                const moveX = curCenter.x - this.state.prevCenter.x;
-                const moveY = curCenter.y - this.state.prevCenter.y;
-
-                this.applyRotation(moveX, moveY, scaleY);
-            }
-            this.state.prevCenter = curCenter;
-
+            this._handlePinchZoom(scaleY);
         } else if (this.state.pointers.size === 1) {
-            const dx = e.clientX - this.state.lastX;
-            const dy = e.clientY - this.state.lastY;
-            this.state.lastX = e.clientX;
-            this.state.lastY = e.clientY;
-
-            this.applyRotation(dx, dy, scaleY);
+            this._handlePan(e, scaleY);
         }
 
         this.config.centerX = add_coord(this.state.refX, this.state.offsetX);

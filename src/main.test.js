@@ -72,7 +72,7 @@ describe('main.js initialization', () => {
     it('should initialize app and update UI', async () => {
         vi.stubGlobal('process', { env: { NODE_ENV: 'production' } });
 
-        const main = await import('./main.js');
+        await import('./main.js');
 
         // Wait a small tick for async init to complete
         await new Promise(resolve => setTimeout(resolve, 100));
