@@ -1,6 +1,7 @@
 .firebase/
 .firebaserc
 *.code-workspace
+*.log
 dist/
 node_modules/
 wasm/pkg/
