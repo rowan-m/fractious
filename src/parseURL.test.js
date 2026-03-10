@@ -14,13 +14,24 @@ const mockDocument = {
 };
 vi.stubGlobal('document', mockDocument);
 
-const { Fractious } = await import('./main.js');
+const { Fractious, createDefaultConfig, createDefaultState } = await import('./main.js');
 
 describe('parseURL', () => {
     let app;
+    let config;
+    let state;
+    let mockRenderer;
+    let mockWorkerManager;
+    let mockInteractionManager;
 
     beforeEach(() => {
-        app = new Fractious();
+        config = createDefaultConfig();
+        state = createDefaultState();
+        mockRenderer = { init: vi.fn(), render: vi.fn(), updateOrbitBuffer: vi.fn(), onSubmittedWorkDone: vi.fn() };
+        mockWorkerManager = { init: vi.fn(), updateReference: vi.fn() };
+        mockInteractionManager = { bindEvents: vi.fn(), updateUI: vi.fn(), el: { canvas: { clientWidth: 800, clientHeight: 600 } } };
+
+        app = new Fractious(config, state, mockRenderer, mockWorkerManager, mockInteractionManager);
     });
 
     it('should parse URL parameters and update config appropriately', () => {
