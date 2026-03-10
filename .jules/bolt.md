@@ -1,0 +1,3 @@
+## 2024-03-10 - Redundant History API updates during high-frequency events
+**Learning:** High-frequency events like zooming or panning that update the URL via `window.history.replaceState` can trigger unnecessary performance penalties if the generated query string has not actually changed.
+**Action:** When updating browser history state during interactions, compare the newly generated URL search query against the current `window.location.search` to conditionally apply updates and avoid expensive redundancy.

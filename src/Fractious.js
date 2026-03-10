@@ -107,7 +107,12 @@ export class Fractious {
         params.set('r', this.config.rotation.toFixed(3));
         params.set('h', this.config.hue.toFixed(3));
         params.set('s', this.config.hueStep.toFixed(3));
-        window.history.replaceState({}, '', `?${params.toString()}`);
+
+        const newSearch = `?${params.toString()}`;
+        // Optimization: Avoid expensive redundant DOM/Browser API history updates if the generated state matches the current state.
+        if (newSearch !== window.location.search) {
+            window.history.replaceState({}, '', newSearch);
+        }
     }
 
     updateReference() {
