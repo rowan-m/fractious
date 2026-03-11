@@ -257,9 +257,9 @@ export class InteractionManager {
             }
         };
 
-        for (const [id, handler] of Object.entries(buttonActions)) {
+        for (const id in buttonActions) {
             const btn = document.getElementById(id);
-            if (btn) btn.onclick = handler;
+            if (btn) btn.onclick = buttonActions[id];
         }
 
         const btnFullscreen = document.getElementById('btn-fullscreen');
