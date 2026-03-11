@@ -107,7 +107,12 @@ export class Fractious {
         params.set('r', this.config.rotation.toFixed(3));
         params.set('h', this.config.hue.toFixed(3));
         params.set('s', this.config.hueStep.toFixed(3));
-        window.history.replaceState({}, '', `?${params.toString()}`);
+        const newSearch = `?${params.toString()}`;
+        // Performance optimization: prevent redundant synchronous History API calls
+        // which can cause main-thread blocking during rapid user interactions or worker updates.
+        if (window.location.search !== newSearch) {
+            window.history.replaceState({}, '', newSearch);
+        }
     }
 
     updateReference() {

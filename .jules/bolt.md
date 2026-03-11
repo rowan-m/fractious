@@ -1,0 +1,3 @@
+## 2024-05-24 - Redundant History API calls cause performance bottlenecks
+**Learning:** Calling `window.history.replaceState` synchronously during high-frequency events (like rapid worker updates or user interactions) can lead to significant main-thread blocking and jank, even if the URL parameters being set are identical to the current ones.
+**Action:** Always check if the newly constructed state string actually differs from the current `window.location.search` before invoking `window.history.replaceState`. This small check avoids redundant DOM/History operations during hot code paths.
