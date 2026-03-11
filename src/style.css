@@ -120,6 +120,11 @@ canvas {
   max-width: 20vw;
 }
 
+.stats input:focus {
+  outline: 1px solid rgba(255, 166, 0, 0.5);
+  border-radius: 2px;
+}
+
 input[name="centerx"],
 input[name="centery"] {
   width: 17ch;
@@ -188,6 +193,7 @@ footer {
 
 .controls button:focus,
 .controls button:hover,
+.controls a:focus,
 .controls a:hover {
   border: 1px solid rgba(255, 166, 0, 0.5);
   border-radius: 4px;
