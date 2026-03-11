@@ -1,6 +1,10 @@
 import shaderCode from './renderer/shader.wgsl?raw';
 import postShaderCode from './renderer/post.wgsl?raw';
 
+const INTERACTION_MAX_OPS = 40000000;
+const PROGRESSIVE_MAX_OPS = 200000000;
+const INTERACTION_SCALE_LIMIT = 0.5;
+
 export class Renderer {
     constructor(canvas, bgCanvas) {
         this.canvas = canvas;
@@ -123,20 +127,18 @@ export class Renderer {
 
     _calculatePassesAndResize(config, state) {
         const { dpr, width, height, currentPixels, workerBusy, isPendingUpdate } = state;
-        const interactionMaxOps = 40000000;
-        const progressiveMaxOps = 200000000;
         let targetScale = 1.0;
 
         const isDragging = state.pointers.size > 0;
 
         if (isDragging || workerBusy || isPendingUpdate) {
-            const idealPixels = interactionMaxOps / (config.iter || 1);
+            const idealPixels = INTERACTION_MAX_OPS / (config.iter || 1);
             targetScale = Math.sqrt(idealPixels / currentPixels);
-            targetScale = Math.min(0.5, targetScale);
+            targetScale = Math.min(INTERACTION_SCALE_LIMIT, targetScale);
             state.totalPasses = 1;
         } else {
             const totalOps = currentPixels * config.iter;
-            state.totalPasses = Math.max(1, Math.ceil(totalOps / progressiveMaxOps));
+            state.totalPasses = Math.max(1, Math.ceil(totalOps / PROGRESSIVE_MAX_OPS));
         }
 
         if (width > 0 && height > 0) {
