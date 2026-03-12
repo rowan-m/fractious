@@ -1,0 +1,3 @@
+## 2024-05-24 - History API replaceState Optimization
+**Learning:** Calling `window.history.replaceState` indiscriminately during high-frequency events (like continuous panning or zooming in a WebGL/canvas context) introduces severe main thread stalls, even if the new URL parameters are identical to the current ones. The History API overhead is not just string allocation; it involves browser-level state synchronization which is highly expensive when done repeatedly within a render loop or input event stream.
+**Action:** Always wrap `history.replaceState` or `history.pushState` with a conditional check comparing the proposed new query string/URL against the current `window.location.search` or `window.location.href`. Only trigger the update if there is an actual change.
