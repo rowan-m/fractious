@@ -102,7 +102,7 @@ pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, pr
 
 #[wasm_bindgen]
 pub fn add_coord(val: String, delta: f64) -> String {
-    let r_d = DBig::from_str(&val).unwrap_or_else(|_| DBig::ZERO);
+    let r_d = DBig::from_str(&val).unwrap_or(DBig::ZERO);
     let d_d = Rational::try_from(delta).map(DBig::from).unwrap_or(DBig::ZERO);
     
     let res = r_d + d_d;
@@ -111,8 +111,8 @@ pub fn add_coord(val: String, delta: f64) -> String {
 
 #[wasm_bindgen]
 pub fn sub_coord(val1: String, val2: String) -> f64 {
-    let v1 = DBig::from_str(&val1).unwrap_or_else(|_| DBig::ZERO);
-    let v2 = DBig::from_str(&val2).unwrap_or_else(|_| DBig::ZERO);
+    let v1 = DBig::from_str(&val1).unwrap_or(DBig::ZERO);
+    let v2 = DBig::from_str(&val2).unwrap_or(DBig::ZERO);
     let diff = v1 - v2;
     diff.to_f64().value()
 }
@@ -121,8 +121,8 @@ pub fn sub_coord(val1: String, val2: String) -> f64 {
 #[wasm_bindgen]
 pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64, max_iter: u32, prec: u32, abort_flag: Option<js_sys::Int32Array>) -> Anchor {
     let prec = prec as usize;
-    let center_x = DBig::from_str(&cx_str).unwrap_or_else(|_| DBig::ZERO);
-    let center_y = DBig::from_str(&cy_str).unwrap_or_else(|_| DBig::ZERO);
+    let center_x = DBig::from_str(&cx_str).unwrap_or(DBig::ZERO);
+    let center_y = DBig::from_str(&cy_str).unwrap_or(DBig::ZERO);
     
     // Scale is the vertical span (approx).
     // Multiply x-step by aspect to cover wide screen
