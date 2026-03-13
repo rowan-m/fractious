@@ -145,13 +145,11 @@ export class Fractious {
 
         const needsMorePasses = this.renderer.render(this.config, this.state);
 
-        if (needsMorePasses) {
-            if (!this.state.isFrameScheduled) {
-                this.state.isFrameScheduled = true;
-                this.renderer.onSubmittedWorkDone().then(() => {
-                    requestAnimationFrame(this.frame);
-                });
-            }
+        if (needsMorePasses && !this.state.isFrameScheduled) {
+            this.state.isFrameScheduled = true;
+            this.renderer.onSubmittedWorkDone().then(() => {
+                requestAnimationFrame(this.frame);
+            });
         }
     }
 }

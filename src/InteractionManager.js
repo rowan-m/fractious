@@ -257,10 +257,10 @@ export class InteractionManager {
             }
         };
 
-        for (const id in buttonActions) {
+        Object.entries(buttonActions).forEach(([id, action]) => {
             const btn = document.getElementById(id);
-            if (btn) btn.onclick = buttonActions[id];
-        }
+            if (btn) btn.onclick = action;
+        });
 
         const btnFullscreen = document.getElementById('btn-fullscreen');
         if (btnFullscreen) {

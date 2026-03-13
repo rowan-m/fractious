@@ -15,8 +15,8 @@ export class WorkerManager {
             if (type === 'result') {
                 if (payload.aborted) return;
                 if (this.onResult) this.onResult(payload);
-            } else if (type === 'error') {
-                if (this.onError) this.onError(error);
+            } else if (type === 'error' && this.onError) {
+                this.onError(error);
             }
         };
     }
