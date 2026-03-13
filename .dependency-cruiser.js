@@ -66,6 +66,29 @@ export default {
         couldNotResolve: true,
         pathNot: ["^\\?raw$"] // Allow vite ?raw imports
       }
+    },
+    {
+      name: "not-to-test",
+      severity: "error",
+      comment: "This module depends on code within a test folder or file. This indicates a test-only utility is leaking into production code.",
+      from: { pathNot: "\\.(spec|test)\\.(js|mjs|cjs|ts|ls|coffee|litcoffee|coffee\\.md)$" },
+      to: {
+        path: "\\.(spec|test)\\.(js|mjs|cjs|ts|ls|coffee|litcoffee|coffee\\.md)$"
+      }
+    },
+    {
+      name: "worker-isolation",
+      severity: "error",
+      comment: "Web workers must not import DOM-dependent UI or Renderer modules.",
+      from: { path: "^src/worker\\.js$" },
+      to: { path: "^src/(Renderer|InteractionManager|main)\\.js$" }
+    },
+    {
+      name: "no-dev-dependencies",
+      severity: "error",
+      comment: "Don't import devDependencies from production code.",
+      from: { path: "^src/", pathNot: "\\.(spec|test)\\.(js|mjs|cjs|ts|ls|coffee|litcoffee|coffee\\.md)$" },
+      to: { dependencyTypes: ["npm-dev"] }
     }
   ],
   options: {
