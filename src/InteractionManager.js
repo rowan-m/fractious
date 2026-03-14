@@ -168,9 +168,10 @@ export class InteractionManager {
 
         canvas.addEventListener('pointerdown', this.handlePointerDown);
         canvas.addEventListener('pointermove', this.handlePointerMove);
-        ['pointerup', 'pointercancel', 'pointerout', 'pointerleave'].forEach(e =>
-            canvas.addEventListener(e, this.handlePointerUp)
-        );
+        canvas.addEventListener('pointerup', this.handlePointerUp);
+        canvas.addEventListener('pointercancel', this.handlePointerUp);
+        canvas.addEventListener('pointerout', this.handlePointerUp);
+        canvas.addEventListener('pointerleave', this.handlePointerUp);
         canvas.addEventListener('wheel', this.handleWheel, { passive: false });
 
         this.bindInputEvents();
