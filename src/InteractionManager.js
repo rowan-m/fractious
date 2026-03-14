@@ -270,7 +270,12 @@ export class InteractionManager {
             };
 
             document.addEventListener('fullscreenchange', () => {
-                btnFullscreen.textContent = document.fullscreenElement ? '⏬' : '⏫';
+                const span = btnFullscreen.querySelector('span');
+                if (span) {
+                    span.textContent = document.fullscreenElement ? '⏬' : '⏫';
+                } else {
+                    btnFullscreen.textContent = document.fullscreenElement ? '⏬' : '⏫';
+                }
             });
         }
     }
