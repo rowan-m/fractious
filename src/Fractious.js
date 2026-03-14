@@ -44,7 +44,6 @@ export class Fractious {
 
             this.config.iter = payload.iter;
             this.interactionManager.updateUI();
-            this.updateURL();
 
             this.state.isPendingUpdate = false;
             this.state.workerBusy = false;
@@ -123,7 +122,6 @@ export class Fractious {
         if (needsNewReference) {
             this.updateReference();
         } else {
-            this.updateURL();
             if (this._interactionTimeout) clearTimeout(this._interactionTimeout);
             this._interactionTimeout = setTimeout(() => {
                 this.state.isPendingUpdate = false;
@@ -133,6 +131,9 @@ export class Fractious {
     }
 
     requestRender() {
+        if (!this.state.isPendingUpdate && !this.state.workerBusy) {
+            this.updateURL();
+        }
         this.state.currentPass = 0;
         if (!this.state.isFrameScheduled) {
             this.state.isFrameScheduled = true;
@@ -145,13 +146,11 @@ export class Fractious {
 
         const needsMorePasses = this.renderer.render(this.config, this.state);
 
-        if (needsMorePasses) {
-            if (!this.state.isFrameScheduled) {
-                this.state.isFrameScheduled = true;
-                this.renderer.onSubmittedWorkDone().then(() => {
-                    requestAnimationFrame(this.frame);
-                });
-            }
+        if (needsMorePasses && !this.state.isFrameScheduled) {
+            this.state.isFrameScheduled = true;
+            this.renderer.onSubmittedWorkDone().then(() => {
+                requestAnimationFrame(this.frame);
+            });
         }
     }
 }
