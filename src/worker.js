@@ -9,12 +9,12 @@ async function initialize() {
     }
 }
 
-function calculatePrecision(scale) {
+export function calculatePrecision(scale) {
     let bits = Math.ceil(-Math.log2(scale)) + 128;
     return Math.min(Math.max(bits, 128), 4096);
 }
 
-function calculateUpgradedIter(iter, anchorIter, searchLimit) {
+export function calculateUpgradedIter(iter, anchorIter, searchLimit) {
     let calcIter = Math.max(iter, anchorIter);
     if (anchorIter >= searchLimit) {
         calcIter = Math.floor(searchLimit * 1.5);
