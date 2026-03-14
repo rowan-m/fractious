@@ -12,12 +12,15 @@ export class WorkerManager {
 
         this.worker.onmessage = (e) => {
             const { type, payload, error } = e.data;
-            if (type === 'result') {
-                if (payload.aborted) return;
-                if (this.onResult) this.onResult(payload);
-            } else if (type === 'error' && this.onError) {
-                this.onError(error);
+
+            if (type === 'error') {
+                if (this.onError) this.onError(error);
+                return;
             }
+
+            if (type !== 'result') return;
+            if (payload.aborted) return;
+            if (this.onResult) this.onResult(payload);
         };
     }
 
