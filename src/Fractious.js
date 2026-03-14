@@ -107,7 +107,12 @@ export class Fractious {
         params.set('r', this.config.rotation.toFixed(3));
         params.set('h', this.config.hue.toFixed(3));
         params.set('s', this.config.hueStep.toFixed(3));
-        window.history.replaceState({}, '', `?${params.toString()}`);
+
+        // ⚡ Bolt: Prevent redundant and slow History API / DOM updates
+        const newSearch = `?${params.toString()}`;
+        if (newSearch !== window.location.search) {
+            window.history.replaceState({}, '', newSearch);
+        }
     }
 
     updateReference() {
