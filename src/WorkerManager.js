@@ -4,6 +4,7 @@ export class WorkerManager {
         this.currentAbortArray = null;
         this.onResult = null;
         this.onError = null;
+        this._updateTimeout = null;
     }
 
     init() {
@@ -29,28 +30,32 @@ export class WorkerManager {
             Atomics.store(this.currentAbortArray, 0, 1);
         }
 
-        const aspect = canvasWidth / canvasHeight;
-        const logZoom = Math.log10(config.zoom);
-        const requestedIter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
+        if (this._updateTimeout) clearTimeout(this._updateTimeout);
 
-        let abortBuffer = null;
-        if (typeof SharedArrayBuffer !== 'undefined') {
-            abortBuffer = new SharedArrayBuffer(4);
-            this.currentAbortArray = new Int32Array(abortBuffer);
-        } else {
-            this.currentAbortArray = null;
-        }
+        this._updateTimeout = setTimeout(() => {
+            const aspect = canvasWidth / canvasHeight;
+            const logZoom = Math.log10(config.zoom);
+            const requestedIter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
 
-        this.worker.postMessage({
-            type: 'calculate_reference',
-            payload: {
-                centerX: config.centerX,
-                centerY: config.centerY,
-                scale: config.zoom,
-                aspect,
-                iter: requestedIter,
-                abortBuffer
+            let abortBuffer = null;
+            if (typeof SharedArrayBuffer !== 'undefined') {
+                abortBuffer = new SharedArrayBuffer(4);
+                this.currentAbortArray = new Int32Array(abortBuffer);
+            } else {
+                this.currentAbortArray = null;
             }
-        });
+
+            this.worker.postMessage({
+                type: 'calculate_reference',
+                payload: {
+                    centerX: config.centerX,
+                    centerY: config.centerY,
+                    scale: config.zoom,
+                    aspect,
+                    iter: requestedIter,
+                    abortBuffer
+                }
+            });
+        }, 50);
     }
 }

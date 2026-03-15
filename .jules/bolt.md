@@ -1,0 +1,3 @@
+## 2024-03-15 - Web Worker Thrashing on Pointer Events
+**Learning:** Found a severe codebase-specific performance bottleneck where continuous events (like `pointermove` or pinch zoom) triggered synchronous Web Worker aborts and restarts. This resulted in instantiating a new `SharedArrayBuffer` and posting a `postMessage` on every single pixel movement (up to 60-120x per second), causing immense main and worker thread thrashing.
+**Action:** Always implement debouncing or throttling when communicating across thread boundaries (like Web Workers) for high-frequency continuous events to reduce serialization and memory allocation overhead.
