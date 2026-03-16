@@ -11,11 +11,11 @@ export default [
       sourceType: "module",
       globals: {
         ...globals.browser,
-        ...globals.worker
-      }
+        ...globals.worker,
+      },
     },
     rules: {
-      "sonarjs/no-duplicate-string": ["error", { "threshold": 5 }],
+      "sonarjs/no-duplicate-string": ["error", { threshold: 5 }],
       "sonarjs/cognitive-complexity": ["error", 15],
       "sonarjs/no-identical-functions": "error",
       "sonarjs/no-inverted-boolean-check": "error",
@@ -24,7 +24,7 @@ export default [
       "sonarjs/no-useless-catch": "error",
       "sonarjs/prefer-immediate-return": "error",
       "sonarjs/no-ignored-return": "error",
-      "sonarjs/no-all-duplicated-branches": "error"
-    }
-  }
+      "sonarjs/no-all-duplicated-branches": "error",
+    },
+  },
 ];

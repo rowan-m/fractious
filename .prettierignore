@@ -1,0 +1,10 @@
+.firebase/
+.firebaserc
+*.code-workspace
+*.log
+dist/
+node_modules/
+wasm/pkg/
+wasm/target/
+package-lock.json
+pnpm-lock.yaml
