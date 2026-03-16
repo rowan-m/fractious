@@ -1,8 +1,8 @@
-use wasm_bindgen::prelude::*;
-use dashu::float::{FBig, DBig};
+use dashu::float::{DBig, FBig};
 use dashu::Rational;
-use std::str::FromStr;
 use std::convert::TryFrom;
+use std::str::FromStr;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub fn init_hooks() {
@@ -39,72 +39,82 @@ fn is_aborted(abort_flag: &Option<js_sys::Int32Array>) -> bool {
 }
 
 #[wasm_bindgen]
-pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, prec: u32, abort_flag: Option<js_sys::Int32Array>) -> Vec<f32> {
+pub fn calculate_reference(
+    c_re_str: String,
+    c_im_str: String,
+    max_iter: u32,
+    prec: u32,
+    abort_flag: Option<js_sys::Int32Array>,
+) -> Vec<f32> {
     let prec = prec as usize;
-    
+
     // Parse decimal strings directly to DBig
-    let cx_d = DBig::from_str(&c_re_str).unwrap_or_else(|_| DBig::ZERO.with_precision(prec).value());
-    let cy_d = DBig::from_str(&c_im_str).unwrap_or_else(|_| DBig::ZERO.with_precision(prec).value());
-    
+    let cx_d =
+        DBig::from_str(&c_re_str).unwrap_or_else(|_| DBig::ZERO.with_precision(prec).value());
+    let cy_d =
+        DBig::from_str(&c_im_str).unwrap_or_else(|_| DBig::ZERO.with_precision(prec).value());
+
     let cx = to_fbig(cx_d, prec);
     let cy = to_fbig(cy_d, prec);
-    
+
     // Initialize Z (zero)
     let mut zx = FBig::ZERO.with_precision(prec).value();
     let mut zy = FBig::ZERO.with_precision(prec).value();
-    
+
     let mut orbit = Vec::with_capacity((max_iter as usize) * 2);
-    
+
     // Constant 4.0 and 2.0
     let f4: FBig = FBig::from(4).with_precision(prec).value();
-    
+
     for iter_idx in 0..=max_iter {
         if iter_idx % 1000 == 0 && is_aborted(&abort_flag) {
             break;
         }
-        
+
         // Output f64: use to_f64() -> value()
         let zx_f64 = zx.to_f64().value();
         let zy_f64 = zy.to_f64().value();
         orbit.push(zx_f64 as f32);
         orbit.push(zy_f64 as f32);
-        
+
         let zx2 = (&zx * &zx).with_precision(prec).value();
         let zy2 = (&zy * &zy).with_precision(prec).value();
-        
+
         // Sum calculation to avoid Approximation allocation (compare to f4 directly)
         let sum2 = (&zx2 + &zy2).with_precision(prec).value();
         if sum2 > f4 {
             break;
         }
-        
+
         let mut new_zy = zx;
         new_zy *= &zy;
         new_zy <<= 1;
         new_zy += &cy;
         zy = new_zy.with_precision(prec).value();
-        
+
         let mut new_zx = zx2;
         new_zx -= &zy2;
         new_zx += &cx;
         zx = new_zx.with_precision(prec).value();
     }
-    
+
     // Pad with 0.0 effectively stopping the reference influence
     let required_len = (max_iter as usize + 1) * 2;
     while orbit.len() < required_len {
         orbit.push(0.0);
         orbit.push(0.0);
     }
-    
+
     orbit
 }
 
 #[wasm_bindgen]
 pub fn add_coord(val: String, delta: f64) -> String {
     let r_d = DBig::from_str(&val).unwrap_or(DBig::ZERO);
-    let d_d = Rational::try_from(delta).map(DBig::from).unwrap_or(DBig::ZERO);
-    
+    let d_d = Rational::try_from(delta)
+        .map(DBig::from)
+        .unwrap_or(DBig::ZERO);
+
     let res = r_d + d_d;
     res.to_string()
 }
@@ -119,34 +129,64 @@ pub fn sub_coord(val1: String, val2: String) -> f64 {
 
 // Return tuple [x_str, y_str]
 #[wasm_bindgen]
-pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64, max_iter: u32, prec: u32, abort_flag: Option<js_sys::Int32Array>) -> Anchor {
+pub fn find_best_anchor(
+    cx_str: String,
+    cy_str: String,
+    scale: f64,
+    aspect: f64,
+    max_iter: u32,
+    prec: u32,
+    abort_flag: Option<js_sys::Int32Array>,
+) -> Anchor {
     let prec = prec as usize;
     let center_x = DBig::from_str(&cx_str).unwrap_or(DBig::ZERO);
     let center_y = DBig::from_str(&cy_str).unwrap_or(DBig::ZERO);
-    
+
     // Scale is the vertical span (approx).
     // Multiply x-step by aspect to cover wide screen
     // Dense Grid: Step 0.22 allows 5 points (-2 to 2) to cover approx -0.44 to 0.44 (90% view)
-    let step_y = Rational::try_from(scale * 0.22).map(DBig::from).unwrap_or(DBig::ZERO);
-    let step_x = Rational::try_from(scale * 0.22 * aspect).map(DBig::from).unwrap_or(DBig::ZERO);
-    
+    let step_y = Rational::try_from(scale * 0.22)
+        .map(DBig::from)
+        .unwrap_or(DBig::ZERO);
+    let step_x = Rational::try_from(scale * 0.22 * aspect)
+        .map(DBig::from)
+        .unwrap_or(DBig::ZERO);
+
     let f4: FBig = FBig::from(4).with_precision(prec).value();
-    
+
     let mut best_iter = 0;
     let mut best_cx = center_x.clone();
     let mut best_cy = center_y.clone();
-    
+
     // 5x5 Grid Search: Center-out spiral order for maximum stability
     let offsets: [(i32, i32); 25] = [
         (0, 0),
-        (-1, 0), (1, 0), (0, -1), (0, 1),
-        (-1, -1), (1, -1), (-1, 1), (1, 1),
-        (-2, 0), (2, 0), (0, -2), (0, 2),
-        (-2, -1), (-2, 1), (2, -1), (2, 1),
-        (-1, -2), (1, -2), (-1, 2), (1, 2),
-        (-2, -2), (2, -2), (-2, 2), (2, 2),
+        (-1, 0),
+        (1, 0),
+        (0, -1),
+        (0, 1),
+        (-1, -1),
+        (1, -1),
+        (-1, 1),
+        (1, 1),
+        (-2, 0),
+        (2, 0),
+        (0, -2),
+        (0, 2),
+        (-2, -1),
+        (-2, 1),
+        (2, -1),
+        (2, 1),
+        (-1, -2),
+        (1, -2),
+        (-1, 2),
+        (1, 2),
+        (-2, -2),
+        (2, -2),
+        (-2, 2),
+        (2, 2),
     ];
-    
+
     for &(ox_i, oy_i) in offsets.iter() {
         if is_aborted(&abort_flag) {
             break;
@@ -154,16 +194,16 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
 
         let dx_val = DBig::from(ox_i);
         let dy_val = DBig::from(oy_i);
-        
+
         let cx_probe = &center_x + (&step_x * dx_val);
         let cy_probe = &center_y + (&step_y * dy_val);
-        
+
         let cx = to_fbig(cx_probe.clone(), prec);
         let cy = to_fbig(cy_probe.clone(), prec);
-        
+
         let mut zx = FBig::ZERO.with_precision(prec).value();
         let mut zy = FBig::ZERO.with_precision(prec).value();
-        
+
         let mut i = 0;
         while i < max_iter {
             if i % 1000 == 0 && is_aborted(&abort_flag) {
@@ -172,37 +212,37 @@ pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64,
 
             let zx2 = (&zx * &zx).with_precision(prec).value();
             let zy2 = (&zy * &zy).with_precision(prec).value();
-            
+
             // Sum calculation to avoid Approximation allocation (compare to f4 directly)
             let sum2 = (&zx2 + &zy2).with_precision(prec).value();
             if sum2 > f4 {
                 break;
             }
-            
+
             let mut new_zy = zx;
             new_zy *= &zy;
             new_zy <<= 1;
             new_zy += &cy;
             zy = new_zy.with_precision(prec).value();
-            
+
             let mut new_zx = zx2;
             new_zx -= &zy2;
             new_zx += &cx;
             zx = new_zx.with_precision(prec).value();
             i += 1;
         }
-        
+
         if i > best_iter {
             best_iter = i;
             best_cx = cx_probe;
             best_cy = cy_probe;
-            
+
             if i >= max_iter {
-                break; 
+                break;
             }
         }
     }
-    
+
     Anchor {
         x: best_cx.to_string(),
         y: best_cy.to_string(),
@@ -233,26 +273,14 @@ mod tests {
 
     #[wasm_bindgen_test]
     fn test_calculate_reference_origin() {
-        let result = calculate_reference(
-            "0.0".to_string(),
-            "0.0".to_string(),
-            2,
-            53,
-            None,
-        );
+        let result = calculate_reference("0.0".to_string(), "0.0".to_string(), 2, 53, None);
         // max_iter = 2 -> required_len = (2 + 1) * 2 = 6
         assert_eq!(result, vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
     }
 
     #[wasm_bindgen_test]
     fn test_calculate_reference_diverge() {
-        let result = calculate_reference(
-            "3.0".to_string(),
-            "0.0".to_string(),
-            2,
-            53,
-            None,
-        );
+        let result = calculate_reference("3.0".to_string(), "0.0".to_string(), 2, 53, None);
         // Iter 0: z=0,0 -> pushed 0,0. New z = 3,0
         // Iter 1: z=3,0 -> pushed 3,0. (3^2 + 0^2 > 4) -> breaks
         // Required len is 6, so pads with 0,0 until len 6
@@ -261,13 +289,7 @@ mod tests {
 
     #[wasm_bindgen_test]
     fn test_calculate_reference_oscillate() {
-        let result = calculate_reference(
-            "-1.0".to_string(),
-            "0.0".to_string(),
-            3,
-            53,
-            None,
-        );
+        let result = calculate_reference("-1.0".to_string(), "0.0".to_string(), 3, 53, None);
         // c = (-1, 0)
         // Iter 0: z = (0, 0) -> pushed 0, 0. z_new = z^2+c = (-1, 0)
         // Iter 1: z = (-1, 0) -> pushed -1, 0. z_new = (-1)^2+c = (1,0) + (-1,0) = (0, 0)
@@ -280,13 +302,7 @@ mod tests {
     #[wasm_bindgen_test]
     fn test_calculate_reference_invalid_input() {
         // We pass "invalid" so it defaults to 0.0 but we must pass precision > 0
-        let result = calculate_reference(
-            "invalid".to_string(),
-            "invalid".to_string(),
-            2,
-            53,
-            None,
-        );
+        let result = calculate_reference("invalid".to_string(), "invalid".to_string(), 2, 53, None);
         // Should fall back to 0.0
         assert_eq!(result, vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
     }

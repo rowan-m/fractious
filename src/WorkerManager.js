@@ -7,22 +7,16 @@ export class WorkerManager {
         this._updateTimeout = null;
     }
 
-    init() {
-        if (this.worker) return;
-        this.worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+    const aspect = canvasWidth / canvasHeight;
+    const logZoom = Math.log10(config.zoom);
+    const requestedIter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
 
-        this.worker.onmessage = (e) => {
-            const { type, payload, error } = e.data;
-
-            if (type === 'error') {
-                if (this.onError) this.onError(error);
-                return;
-            }
-
-            if (type !== 'result') return;
-            if (payload.aborted) return;
-            if (this.onResult) this.onResult(payload);
-        };
+    let abortBuffer = null;
+    if (typeof SharedArrayBuffer !== "undefined") {
+      abortBuffer = new SharedArrayBuffer(4);
+      this.currentAbortArray = new Int32Array(abortBuffer);
+    } else {
+      this.currentAbortArray = null;
     }
 
     updateReference(config, canvasWidth, canvasHeight) {

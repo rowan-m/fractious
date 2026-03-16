@@ -13,8 +13,8 @@ export default [
       sourceType: "module",
       globals: {
         ...globals.browser,
-        ...globals.worker
-      }
+        ...globals.worker,
+      },
     },
     rules: {
       "security/detect-object-injection": "error",
@@ -23,7 +23,7 @@ export default [
       "security/detect-buffer-noassert": "error",
       "security/detect-eval-with-expression": "error",
       "no-unsanitized/method": "error",
-      "no-unsanitized/property": "error"
-    }
-  }
+      "no-unsanitized/property": "error",
+    },
+  },
 ];
