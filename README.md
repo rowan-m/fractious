@@ -3,6 +3,7 @@
 A deep-zooming viewer for the Mandelbrot set hosted at https://fractious-deep.web.app/.
 
 The architecture combines :
+
 - **Rust & WebAssembly** for calculating high-precision reference orbits on the CPU (using the `dashu` arbitrary-precision crate).
 - **WebGPU** then renders via a `f32` fragment shader.
 - **Web Workers** for offloading the heavy math from the UI thread.
