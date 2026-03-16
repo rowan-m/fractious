@@ -1,307 +1,101 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" href="img/icon-144x144.png" />
-    <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#3d5b88" />
-    <meta
-      name="description"
-      content="Explore infinite fractals in the Mandelbrot set. Discover beautiful downloadable images and share locations with friends—all with simple, fun controls."
-    />
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="img/icon-144x144.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3d5b88">
+<meta name="description" content="Explore infinite fractals in the Mandelbrot set. Discover beautiful downloadable images and share locations with friends—all with simple, fun controls.">
 
-    <meta property="og:url" content="https://fractious-deep.web.app/" />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Fractious" />
-    <meta
-      property="og:description"
-      content="Explore infinite fractals in the Mandelbrot set. Discover beautiful downloadable images and share locations with friends—all with simple, fun controls."
-    />
-    <meta
-      property="og:image"
-      content="https://fractious-deep.web.app/img/preview.jpg"
-    />
+<meta property="og:url" content="https://fractious-deep.web.app/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Fractious">
+<meta property="og:description" content="Explore infinite fractals in the Mandelbrot set. Discover beautiful downloadable images and share locations with friends—all with simple, fun controls.">
+<meta property="og:image" content="https://fractious-deep.web.app/img/preview.jpg">
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:creator" content="@rowan_m" />
-    <meta name="twitter:title" content="Fractious" />
-    <meta
-      name="twitter:description"
-      content="Explore infinite fractals in the Mandelbrot set. Discover beautiful downloadable images and share locations with friends—all with simple, fun controls."
-    />
-    <meta
-      name="twitter:image"
-      content="https://fractious-deep.web.app/img/preview.jpg"
-    />
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:creator" content="@rowan_m">
+<meta name="twitter:title" content="Fractious">
+<meta name="twitter:description" content="Explore infinite fractals in the Mandelbrot set. Discover beautiful downloadable images and share locations with friends—all with simple, fun controls.">
+<meta name="twitter:image" content="https://fractious-deep.web.app/img/preview.jpg">
 
-    <title>Fractious</title>
-  </head>
-  <body>
-    <header>
-      <h1>Fractious</h1>
-      <div>
-        <span class="version">v20260314a</span>
-        <a href="https://github.com/rowan-m/fractious"
-          ><span aria-hidden="true">🧑‍💻</span> Code</a
-        >
-        <a href="https://rowan.fyi"
-          ><span aria-hidden="true">🌐</span> rowan.fyi</a
-        >
-        <a href="https://bsky.app/profile/rowan.fyi"
-          ><span aria-hidden="true">🦋</span> rowan.fyi</a
-        >
-        <a href="https://mastodon.social/@rowan_m"
-          ><span aria-hidden="true">🦣</span> rowan_m@mastodon.social</a
-        >
-      </div>
-    </header>
-    <main>
-      <div class="render-area">
-        <canvas id="fractal-bg"></canvas>
-        <canvas
-          height="512"
-          width="512"
-          draggable="false"
-          id="fractal"
-        ></canvas>
-      </div>
-      <div class="pin">
-        <span class="pinpoint" id="crosshair" aria-hidden="true">📍</span>
-      </div>
-      <nav class="stats">
-        <form>
-          <label title="Real part / x"
-            ><span aria-hidden="true">📍</span>x:<input
-              type="text"
-              name="centerx"
-              id="c_re"
-              aria-label="Real part / x"
-          /></label>
-          <label title="Imaginary part / y"
-            ><span aria-hidden="true">📍</span>y:<input
-              type="text"
-              name="centery"
-              id="c_im"
-              aria-label="Imaginary part / y"
-          /></label>
-          <label title="Zoom"
-            ><span aria-hidden="true">🔎</span
-            ><input
-              type="number"
-              name="zoom"
-              step=".1"
-              id="zoom"
-              aria-label="Zoom"
-          /></label>
-          <label title="Rotation"
-            ><span aria-hidden="true">🔄</span
-            ><input
-              type="number"
-              name="rotation"
-              step="1"
-              id="rotation"
-              aria-label="Rotation"
-          /></label>
-          <label title="Hue"
-            ><span aria-hidden="true">🎨</span
-            ><input
-              type="number"
-              name="hue"
-              step=".01"
-              id="hue"
-              aria-label="Hue"
-          /></label>
-          <label title="Hue steps"
-            ><span aria-hidden="true">🌈</span
-            ><input
-              type="number"
-              name="huestep"
-              step=".005"
-              id="huestep"
-              aria-label="Hue steps"
-          /></label>
-          <label title="Iterations"
-            ><span aria-hidden="true">⚙️</span
-            ><input
-              type="number"
-              name="iterations"
-              readonly
-              id="iterations"
-              aria-label="Iterations"
-          /></label>
-        </form>
-      </nav>
-    </main>
-    <footer>
-      <nav class="controls">
-        <form>
-          <fieldset>
-            <button
-              type="button"
-              class="incdec"
-              name="incy"
-              title="Move up"
-              aria-label="Move up"
-              id="btn-up"
-            >
-              <span aria-hidden="true">🔼</span>
-            </button>
-            <span>
-              <button
-                type="button"
-                class="incdec"
-                name="decx"
-                title="Move left"
-                aria-label="Move left"
-                id="btn-left"
-              >
-                <span aria-hidden="true">◀️</span>
-              </button>
-              <span class="icon" aria-hidden="true">📍</span>
-              <button
-                type="button"
-                class="incdec"
-                name="incx"
-                title="Move right"
-                aria-label="Move right"
-                id="btn-right"
-              >
-                <span aria-hidden="true">▶️</span>
-              </button>
-            </span>
-            <button
-              type="button"
-              class="incdec"
-              name="decy"
-              title="Move down"
-              aria-label="Move down"
-              id="btn-down"
-            >
-              <span aria-hidden="true">🔽</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <button
-              type="button"
-              class="incdec"
-              name="inczoom"
-              title="Zoom in"
-              aria-label="Zoom in"
-              id="btn-zoom-in"
-            >
-              <span aria-hidden="true">🔼</span>
-            </button>
-            <span class="icon" aria-hidden="true">🔎</span>
-            <button
-              type="button"
-              class="incdec"
-              name="deczoom"
-              title="Zoom out"
-              aria-label="Zoom out"
-              id="btn-zoom-out"
-            >
-              <span aria-hidden="true">🔽</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <button
-              type="button"
-              class="incdec"
-              name="incrotate"
-              title="Rotate clockwise"
-              aria-label="Rotate clockwise"
-              id="btn-rotate-cw"
-            >
-              <span aria-hidden="true">🔼</span>
-            </button>
-            <span class="icon" aria-hidden="true">🔄</span>
-            <button
-              type="button"
-              class="incdec"
-              name="decrotate"
-              title="Rotate counter-clockwise"
-              aria-label="Rotate counter-clockwise"
-              id="btn-rotate-ccw"
-            >
-              <span aria-hidden="true">🔽</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <button
-              type="button"
-              class="incdec"
-              name="inchuestep"
-              title="Increase colour cycling"
-              aria-label="Increase colour cycling"
-              id="btn-cycle-in"
-            >
-              <span aria-hidden="true">🔼</span>
-            </button>
-            <span>
-              <button
-                type="button"
-                class="incdec"
-                name="dechue"
-                title="Shift colours"
-                aria-label="Shift colours left"
-                id="btn-hue-left"
-              >
-                <span aria-hidden="true">◀️</span>
-              </button>
-              <span class="icon" aria-hidden="true">🎨</span>
-              <button
-                type="button"
-                class="incdec"
-                name="inchue"
-                title="Shift colours"
-                aria-label="Shift colours right"
-                id="btn-hue-right"
-              >
-                <span aria-hidden="true">▶️</span>
-              </button>
-            </span>
-            <button
-              type="button"
-              class="incdec"
-              name="dechuestep"
-              title="Decrease colour cycling"
-              aria-label="Decrease colour cycling"
-              id="btn-cycle-out"
-            >
-              <span aria-hidden="true">🔽</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <button
-              type="button"
-              class="fullscreen"
-              title="Toggle fullscreen display"
-              aria-label="Toggle fullscreen display"
-              id="btn-fullscreen"
-            >
-              <span aria-hidden="true">⏫</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <button
-              type="button"
-              class="fullscreen"
-              title="Download screenshot"
-              aria-label="Download screenshot"
-              id="btn-screenshot"
-            >
-              <span aria-hidden="true">🖼️</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <a href="." class="" title="Reset" aria-label="Reset"
-              ><span aria-hidden="true">🔁</span></a
-            >
-          </fieldset>
-        </form>
-      </nav>
-    </footer>
-    <script type="module" src="src/main.js"></script>
-  </body>
+<title>Fractious</title>
+</head>
+<body>
+<header>
+  <h1>Fractious</h1>
+  <div>
+    <span class="version">v20260314a</span>
+    <a href="https://github.com/rowan-m/fractious"><span aria-hidden="true">🧑‍💻</span> Code</a>
+    <a href="https://rowan.fyi"><span aria-hidden="true">🌐</span> rowan.fyi</a>
+    <a href="https://bsky.app/profile/rowan.fyi"><span aria-hidden="true">🦋</span> rowan.fyi</a>
+    <a href="https://mastodon.social/@rowan_m"><span aria-hidden="true">🦣</span> rowan_m@mastodon.social</a>
+  </div>
+</header>
+<main>
+  <div class="render-area">
+    <canvas id="fractal-bg"></canvas>
+    <canvas height="512" width="512" draggable="false" id="fractal"></canvas>
+  </div>
+  <div class="pin">
+    <span class="pinpoint" id="crosshair" aria-hidden="true">📍</span>
+  </div>
+  <nav class="stats">
+    <form>
+      <label title="Real part / x"><span aria-hidden="true">📍</span>x:<input type="text" name="centerx" id="c_re" aria-label="Real part / x" /></label>
+      <label title="Imaginary part / y"><span aria-hidden="true">📍</span>y:<input type="text" name="centery" id="c_im" aria-label="Imaginary part / y" /></label>
+      <label title="Zoom"><span aria-hidden="true">🔎</span><input type="number" name="zoom" step=".1" id="zoom" aria-label="Zoom" /></label>
+      <label title="Rotation"><span aria-hidden="true">🔄</span><input type="number" name="rotation" step="1" id="rotation" aria-label="Rotation" /></label>
+      <label title="Hue"><span aria-hidden="true">🎨</span><input type="number" name="hue" step=".01" id="hue" aria-label="Hue" /></label>
+      <label title="Hue steps"><span aria-hidden="true">🌈</span><input type="number" name="huestep" step=".005" id="huestep" aria-label="Hue steps" /></label>
+      <label title="Iterations"><span aria-hidden="true">⚙️</span><input type="number" name="iterations" readonly id="iterations" aria-label="Iterations" /></label>
+    </form>
+  </nav>
+</main>
+<footer>
+  <nav class="controls">
+    <form>
+      <fieldset>
+        <button type="button" class="incdec" name="incy" title="Move up" aria-label="Move up" id="btn-up"><span aria-hidden="true">🔼</span></button>
+        <span>
+          <button type="button" class="incdec" name="decx" title="Move left" aria-label="Move left" id="btn-left"><span aria-hidden="true">◀️</span></button>
+          <span class="icon" aria-hidden="true">📍</span>
+          <button type="button" class="incdec" name="incx" title="Move right" aria-label="Move right" id="btn-right"><span aria-hidden="true">▶️</span></button>
+        </span>
+        <button type="button" class="incdec" name="decy" title="Move down" aria-label="Move down" id="btn-down"><span aria-hidden="true">🔽</span></button>
+      </fieldset>
+      <fieldset>
+        <button type="button" class="incdec" name="inczoom" title="Zoom in" aria-label="Zoom in" id="btn-zoom-in"><span aria-hidden="true">🔼</span></button>
+        <span class="icon" aria-hidden="true">🔎</span>
+        <button type="button" class="incdec" name="deczoom" title="Zoom out" aria-label="Zoom out" id="btn-zoom-out"><span aria-hidden="true">🔽</span></button>
+      </fieldset>
+      <fieldset>
+        <button type="button" class="incdec" name="incrotate" title="Rotate clockwise" aria-label="Rotate clockwise" id="btn-rotate-cw"><span aria-hidden="true">🔼</span></button>
+        <span class="icon" aria-hidden="true">🔄</span>
+        <button type="button" class="incdec" name="decrotate" title="Rotate counter-clockwise" aria-label="Rotate counter-clockwise" id="btn-rotate-ccw"><span aria-hidden="true">🔽</span></button>
+      </fieldset>
+      <fieldset>
+        <button type="button" class="incdec" name="inchuestep" title="Increase colour cycling" aria-label="Increase colour cycling" id="btn-cycle-in"><span aria-hidden="true">🔼</span></button>
+        <span>
+          <button type="button" class="incdec" name="dechue" title="Shift colours" aria-label="Shift colours left" id="btn-hue-left"><span aria-hidden="true">◀️</span></button>
+          <span class="icon" aria-hidden="true">🎨</span>
+          <button type="button" class="incdec" name="inchue" title="Shift colours" aria-label="Shift colours right" id="btn-hue-right"><span aria-hidden="true">▶️</span></button>
+        </span>
+        <button type="button" class="incdec" name="dechuestep" title="Decrease colour cycling" aria-label="Decrease colour cycling" id="btn-cycle-out"><span aria-hidden="true">🔽</span></button>
+      </fieldset>
+      <fieldset>
+        <button type="button" class="fullscreen" title="Toggle fullscreen display" aria-label="Toggle fullscreen display" id="btn-fullscreen"><span aria-hidden="true">⏫</span></button>
+      </fieldset>
+      <fieldset>
+        <button type="button" class="fullscreen" title="Download screenshot" aria-label="Download screenshot" id="btn-screenshot"><span aria-hidden="true">🖼️</span></button>
+      </fieldset>
+      <fieldset>
+        <a href="." class="" title="Reset" aria-label="Reset"><span aria-hidden="true">🔁</span></a>
+      </fieldset>
+    </form>
+  </nav>
+</footer>
+<script type="module" src="src/main.js"></script>
+</body>
 </html>

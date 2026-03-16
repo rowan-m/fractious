@@ -1,8 +1,8 @@
-use dashu::float::{DBig, FBig};
-use dashu::Rational;
-use std::convert::TryFrom;
-use std::str::FromStr;
 use wasm_bindgen::prelude::*;
+use dashu::float::{FBig, DBig};
+use dashu::Rational;
+use std::str::FromStr;
+use std::convert::TryFrom;
 
 #[wasm_bindgen]
 pub fn init_hooks() {
@@ -39,20 +39,12 @@ fn is_aborted(abort_flag: &Option<js_sys::Int32Array>) -> bool {
 }
 
 #[wasm_bindgen]
-pub fn calculate_reference(
-    c_re_str: String,
-    c_im_str: String,
-    max_iter: u32,
-    prec: u32,
-    abort_flag: Option<js_sys::Int32Array>,
-) -> Vec<f32> {
+pub fn calculate_reference(c_re_str: String, c_im_str: String, max_iter: u32, prec: u32, abort_flag: Option<js_sys::Int32Array>) -> Vec<f32> {
     let prec = prec as usize;
 
     // Parse decimal strings directly to DBig
-    let cx_d =
-        DBig::from_str(&c_re_str).unwrap_or_else(|_| DBig::ZERO.with_precision(prec).value());
-    let cy_d =
-        DBig::from_str(&c_im_str).unwrap_or_else(|_| DBig::ZERO.with_precision(prec).value());
+    let cx_d = DBig::from_str(&c_re_str).unwrap_or_else(|_| DBig::ZERO.with_precision(prec).value());
+    let cy_d = DBig::from_str(&c_im_str).unwrap_or_else(|_| DBig::ZERO.with_precision(prec).value());
 
     let cx = to_fbig(cx_d, prec);
     let cy = to_fbig(cy_d, prec);
@@ -111,9 +103,7 @@ pub fn calculate_reference(
 #[wasm_bindgen]
 pub fn add_coord(val: String, delta: f64) -> String {
     let r_d = DBig::from_str(&val).unwrap_or(DBig::ZERO);
-    let d_d = Rational::try_from(delta)
-        .map(DBig::from)
-        .unwrap_or(DBig::ZERO);
+    let d_d = Rational::try_from(delta).map(DBig::from).unwrap_or(DBig::ZERO);
 
     let res = r_d + d_d;
     res.to_string()
@@ -129,15 +119,7 @@ pub fn sub_coord(val1: String, val2: String) -> f64 {
 
 // Return tuple [x_str, y_str]
 #[wasm_bindgen]
-pub fn find_best_anchor(
-    cx_str: String,
-    cy_str: String,
-    scale: f64,
-    aspect: f64,
-    max_iter: u32,
-    prec: u32,
-    abort_flag: Option<js_sys::Int32Array>,
-) -> Anchor {
+pub fn find_best_anchor(cx_str: String, cy_str: String, scale: f64, aspect: f64, max_iter: u32, prec: u32, abort_flag: Option<js_sys::Int32Array>) -> Anchor {
     let prec = prec as usize;
     let center_x = DBig::from_str(&cx_str).unwrap_or(DBig::ZERO);
     let center_y = DBig::from_str(&cy_str).unwrap_or(DBig::ZERO);
@@ -145,12 +127,8 @@ pub fn find_best_anchor(
     // Scale is the vertical span (approx).
     // Multiply x-step by aspect to cover wide screen
     // Dense Grid: Step 0.22 allows 5 points (-2 to 2) to cover approx -0.44 to 0.44 (90% view)
-    let step_y = Rational::try_from(scale * 0.22)
-        .map(DBig::from)
-        .unwrap_or(DBig::ZERO);
-    let step_x = Rational::try_from(scale * 0.22 * aspect)
-        .map(DBig::from)
-        .unwrap_or(DBig::ZERO);
+    let step_y = Rational::try_from(scale * 0.22).map(DBig::from).unwrap_or(DBig::ZERO);
+    let step_x = Rational::try_from(scale * 0.22 * aspect).map(DBig::from).unwrap_or(DBig::ZERO);
 
     let f4: FBig = FBig::from(4).with_precision(prec).value();
 
@@ -161,30 +139,12 @@ pub fn find_best_anchor(
     // 5x5 Grid Search: Center-out spiral order for maximum stability
     let offsets: [(i32, i32); 25] = [
         (0, 0),
-        (-1, 0),
-        (1, 0),
-        (0, -1),
-        (0, 1),
-        (-1, -1),
-        (1, -1),
-        (-1, 1),
-        (1, 1),
-        (-2, 0),
-        (2, 0),
-        (0, -2),
-        (0, 2),
-        (-2, -1),
-        (-2, 1),
-        (2, -1),
-        (2, 1),
-        (-1, -2),
-        (1, -2),
-        (-1, 2),
-        (1, 2),
-        (-2, -2),
-        (2, -2),
-        (-2, 2),
-        (2, 2),
+        (-1, 0), (1, 0), (0, -1), (0, 1),
+        (-1, -1), (1, -1), (-1, 1), (1, 1),
+        (-2, 0), (2, 0), (0, -2), (0, 2),
+        (-2, -1), (-2, 1), (2, -1), (2, 1),
+        (-1, -2), (1, -2), (-1, 2), (1, 2),
+        (-2, -2), (2, -2), (-2, 2), (2, 2),
     ];
 
     for &(ox_i, oy_i) in offsets.iter() {
@@ -273,14 +233,26 @@ mod tests {
 
     #[wasm_bindgen_test]
     fn test_calculate_reference_origin() {
-        let result = calculate_reference("0.0".to_string(), "0.0".to_string(), 2, 53, None);
+        let result = calculate_reference(
+            "0.0".to_string(),
+            "0.0".to_string(),
+            2,
+            53,
+            None,
+        );
         // max_iter = 2 -> required_len = (2 + 1) * 2 = 6
         assert_eq!(result, vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
     }
 
     #[wasm_bindgen_test]
     fn test_calculate_reference_diverge() {
-        let result = calculate_reference("3.0".to_string(), "0.0".to_string(), 2, 53, None);
+        let result = calculate_reference(
+            "3.0".to_string(),
+            "0.0".to_string(),
+            2,
+            53,
+            None,
+        );
         // Iter 0: z=0,0 -> pushed 0,0. New z = 3,0
         // Iter 1: z=3,0 -> pushed 3,0. (3^2 + 0^2 > 4) -> breaks
         // Required len is 6, so pads with 0,0 until len 6
@@ -289,7 +261,13 @@ mod tests {
 
     #[wasm_bindgen_test]
     fn test_calculate_reference_oscillate() {
-        let result = calculate_reference("-1.0".to_string(), "0.0".to_string(), 3, 53, None);
+        let result = calculate_reference(
+            "-1.0".to_string(),
+            "0.0".to_string(),
+            3,
+            53,
+            None,
+        );
         // c = (-1, 0)
         // Iter 0: z = (0, 0) -> pushed 0, 0. z_new = z^2+c = (-1, 0)
         // Iter 1: z = (-1, 0) -> pushed -1, 0. z_new = (-1)^2+c = (1,0) + (-1,0) = (0, 0)
@@ -302,7 +280,13 @@ mod tests {
     #[wasm_bindgen_test]
     fn test_calculate_reference_invalid_input() {
         // We pass "invalid" so it defaults to 0.0 but we must pass precision > 0
-        let result = calculate_reference("invalid".to_string(), "invalid".to_string(), 2, 53, None);
+        let result = calculate_reference(
+            "invalid".to_string(),
+            "invalid".to_string(),
+            2,
+            53,
+            None,
+        );
         // Should fall back to 0.0
         assert_eq!(result, vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
     }
