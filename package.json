@@ -18,7 +18,10 @@
     "check": "npm run lint && npm run lint:sonar && npm run lint:security && npm run depcruise",
     "test": "npm run test:wasm && npm run test:web",
     "test:web": "vitest run",
-    "test:wasm": "cd wasm && wasm-pack test --node"
+    "test:wasm": "cd wasm && wasm-pack test --node",
+    "format": "npm run format:web && npm run format:rust",
+    "format:web": "prettier --write .",
+    "format:rust": "cd wasm && cargo fmt"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -30,6 +33,7 @@
     "eslint-plugin-sonarjs": "^4.0.1",
     "globals": "^17.4.0",
     "happy-dom": "^20.8.3",
+    "prettier": "^3.8.1",
     "rimraf": "^6.1.3",
     "vite": "^7.3.1",
     "vite-plugin-pwa": "^1.2.0",
