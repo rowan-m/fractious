@@ -69,7 +69,7 @@
       <div class="pin">
         <span class="pinpoint" id="crosshair" aria-hidden="true">📍</span>
       </div>
-      <nav class="stats">
+      <nav class="stats" aria-label="Fractal parameters">
         <form>
           <label title="Real part / x"
             ><span aria-hidden="true">📍</span>x:<input
@@ -134,15 +134,16 @@
       </nav>
     </main>
     <footer>
-      <nav class="controls">
+      <nav class="controls" aria-label="View controls">
         <form>
           <fieldset>
             <button
               type="button"
               class="incdec"
               name="incy"
-              title="Move up"
+              title="Move up (W or ↑)"
               aria-label="Move up"
+              aria-keyshortcuts="w ArrowUp"
               id="btn-up"
             >
               <span aria-hidden="true">🔼</span>
@@ -152,8 +153,9 @@
                 type="button"
                 class="incdec"
                 name="decx"
-                title="Move left"
+                title="Move left (A or ←)"
                 aria-label="Move left"
+                aria-keyshortcuts="a ArrowLeft"
                 id="btn-left"
               >
                 <span aria-hidden="true">◀️</span>
@@ -163,8 +165,9 @@
                 type="button"
                 class="incdec"
                 name="incx"
-                title="Move right"
+                title="Move right (D or →)"
                 aria-label="Move right"
+                aria-keyshortcuts="d ArrowRight"
                 id="btn-right"
               >
                 <span aria-hidden="true">▶️</span>
@@ -174,8 +177,9 @@
               type="button"
               class="incdec"
               name="decy"
-              title="Move down"
+              title="Move down (S or ↓)"
               aria-label="Move down"
+              aria-keyshortcuts="s ArrowDown"
               id="btn-down"
             >
               <span aria-hidden="true">🔽</span>
@@ -186,8 +190,9 @@
               type="button"
               class="incdec"
               name="inczoom"
-              title="Zoom in"
+              title="Zoom in (+)"
               aria-label="Zoom in"
+              aria-keyshortcuts="+"
               id="btn-zoom-in"
             >
               <span aria-hidden="true">🔼</span>
@@ -197,8 +202,9 @@
               type="button"
               class="incdec"
               name="deczoom"
-              title="Zoom out"
+              title="Zoom out (-)"
               aria-label="Zoom out"
+              aria-keyshortcuts="-"
               id="btn-zoom-out"
             >
               <span aria-hidden="true">🔽</span>
