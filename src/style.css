@@ -189,13 +189,20 @@ footer {
   border: 1px solid rgba(255, 166, 0, 0);
   user-select: none;
   text-decoration: none;
+  outline: none;
+  transition: transform 0.1s ease, border-color 0.2s ease;
 }
 
-.controls button:focus,
+.controls button:focus-visible,
 .controls button:hover,
-.controls a:focus,
+.controls a:focus-visible,
 .controls a:hover {
   border: 1px solid rgba(255, 166, 0, 0.5);
   border-radius: 4px;
   outline: none;
+}
+
+.controls button:active,
+.controls a:active {
+  transform: scale(0.9);
 }
