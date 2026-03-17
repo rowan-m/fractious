@@ -289,10 +289,24 @@ export class InteractionManager {
       },
     };
 
-    Object.entries(buttonActions).forEach(([id, action]) => {
-      const btn = document.getElementById(id);
-      if (btn) btn.onclick = action;
-    });
+        const bindBtn = (id, action) => {
+            const btn = document.getElementById(id);
+            if (btn) btn.onclick = action;
+        };
+
+        bindBtn('btn-up', buttonActions['btn-up']);
+        bindBtn('btn-down', buttonActions['btn-down']);
+        bindBtn('btn-left', buttonActions['btn-left']);
+        bindBtn('btn-right', buttonActions['btn-right']);
+        bindBtn('btn-zoom-in', buttonActions['btn-zoom-in']);
+        bindBtn('btn-zoom-out', buttonActions['btn-zoom-out']);
+        bindBtn('btn-rotate-cw', buttonActions['btn-rotate-cw']);
+        bindBtn('btn-rotate-ccw', buttonActions['btn-rotate-ccw']);
+        bindBtn('btn-cycle-in', buttonActions['btn-cycle-in']);
+        bindBtn('btn-cycle-out', buttonActions['btn-cycle-out']);
+        bindBtn('btn-hue-left', buttonActions['btn-hue-left']);
+        bindBtn('btn-hue-right', buttonActions['btn-hue-right']);
+        bindBtn('btn-screenshot', buttonActions['btn-screenshot']);
 
     const btnFullscreen = document.getElementById("btn-fullscreen");
     if (btnFullscreen) {
