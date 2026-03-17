@@ -285,8 +285,7 @@ export class InteractionManager {
         this.callbacks.onInteract(false);
       },
       "btn-screenshot": () => {
-        this.state.screenshotRequested = true;
-        this.callbacks.onRequestRender();
+        this.callbacks.onScreenshotRequest();
       },
     };
 
