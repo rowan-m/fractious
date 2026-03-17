@@ -146,6 +146,14 @@ export class Fractious {
     }
   }
 
+  requestScreenshot() {
+    this.state.screenshotRequested = true;
+    if (!this.state.isFrameScheduled) {
+      this.state.isFrameScheduled = true;
+      requestAnimationFrame(this.frame);
+    }
+  }
+
   frame() {
     this.state.isFrameScheduled = false;
 
