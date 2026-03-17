@@ -33,6 +33,14 @@ async function handleCalculateReference(payload) {
   try {
     const { centerX, centerY, scale, aspect, iter, abortBuffer } = payload;
     const abortArray = abortBuffer ? new Int32Array(abortBuffer) : null;
+
+    // ⚡ Bolt: Early return optimization. If the main thread has already
+    // signalled an abort (e.g. user panned/zoomed quickly), exit immediately
+    // before doing expensive precision or anchor calculations.
+    if (abortArray && Atomics.load(abortArray, 0) === 1) {
+      return self.postMessage({ type: "result", payload: { aborted: true } });
+    }
+
     const prec = calculatePrecision(scale);
     const searchLimit = Math.max(iter * 3, 5000);
 
