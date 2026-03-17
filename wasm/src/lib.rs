@@ -100,10 +100,7 @@ pub fn calculate_reference(
 
     // Pad with 0.0 effectively stopping the reference influence
     let required_len = (max_iter as usize + 1) * 2;
-    while orbit.len() < required_len {
-        orbit.push(0.0);
-        orbit.push(0.0);
-    }
+    orbit.resize(required_len, 0.0);
 
     orbit
 }
