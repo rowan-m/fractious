@@ -159,11 +159,13 @@ export class Fractious {
 
     const needsMorePasses = this.renderer.render(this.config, this.state);
 
+    // ⚡ Bolt: Removed this.renderer.onSubmittedWorkDone().then() wrapper.
+    // requestAnimationFrame naturally synchronizes with the display rate and WebGPU
+    // command queue, so waiting for full GPU idle forces unnecessary CPU-GPU stalls
+    // and lowers frame throughput during progressive rendering.
     if (needsMorePasses && !this.state.isFrameScheduled) {
       this.state.isFrameScheduled = true;
-      this.renderer.onSubmittedWorkDone().then(() => {
-        requestAnimationFrame(this.frame);
-      });
+      requestAnimationFrame(this.frame);
     }
   }
 }
