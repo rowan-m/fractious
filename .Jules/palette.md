@@ -12,3 +12,8 @@
 
 **Learning:** Using the generic `:focus` pseudo-class for custom focus indicators (like adding a border to icon buttons) creates a frustrating UX for pointer users, because the indicator becomes "stuck" on the element after a mouse click.
 **Action:** Always prefer the `:focus-visible` pseudo-class for interactive UI elements. This ensures focus rings only appear when the user is navigating via keyboard, keeping pointer interactions clean and expected.
+
+## 2025-03-09 - Direct-Manipulation Surface Affordances
+
+**Learning:** Interactive `<canvas>` elements that act as map-like panning surfaces lack inherent visual cues for interaction. Users may assume they are static images without exploring them via pointer.
+**Action:** Apply the `cursor: grab;` CSS property to direct-manipulation surfaces by default, and `cursor: grabbing;` to their `:active` state. This establishes an immediate, standard visual affordance that the surface is draggable.
