@@ -62,12 +62,14 @@
     </header>
     <main>
       <div class="render-area">
-        <canvas id="fractal-bg"></canvas>
+        <canvas id="fractal-bg" aria-hidden="true"></canvas>
         <canvas
           height="512"
           width="512"
           draggable="false"
           id="fractal"
+          role="img"
+          aria-label="Interactive Mandelbrot set rendering"
         ></canvas>
       </div>
       <div class="pin">
