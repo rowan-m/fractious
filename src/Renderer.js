@@ -112,19 +112,26 @@ export class Renderer {
 
   updateOrbitBuffer(orbitArrayBuffer) {
     const requiredSize = orbitArrayBuffer.byteLength;
+    let bufferRecreated = false;
     if (requiredSize > this.referenceOrbitSize) {
       this.referenceOrbitSize = requiredSize;
       this.referenceOrbitBuffer = this.device.createBuffer({
         size: this.referenceOrbitSize,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
       });
+      bufferRecreated = true;
     }
     this.device.queue.writeBuffer(
       this.referenceOrbitBuffer,
       0,
       orbitArrayBuffer,
     );
-    this.createBindGroup();
+
+    // ⚡ Bolt: Avoid redundant GPUBindGroup re-creation. writeBuffer updates
+    // data in-place. Only re-create if the buffer itself was newly allocated.
+    if (bufferRecreated || !this.bindGroup) {
+      this.createBindGroup();
+    }
   }
 
   resizeOffscreenTexture(w, h) {
