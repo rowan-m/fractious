@@ -12,3 +12,8 @@
 
 **Learning:** Using the generic `:focus` pseudo-class for custom focus indicators (like adding a border to icon buttons) creates a frustrating UX for pointer users, because the indicator becomes "stuck" on the element after a mouse click.
 **Action:** Always prefer the `:focus-visible` pseudo-class for interactive UI elements. This ensures focus rings only appear when the user is navigating via keyboard, keeping pointer interactions clean and expected.
+
+## 2025-03-19 - Interactive Canvas Accessibility and Affordance
+
+**Learning:** Interactive `<canvas>` elements lack semantic meaning for screen readers and default visual affordances for pointer users. Without a `role`, screen readers may ignore the canvas entirely or read generic content, and without a cursor change, users may not realize the surface is draggable.
+**Action:** Always add `role="img"` and a descriptive `aria-label` to interactive foreground `<canvas>` elements so they are announced as visual regions. Hide purely functional background canvases with `aria-hidden="true"`. Furthermore, apply `cursor: grab` and `cursor: grabbing` on `:active` to direct-manipulation surfaces to establish clear visual affordances for drag interactions.
