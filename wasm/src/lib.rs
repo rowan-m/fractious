@@ -61,7 +61,10 @@ pub fn calculate_reference(
     let mut zx = FBig::ZERO.with_precision(prec).value();
     let mut zy = FBig::ZERO.with_precision(prec).value();
 
-    let mut orbit = Vec::with_capacity((max_iter as usize) * 2);
+    // ⚡ Bolt: Pre-allocate with resize to avoid repeated bounds checking and
+    // potential reallocation overhead from push() inside the hot loop.
+    let required_len = (max_iter as usize + 1) * 2;
+    let mut orbit = vec![0.0; required_len];
 
     // Constant 4.0 and 2.0
     let f4: FBig = FBig::from(4).with_precision(prec).value();
@@ -74,8 +77,10 @@ pub fn calculate_reference(
         // Output f64: use to_f64() -> value()
         let zx_f64 = zx.to_f64().value();
         let zy_f64 = zy.to_f64().value();
-        orbit.push(zx_f64 as f32);
-        orbit.push(zy_f64 as f32);
+
+        let idx = (iter_idx as usize) * 2;
+        orbit[idx] = zx_f64 as f32;
+        orbit[idx + 1] = zy_f64 as f32;
 
         let zx2 = (&zx * &zx).with_precision(prec).value();
         let zy2 = (&zy * &zy).with_precision(prec).value();
@@ -98,9 +103,7 @@ pub fn calculate_reference(
         zx = new_zx.with_precision(prec).value();
     }
 
-    // Pad with 0.0 effectively stopping the reference influence
-    let required_len = (max_iter as usize + 1) * 2;
-    orbit.resize(required_len, 0.0);
+    // No need to pad since we initialized with vec![0.0; required_len]
 
     orbit
 }
