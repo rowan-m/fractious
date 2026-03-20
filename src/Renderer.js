@@ -25,6 +25,8 @@ export class Renderer {
     this.uniformBufferSize = 32;
     this.uniformData = new ArrayBuffer(this.uniformBufferSize);
     this.uniformDataView = new DataView(this.uniformData);
+
+    this.postBindGroup = null;
   }
 
   async init() {
@@ -153,6 +155,16 @@ export class Renderer {
         GPUTextureUsage.COPY_SRC,
     });
     this.offscreenTextureView = this.offscreenTexture.createView();
+
+    // ⚡ Bolt: Cache postBindGroup instead of recreating it every frame.
+    // It only needs to be updated when the offscreen texture is resized.
+    this.postBindGroup = this.device.createBindGroup({
+      layout: this.postPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: this.offscreenTextureView },
+        { binding: 1, resource: this.sampler },
+      ],
+    });
   }
 
   _calculatePassesAndResize(config, state) {
@@ -270,14 +282,6 @@ export class Renderer {
     const destTexture = this.context.getCurrentTexture();
     if (!destTexture) return false;
 
-    const postBindGroup = this.device.createBindGroup({
-      layout: this.postPipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: this.offscreenTextureView },
-        { binding: 1, resource: this.sampler },
-      ],
-    });
-
     const postPass = commandEncoder.beginRenderPass({
       colorAttachments: [
         {
@@ -289,8 +293,10 @@ export class Renderer {
       ],
     });
     postPass.setPipeline(this.postPipeline);
-    postPass.setBindGroup(0, postBindGroup);
-    postPass.draw(6);
+    if (this.postBindGroup) {
+      postPass.setBindGroup(0, this.postBindGroup);
+      postPass.draw(6);
+    }
     postPass.end();
 
     this.device.queue.submit([commandEncoder.finish()]);
