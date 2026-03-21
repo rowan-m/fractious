@@ -130,6 +130,12 @@ canvas:active {
   border-radius: 2px;
 }
 
+.stats input[readonly] {
+  cursor: default;
+  color: silver;
+  opacity: 0.8;
+}
+
 input[name="centerx"],
 input[name="centery"] {
   width: 17ch;
@@ -195,6 +201,7 @@ footer {
   user-select: none;
   text-decoration: none;
   outline: none;
+  cursor: pointer;
   transition:
     transform 0.1s ease,
     border-color 0.2s ease;
