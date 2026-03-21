@@ -1,0 +1,5 @@
+## 2024-03-21 - [MEDIUM] Fix missing input validation for high-precision Wasm coordinates
+
+**Vulnerability:** The application accepted raw strings for X and Y coordinates directly from the URL parameters (`?x=...&y=...`) and user inputs (`inputs.c_re`, `inputs.c_im`) without ensuring they were valid finite numeric strings before passing them down to the Rust/WebAssembly module.
+**Learning:** Because high-precision arithmetic relies on string representations to prevent JS `Number` precision loss (via `dashu`'s `DBig::from_str`), failing to strictly validate these string inputs before processing can lead to unpredictable application states, incorrect default parsing values, or potentially Denial-of-Service if the underlying parser handles arbitrarily large or malformed strings poorly.
+**Prevention:** Always validate URL parameters and string inputs intended for high-precision math by verifying they represent valid finite numbers (e.g., `!isNaN(parseFloat(val)) && isFinite(val)`) before they hit the Wasm boundary.

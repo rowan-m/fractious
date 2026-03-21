@@ -184,15 +184,25 @@ export class InteractionManager {
     const { inputs } = this.el;
 
     inputs.c_re.addEventListener("change", () => {
-      this.config.centerX = inputs.c_re.value;
-      this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
-      this.callbacks.onInteract(true);
+      const val = inputs.c_re.value;
+      if (!isNaN(parseFloat(val)) && isFinite(val)) {
+        this.config.centerX = val;
+        this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
+        this.callbacks.onInteract(true);
+      } else {
+        this.updateUI();
+      }
     });
 
     inputs.c_im.addEventListener("change", () => {
-      this.config.centerY = inputs.c_im.value;
-      this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
-      this.callbacks.onInteract(true);
+      const val = inputs.c_im.value;
+      if (!isNaN(parseFloat(val)) && isFinite(val)) {
+        this.config.centerY = val;
+        this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
+        this.callbacks.onInteract(true);
+      } else {
+        this.updateUI();
+      }
     });
 
     inputs.zoom.addEventListener("change", () => {
