@@ -17,3 +17,8 @@
 
 **Learning:** Interactive `<canvas>` elements lack semantic meaning for screen readers and default visual affordances for pointer users. Without a `role`, screen readers may ignore the canvas entirely or read generic content, and without a cursor change, users may not realize the surface is draggable.
 **Action:** Always add `role="img"` and a descriptive `aria-label` to interactive foreground `<canvas>` elements so they are announced as visual regions. Hide purely functional background canvases with `aria-hidden="true"`. Furthermore, apply `cursor: grab` and `cursor: grabbing` on `:active` to direct-manipulation surfaces to establish clear visual affordances for drag interactions.
+
+## 2026-03-20 - Disambiguating Identical Link Text
+
+**Learning:** Hiding decorative emojis with `aria-hidden="true"` inside links can inadvertently create ambiguous link text (multiple links on a page that read exactly the same, like "rowan.fyi") if those emojis were previously providing the visual context to distinguish them.
+**Action:** When multiple links share the same visible text (especially after hiding decorative emojis), apply a descriptive `aria-label` directly to the `<a>` tag (e.g., `aria-label="Bluesky profile rowan.fyi"`) to ensure the destinations are clearly distinct for screen reader users.
