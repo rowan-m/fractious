@@ -17,6 +17,7 @@ export class Renderer {
     this.postPipeline = null;
     this.sampler = null;
     this.bindGroup = null;
+    this.postBindGroup = null;
     this.uniformBuffer = null;
     this.referenceOrbitBuffer = null;
     this.referenceOrbitSize = 0;
@@ -153,6 +154,16 @@ export class Renderer {
         GPUTextureUsage.COPY_SRC,
     });
     this.offscreenTextureView = this.offscreenTexture.createView();
+
+    // ⚡ Bolt: Cache postBindGroup here rather than recreating per-pass.
+    // It only needs recreation when the offscreen texture is resized.
+    this.postBindGroup = this.device.createBindGroup({
+      layout: this.postPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: this.offscreenTextureView },
+        { binding: 1, resource: this.sampler },
+      ],
+    });
   }
 
   _calculatePassesAndResize(config, state) {
@@ -270,28 +281,22 @@ export class Renderer {
     const destTexture = this.context.getCurrentTexture();
     if (!destTexture) return false;
 
-    const postBindGroup = this.device.createBindGroup({
-      layout: this.postPipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: this.offscreenTextureView },
-        { binding: 1, resource: this.sampler },
-      ],
-    });
-
-    const postPass = commandEncoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: destTexture.createView(),
-          clearValue: { r: 0, g: 0, b: 0, a: 0 },
-          loadOp: "clear",
-          storeOp: "store",
-        },
-      ],
-    });
-    postPass.setPipeline(this.postPipeline);
-    postPass.setBindGroup(0, postBindGroup);
-    postPass.draw(6);
-    postPass.end();
+    if (this.postBindGroup) {
+      const postPass = commandEncoder.beginRenderPass({
+        colorAttachments: [
+          {
+            view: destTexture.createView(),
+            clearValue: { r: 0, g: 0, b: 0, a: 0 },
+            loadOp: "clear",
+            storeOp: "store",
+          },
+        ],
+      });
+      postPass.setPipeline(this.postPipeline);
+      postPass.setBindGroup(0, this.postBindGroup);
+      postPass.draw(6);
+      postPass.end();
+    }
 
     this.device.queue.submit([commandEncoder.finish()]);
     return true;
