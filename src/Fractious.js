@@ -68,8 +68,21 @@ export class Fractious {
   parseURL() {
     const params = new URLSearchParams(window.location.search);
 
-    if (params.has("x")) this.config.centerX = params.get("x");
-    if (params.has("y")) this.config.centerY = params.get("y");
+    // 🛡️ Sentinel: Validate URL parameters intended for high-precision arithmetic
+    // (stored as strings to avoid JS precision loss before passing to Wasm/Rust).
+    // Ensure they represent valid finite numeric strings before assignment.
+    if (params.has("x")) {
+      const val = params.get("x");
+      if (!isNaN(parseFloat(val)) && isFinite(val)) {
+        this.config.centerX = val;
+      }
+    }
+    if (params.has("y")) {
+      const val = params.get("y");
+      if (!isNaN(parseFloat(val)) && isFinite(val)) {
+        this.config.centerY = val;
+      }
+    }
 
     this.state.refX = this.config.centerX;
     this.state.refY = this.config.centerY;
