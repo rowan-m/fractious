@@ -68,28 +68,30 @@ export class Fractious {
   parseURL() {
     const params = new URLSearchParams(window.location.search);
 
-    if (params.has("x")) this.config.centerX = params.get("x");
-    if (params.has("y")) this.config.centerY = params.get("y");
+    const parseNumStr = (key, callback) => {
+      if (params.has(key)) {
+        const val = params.get(key);
+        if (!isNaN(parseFloat(val)) && isFinite(val)) callback(val);
+      }
+    };
+
+    const parseNum = (key, callback) => {
+      if (params.has(key)) {
+        const val = parseFloat(params.get(key));
+        if (!isNaN(val)) callback(val);
+      }
+    };
+
+    parseNumStr("x", (x) => (this.config.centerX = x));
+    parseNumStr("y", (y) => (this.config.centerY = y));
 
     this.state.refX = this.config.centerX;
     this.state.refY = this.config.centerY;
 
-    if (params.has("z")) {
-      const z = parseFloat(params.get("z"));
-      if (!isNaN(z)) this.config.zoom = Math.pow(10, -z);
-    }
-    if (params.has("r")) {
-      const r = parseFloat(params.get("r"));
-      if (!isNaN(r)) this.config.rotation = r;
-    }
-    if (params.has("h")) {
-      const h = parseFloat(params.get("h"));
-      if (!isNaN(h)) this.config.hue = h;
-    }
-    if (params.has("s")) {
-      const s = parseFloat(params.get("s"));
-      if (!isNaN(s)) this.config.hueStep = s;
-    }
+    parseNum("z", (z) => (this.config.zoom = Math.pow(10, -z)));
+    parseNum("r", (r) => (this.config.rotation = r));
+    parseNum("h", (h) => (this.config.hue = h));
+    parseNum("s", (s) => (this.config.hueStep = s));
 
     this.state.targetZoom = this.config.zoom;
 
