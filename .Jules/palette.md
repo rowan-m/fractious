@@ -22,3 +22,8 @@
 
 **Learning:** Hiding decorative emojis with `aria-hidden="true"` inside links can inadvertently create ambiguous link text (multiple links on a page that read exactly the same, like "rowan.fyi") if those emojis were previously providing the visual context to distinguish them.
 **Action:** When multiple links share the same visible text (especially after hiding decorative emojis), apply a descriptive `aria-label` directly to the `<a>` tag (e.g., `aria-label="Bluesky profile rowan.fyi"`) to ensure the destinations are clearly distinct for screen reader users.
+
+## 2026-03-24 - Interactive and Readonly Visual Affordances
+
+**Learning:** Missing `cursor: pointer` on unstyled custom interactive elements (like `.controls button`) leaves users without immediate visual feedback that they are clickable. Additionally, `readonly` input fields that visually look identical to editable fields (like `.stats input`) cause confusion when users try to type in them.
+**Action:** Always explicitly define `cursor: pointer` for custom interactive controls. To clearly communicate a non-editable state, visually distinguish `readonly` input fields from editable ones using styles such as `cursor: default`, lowered opacity, and distinct text color.

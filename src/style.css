@@ -125,6 +125,12 @@ canvas:active {
   max-width: 20vw;
 }
 
+.stats input[readonly] {
+  cursor: default;
+  opacity: 0.7;
+  color: silver;
+}
+
 .stats input:focus {
   outline: 1px solid rgba(255, 166, 0, 0.5);
   border-radius: 2px;
@@ -195,6 +201,7 @@ footer {
   user-select: none;
   text-decoration: none;
   outline: none;
+  cursor: pointer;
   transition:
     transform 0.1s ease,
     border-color 0.2s ease;
