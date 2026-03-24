@@ -163,9 +163,11 @@ export class Fractious {
 
     if (needsMorePasses && !this.state.isFrameScheduled) {
       this.state.isFrameScheduled = true;
-      this.renderer.onSubmittedWorkDone().then(() => {
-        requestAnimationFrame(this.frame);
-      });
+      // ⚡ Bolt: Removed this.renderer.onSubmittedWorkDone().then() wrapper
+      // to avoid forcing a CPU-GPU synchronization stall, allowing native
+      // browser pipelining for significantly higher frame throughput during
+      // progressive rendering.
+      requestAnimationFrame(this.frame);
     }
   }
 }
