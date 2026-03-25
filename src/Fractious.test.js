@@ -63,6 +63,7 @@ describe("Fractious URL parsing", () => {
       location: { search: "" },
       history: { replaceState: vi.fn() },
     });
+    vi.useFakeTimers();
 
     config.centerX = "2.0";
     config.centerY = "1.0";
@@ -72,11 +73,15 @@ describe("Fractious URL parsing", () => {
     config.hueStep = 0.1;
 
     fractious.updateURL();
+    expect(window.history.replaceState).not.toHaveBeenCalled();
+
+    vi.runAllTimers();
 
     expect(window.history.replaceState).toHaveBeenCalledWith(
       {},
       "",
       "?x=2.0&y=1.0&z=2.000&r=3.142&h=0.500&s=0.100",
     );
+    vi.useRealTimers();
   });
 });

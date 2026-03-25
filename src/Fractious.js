@@ -102,14 +102,17 @@ export class Fractious {
   }
 
   updateURL() {
-    const params = new URLSearchParams(window.location.search);
-    params.set("x", this.config.centerX);
-    params.set("y", this.config.centerY);
-    params.set("z", (-Math.log10(this.config.zoom)).toFixed(3));
-    params.set("r", this.config.rotation.toFixed(3));
-    params.set("h", this.config.hue.toFixed(3));
-    params.set("s", this.config.hueStep.toFixed(3));
-    window.history.replaceState({}, "", `?${params.toString()}`);
+    if (this._urlTimeout) clearTimeout(this._urlTimeout);
+    this._urlTimeout = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      params.set("x", this.config.centerX);
+      params.set("y", this.config.centerY);
+      params.set("z", (-Math.log10(this.config.zoom)).toFixed(3));
+      params.set("r", this.config.rotation.toFixed(3));
+      params.set("h", this.config.hue.toFixed(3));
+      params.set("s", this.config.hueStep.toFixed(3));
+      window.history.replaceState({}, "", `?${params.toString()}`);
+    }, 250);
   }
 
   updateReference() {
