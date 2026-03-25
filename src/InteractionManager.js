@@ -116,8 +116,11 @@ export class InteractionManager {
   }
 
   handlePointerMove(e) {
-    if (!this.state.pointers.has(e.pointerId)) return;
-    this.state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const pointer = this.state.pointers.get(e.pointerId);
+    if (!pointer) return;
+
+    pointer.x = e.clientX;
+    pointer.y = e.clientY;
 
     const heightComplex = 2.0 * this.config.zoom;
     const scaleY = heightComplex / this.el.canvas.clientHeight;
