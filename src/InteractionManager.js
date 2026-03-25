@@ -229,84 +229,84 @@ export class InteractionManager {
     });
   }
 
-  bindButtonEvents() {
+  _bindBtn(id, action) {
+    const btn = document.getElementById(id);
+    if (btn) btn.onclick = action;
+  }
+
+  _moveView(shiftX, shiftY) {
+    const c = Math.cos(this.config.rotation);
+    const s = Math.sin(this.config.rotation);
+    const dx = shiftX * c - shiftY * s;
+    const dy = shiftX * s + shiftY * c;
+
+    this.config.centerX = add_coord(this.config.centerX, dx.toString());
+    this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
+    this.config.centerY = add_coord(this.config.centerY, dy.toString());
+    this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
+    this.callbacks.onInteract(true);
+  }
+
+  _bindNavigationButtons() {
     const moveStep = 0.1;
-
-    const moveView = (shiftX, shiftY) => {
-      const c = Math.cos(this.config.rotation);
-      const s = Math.sin(this.config.rotation);
-      const dx = shiftX * c - shiftY * s;
-      const dy = shiftX * s + shiftY * c;
-
-      this.config.centerX = add_coord(this.config.centerX, dx.toString());
-      this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
-      this.config.centerY = add_coord(this.config.centerY, dy.toString());
-      this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
-      this.callbacks.onInteract(true);
-    };
-
     const aspect = () => this.el.canvas.width / this.el.canvas.height;
 
-    const buttonActions = {
-      "btn-up": () => moveView(0, moveStep * this.config.zoom),
-      "btn-down": () => moveView(0, -moveStep * this.config.zoom),
-      "btn-left": () => moveView(-moveStep * this.config.zoom * aspect(), 0),
-      "btn-right": () => moveView(moveStep * this.config.zoom * aspect(), 0),
-      "btn-zoom-in": () => {
-        this.state.targetZoom /= 1.5;
-        this.callbacks.onInteract(true);
-      },
-      "btn-zoom-out": () => {
-        this.state.targetZoom *= 1.5;
-        this.callbacks.onInteract(true);
-      },
-      "btn-rotate-cw": () => {
-        this.config.rotation += Math.PI / 12;
-        this.callbacks.onInteract(false);
-      },
-      "btn-rotate-ccw": () => {
-        this.config.rotation -= Math.PI / 12;
-        this.callbacks.onInteract(false);
-      },
-      "btn-cycle-in": () => {
-        this.config.hueStep += 0.05;
-        this.callbacks.onInteract(false);
-      },
-      "btn-cycle-out": () => {
-        this.config.hueStep -= 0.05;
-        this.callbacks.onInteract(false);
-      },
-      "btn-hue-left": () => {
-        this.config.hue -= 0.05;
-        this.callbacks.onInteract(false);
-      },
-      "btn-hue-right": () => {
-        this.config.hue += 0.05;
-        this.callbacks.onInteract(false);
-      },
-      "btn-screenshot": () => {
-        this.callbacks.onScreenshotRequest();
-      },
-    };
+    this._bindBtn("btn-up", () =>
+      this._moveView(0, moveStep * this.config.zoom),
+    );
+    this._bindBtn("btn-down", () =>
+      this._moveView(0, -moveStep * this.config.zoom),
+    );
+    this._bindBtn("btn-left", () =>
+      this._moveView(-moveStep * this.config.zoom * aspect(), 0),
+    );
+    this._bindBtn("btn-right", () =>
+      this._moveView(moveStep * this.config.zoom * aspect(), 0),
+    );
+  }
 
-    const bindBtn = (id, action) => {
-      const btn = document.getElementById(id);
-      if (btn) btn.onclick = action;
-    };
+  _bindTransformButtons() {
+    this._bindBtn("btn-zoom-in", () => {
+      this.state.targetZoom /= 1.5;
+      this.callbacks.onInteract(true);
+    });
+    this._bindBtn("btn-zoom-out", () => {
+      this.state.targetZoom *= 1.5;
+      this.callbacks.onInteract(true);
+    });
+    this._bindBtn("btn-rotate-cw", () => {
+      this.config.rotation += Math.PI / 12;
+      this.callbacks.onInteract(false);
+    });
+    this._bindBtn("btn-rotate-ccw", () => {
+      this.config.rotation -= Math.PI / 12;
+      this.callbacks.onInteract(false);
+    });
+  }
 
-    bindBtn("btn-up", buttonActions["btn-up"]);
-    bindBtn("btn-down", buttonActions["btn-down"]);
-    bindBtn("btn-left", buttonActions["btn-left"]);
-    bindBtn("btn-right", buttonActions["btn-right"]);
-    bindBtn("btn-zoom-in", buttonActions["btn-zoom-in"]);
-    bindBtn("btn-zoom-out", buttonActions["btn-zoom-out"]);
-    bindBtn("btn-rotate-cw", buttonActions["btn-rotate-cw"]);
-    bindBtn("btn-rotate-ccw", buttonActions["btn-rotate-ccw"]);
-    bindBtn("btn-cycle-in", buttonActions["btn-cycle-in"]);
-    bindBtn("btn-cycle-out", buttonActions["btn-cycle-out"]);
-    bindBtn("btn-hue-left", buttonActions["btn-hue-left"]);
-    bindBtn("btn-hue-right", buttonActions["btn-hue-right"]);
-    bindBtn("btn-screenshot", buttonActions["btn-screenshot"]);
+  _bindColorButtons() {
+    this._bindBtn("btn-cycle-in", () => {
+      this.config.hueStep += 0.05;
+      this.callbacks.onInteract(false);
+    });
+    this._bindBtn("btn-cycle-out", () => {
+      this.config.hueStep -= 0.05;
+      this.callbacks.onInteract(false);
+    });
+    this._bindBtn("btn-hue-left", () => {
+      this.config.hue -= 0.05;
+      this.callbacks.onInteract(false);
+    });
+    this._bindBtn("btn-hue-right", () => {
+      this.config.hue += 0.05;
+      this.callbacks.onInteract(false);
+    });
+  }
+
+  _bindUtilityButtons() {
+    this._bindBtn("btn-screenshot", () => {
+      this.callbacks.onScreenshotRequest();
+    });
 
     const btnFullscreen = document.getElementById("btn-fullscreen");
     if (btnFullscreen) {
@@ -325,5 +325,12 @@ export class InteractionManager {
         }
       });
     }
+  }
+
+  bindButtonEvents() {
+    this._bindNavigationButtons();
+    this._bindTransformButtons();
+    this._bindColorButtons();
+    this._bindUtilityButtons();
   }
 }
