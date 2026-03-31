@@ -123,7 +123,7 @@ export class InteractionManager {
     pointer.y = e.clientY;
 
     const heightComplex = 2.0 * this.config.zoom;
-    const scaleY = heightComplex / this.el.canvas.clientHeight;
+    const scaleY = heightComplex / this.state.height;
 
     if (this.state.pointers.size === 2) {
       this._handlePinchZoom(scaleY);
