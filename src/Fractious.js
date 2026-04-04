@@ -66,7 +66,8 @@ export class Fractious {
   }
 
   parseURL() {
-    const params = new URLSearchParams(window.location.search);
+    this._urlParams = new URLSearchParams(window.location.search);
+    const params = this._urlParams;
 
     const parseNumStr = (key, callback) => {
       if (params.has(key)) {
@@ -102,7 +103,11 @@ export class Fractious {
   }
 
   updateURL() {
-    const params = new URLSearchParams(window.location.search);
+    // ⚡ Bolt: Reuse URLSearchParams object to avoid redundant parsing and garbage collection.
+    if (!this._urlParams) {
+      this._urlParams = new URLSearchParams(window.location.search);
+    }
+    const params = this._urlParams;
     params.set("x", this.config.centerX);
     params.set("y", this.config.centerY);
     params.set("z", (-Math.log10(this.config.zoom)).toFixed(3));
