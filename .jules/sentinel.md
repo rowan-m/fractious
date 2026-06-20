@@ -1,5 +1,0 @@
-## 2024-05-24 - Validate URL parameters for high-precision arithmetic
-
-**Vulnerability:** URL parameters intended for high-precision arithmetic (`x` and `y` coordinates) were being parsed and passed down to Rust/WebAssembly directly without any validation. Because high precision inputs are stored as strings (to prevent precision loss in JavaScript), they bypass standard JavaScript numeric type coercion until they reach the `dashu` arbitrary-precision crate in Rust.
-**Learning:** `DBig::from_str` defaults to zero for invalid strings. So passing invalid strings (like "1.23foo") causes the Rust code to unexpectedly use 0 for computations, leading to an inconsistent visualization state where the front-end string mismatch the actual computation.
-**Prevention:** Validate string coordinates extracted from URLs using `!isNaN(parseFloat(val)) && isFinite(val)` _before_ assigning them to application state or passing them into the WebAssembly layer. This ensures they represent valid finite numeric strings.
