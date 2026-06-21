@@ -23,7 +23,7 @@ export class Renderer {
     this.referenceOrbitSize = 0;
     this.offscreenTexture = null;
     this.offscreenTextureView = null;
-    this.uniformBufferSize = 32;
+    this.uniformBufferSize = 40;
     this.uniformData = new ArrayBuffer(this.uniformBufferSize);
     this.uniformDataView = new DataView(this.uniformData);
   }
@@ -217,14 +217,22 @@ export class Renderer {
     const aspect = this.canvas.width / this.canvas.height;
     const dv = this.uniformDataView;
 
-    dv.setFloat32(0, state.offsetX, true);
-    dv.setFloat32(4, state.offsetY, true);
-    dv.setFloat32(8, config.zoom, true);
-    dv.setFloat32(12, aspect, true);
-    dv.setUint32(16, config.iter, true);
-    dv.setFloat32(20, config.hue, true);
-    dv.setFloat32(24, config.hueStep, true);
-    dv.setFloat32(28, config.rotation, true);
+    const fround = Math.fround;
+    const hx = fround(state.offsetX);
+    const lx = state.offsetX - hx;
+    const hy = fround(state.offsetY);
+    const ly = state.offsetY - hy;
+
+    dv.setFloat32(0, hx, true);
+    dv.setFloat32(4, hy, true);
+    dv.setFloat32(8, lx, true);
+    dv.setFloat32(12, ly, true);
+    dv.setFloat32(16, config.zoom, true);
+    dv.setFloat32(20, aspect, true);
+    dv.setUint32(24, config.iter, true);
+    dv.setFloat32(28, config.hue, true);
+    dv.setFloat32(32, config.hueStep, true);
+    dv.setFloat32(36, config.rotation, true);
 
     this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);
   }

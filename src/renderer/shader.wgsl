@@ -1,5 +1,6 @@
 struct Uniforms {
-  center: vec2<f32>,
+  center_high: vec2<f32>,
+  center_low: vec2<f32>,
   zoom: f32,
   aspect_ratio: f32,
   iter: u32,
@@ -57,7 +58,7 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
       c_delta.x * sin_r + c_delta.y * cos_r
   );
 
-  c_delta = rotated * uniforms.zoom + uniforms.center; // This is delta_0
+  c_delta = rotated * uniforms.zoom + uniforms.center_high + uniforms.center_low; // This is delta_0
   
   var delta = vec2<f32>(0.0, 0.0);
   
