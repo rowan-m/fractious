@@ -23,7 +23,7 @@ export class Renderer {
     this.referenceOrbitSize = 0;
     this.offscreenTexture = null;
     this.offscreenTextureView = null;
-    this.uniformBufferSize = 40;
+    this.uniformBufferSize = 64;
     this.uniformData = new ArrayBuffer(this.uniformBufferSize);
     this.uniformDataView = new DataView(this.uniformData);
   }
@@ -61,7 +61,7 @@ export class Renderer {
     });
 
     // initial minimal size, will be updated when orbit arrives
-    this.referenceOrbitSize = 200 * 2 * 4;
+    this.referenceOrbitSize = 200 * 8 * 4;
     this.referenceOrbitBuffer = this.device.createBuffer({
       size: Math.max(this.referenceOrbitSize, 16),
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
@@ -217,22 +217,37 @@ export class Renderer {
     const aspect = this.canvas.width / this.canvas.height;
     const dv = this.uniformDataView;
 
-    const fround = Math.fround;
-    const hx = fround(state.offsetX);
-    const lx = state.offsetX - hx;
-    const hy = fround(state.offsetY);
-    const ly = state.offsetY - hy;
+    const splitF64To4F32 = (val) => {
+      const fround = Math.fround;
+      const part0 = fround(val);
+      const r1 = val - part0;
+      const part1 = fround(r1);
+      const r2 = r1 - part1;
+      const part2 = fround(r2);
+      const r3 = r2 - part2;
+      const part3 = fround(r3);
+      return [part0, part1, part2, part3];
+    };
 
-    dv.setFloat32(0, hx, true);
-    dv.setFloat32(4, hy, true);
-    dv.setFloat32(8, lx, true);
-    dv.setFloat32(12, ly, true);
-    dv.setFloat32(16, config.zoom, true);
-    dv.setFloat32(20, aspect, true);
-    dv.setUint32(24, config.iter, true);
-    dv.setFloat32(28, config.hue, true);
-    dv.setFloat32(32, config.hueStep, true);
-    dv.setFloat32(36, config.rotation, true);
+    const splitX = splitF64To4F32(state.offsetX);
+    const splitY = splitF64To4F32(state.offsetY);
+
+    dv.setFloat32(0, splitX[0], true);
+    dv.setFloat32(4, splitY[0], true);
+    dv.setFloat32(8, splitX[1], true);
+    dv.setFloat32(12, splitY[1], true);
+    dv.setFloat32(16, splitX[2], true);
+    dv.setFloat32(20, splitY[2], true);
+    dv.setFloat32(24, splitX[3], true);
+    dv.setFloat32(28, splitY[3], true);
+    dv.setFloat32(32, config.zoom, true);
+    dv.setFloat32(36, aspect, true);
+    dv.setUint32(40, config.iter, true);
+    dv.setFloat32(44, config.hue, true);
+    dv.setFloat32(48, config.hueStep, true);
+    dv.setFloat32(52, config.rotation, true);
+    dv.setFloat32(56, 0.0, true);
+    dv.setFloat32(60, 0.0, true);
 
     this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);
   }
