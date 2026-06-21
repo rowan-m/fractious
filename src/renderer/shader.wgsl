@@ -1,3 +1,47 @@
+struct ds_complex {
+  re: vec2<f32>, // high, low
+  im: vec2<f32>, // high, low
+};
+
+fn ds_add(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    let s = a.x + b.x;
+    let v = s - a.x;
+    let e = (a.x - (s - v)) + (b.x - v) + a.y + b.y;
+    let high = s + e;
+    let low = e - (high - s);
+    return vec2<f32>(high, low);
+}
+
+fn ds_sub(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    let s = a.x - b.x;
+    let v = s - a.x;
+    let e = (a.x - (s - v)) - (b.x + v) + a.y - b.y;
+    let high = s + e;
+    let low = e - (high - s);
+    return vec2<f32>(high, low);
+}
+
+fn ds_mul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    let p = a.x * b.x;
+    let err = fma(a.x, b.x, -p);
+    let low = err + (a.x * b.y + a.y * b.x);
+    let high = p + low;
+    let low2 = low - (high - p);
+    return vec2<f32>(high, low2);
+}
+
+fn dc_add(a: ds_complex, b: ds_complex) -> ds_complex {
+    return ds_complex(ds_add(a.re, b.re), ds_add(a.im, b.im));
+}
+
+fn dc_mul(a: ds_complex, b: ds_complex) -> ds_complex {
+    let re_term1 = ds_mul(a.re, b.re);
+    let re_term2 = ds_mul(a.im, b.im);
+    let im_term1 = ds_mul(a.re, b.im);
+    let im_term2 = ds_mul(a.im, b.re);
+    return ds_complex(ds_sub(re_term1, re_term2), ds_add(im_term1, im_term2));
+}
+
 struct Uniforms {
   center_high: vec2<f32>,
   center_low: vec2<f32>,
@@ -58,39 +102,52 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
       c_delta.x * sin_r + c_delta.y * cos_r
   );
 
-  c_delta = rotated * uniforms.zoom + uniforms.center_high + uniforms.center_low; // This is delta_0
+  let center_x_ds = vec2<f32>(uniforms.center_high.x, uniforms.center_low.x);
+  let center_y_ds = vec2<f32>(uniforms.center_high.y, uniforms.center_low.y);
   
-  var delta = vec2<f32>(0.0, 0.0);
+  let c_delta_re = ds_add(center_x_ds, vec2<f32>(rotated.x * uniforms.zoom, 0.0));
+  let c_delta_im = ds_add(center_y_ds, vec2<f32>(rotated.y * uniforms.zoom, 0.0));
+  
+  let c_delta_ds = ds_complex(c_delta_re, c_delta_im);
+  
+  var delta = ds_complex(vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0));
   
   var i: u32 = 0u;
   var zn_sq: f32 = 0.0;
-  var zn = vec2<f32>(0.0, 0.0);
+  var zn = ds_complex(vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0));
 
   loop {
     if (i >= uniforms.iter) { break; }
     
     // Load Xn (Reference)
     let raw_xn = reference_orbit[i]; 
-    let xn = vec2<f32>(raw_xn.x, raw_xn.z);
+    let xn = ds_complex(
+      vec2<f32>(raw_xn.x, raw_xn.y),
+      vec2<f32>(raw_xn.z, raw_xn.w)
+    );
     
     // delta_{n+1} = 2 X_n delta_n + delta_n^2 + delta_0
-    let two_xn_delta = 2.0 * vec2<f32>(
-      xn.x * delta.x - xn.y * delta.y,
-      xn.x * delta.y + xn.y * delta.x
-    );
+    let two = ds_complex(vec2<f32>(2.0, 0.0), vec2<f32>(0.0, 0.0));
+    let two_xn = dc_mul(two, xn);
+    let two_xn_delta = dc_mul(two_xn, delta);
     
-    let delta_sq = vec2<f32>(
-        delta.x * delta.x - delta.y * delta.y,
-        2.0 * delta.x * delta.y
-    );
+    let delta_sq = dc_mul(delta, delta);
     
-    delta = two_xn_delta + delta_sq + c_delta;
+    delta = dc_add(dc_add(two_xn_delta, delta_sq), c_delta_ds);
     
     let next_i = i + 1u;
     let raw_xn_next = reference_orbit[next_i];
-    let xn_next = vec2<f32>(raw_xn_next.x, raw_xn_next.z);
-    zn = xn_next + delta;
-    zn_sq = dot(zn, zn);
+    let xn_next = ds_complex(
+      vec2<f32>(raw_xn_next.x, raw_xn_next.y),
+      vec2<f32>(raw_xn_next.z, raw_xn_next.w)
+    );
+    zn = dc_add(xn_next, delta);
+    
+    let zn_re_sq = ds_mul(zn.re, zn.re);
+    let zn_im_sq = ds_mul(zn.im, zn.im);
+    let zn_sq_ds = ds_add(zn_re_sq, zn_im_sq);
+    zn_sq = zn_sq_ds.x;
+    
     if (zn_sq > 4.0) {
         i = next_i; 
         break;
@@ -103,22 +160,17 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     return vec4<f32>(0.0, 0.0, 0.0, 1.0);
   }
   
-  // Replicating reference logic:
-  // co = sqrt(max(0.0, co) / 256.0) * huestep;
   let raw_co = f32(i) + 1.0 - log2(max(1.0, log2(zn_sq)));
   let co = sqrt(max(0.0, raw_co) / 256.0) * uniforms.huestep;
   
   var hsv: vec3<f32>;
-  // hue + 1.0 + sin(6.2831*co)/2.0
   hsv.x = fract(uniforms.hue + 1.0 + sin(6.2831 * co) * 0.5);
-  // .25 + .6*(sin(6.2831*co) + 1.0)/2.0
   hsv.y = 0.25 + 0.6 * (sin(6.2831 * co) + 1.0) * 0.5;
-  // .1 + .85*(sin(6.2831*co*1.2) + 1.0)/2.0
   hsv.z = 0.1 + 0.85 * (sin(6.2831 * co * 1.2) + 1.0) * 0.5;
   
   let col = hsv2rgb(hsv);
   
-  let falloff = 0.996 + 0.06 * rand(uv + vec2<f32>(zn.y, zn.x));
+  let falloff = 0.996 + 0.06 * rand(uv + vec2<f32>(zn.im.x, zn.re.x));
 
   return vec4<f32>(col * falloff, 1.0);
 }
