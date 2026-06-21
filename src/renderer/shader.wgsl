@@ -42,6 +42,13 @@ fn dc_mul(a: ds_complex, b: ds_complex) -> ds_complex {
     return ds_complex(ds_sub(re_term1, re_term2), ds_add(im_term1, im_term2));
 }
 
+fn dc_sq(a: ds_complex) -> ds_complex {
+    let re_term1 = ds_mul(a.re, a.re);
+    let re_term2 = ds_mul(a.im, a.im);
+    let im_term = ds_mul(a.re, a.im);
+    return ds_complex(ds_sub(re_term1, re_term2), im_term * 2.0);
+}
+
 struct Uniforms {
   center_high: vec2<f32>,
   center_low: vec2<f32>,
@@ -114,7 +121,7 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   
   var i: u32 = 0u;
   var zn_sq: f32 = 0.0;
-  var zn = ds_complex(vec2<f32>(0.0, 0.0), vec2<f32>(0.0, 0.0));
+  var zn_sp = vec2<f32>(0.0, 0.0);
 
   loop {
     if (i >= uniforms.iter) { break; }
@@ -127,28 +134,23 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     );
     
     // delta_{n+1} = 2 X_n delta_n + delta_n^2 + delta_0
-    let two = ds_complex(vec2<f32>(2.0, 0.0), vec2<f32>(0.0, 0.0));
-    let two_xn = dc_mul(two, xn);
-    let two_xn_delta = dc_mul(two_xn, delta);
+    let xn_delta = dc_mul(xn, delta);
+    let two_xn_delta = ds_complex(xn_delta.re * 2.0, xn_delta.im * 2.0);
     
-    let delta_sq = dc_mul(delta, delta);
+    let delta_sq = dc_sq(delta);
     
     delta = dc_add(dc_add(two_xn_delta, delta_sq), c_delta_ds);
     
     let next_i = i + 1u;
     let raw_xn_next = reference_orbit[next_i];
-    let xn_next = ds_complex(
-      vec2<f32>(raw_xn_next.x, raw_xn_next.y),
-      vec2<f32>(raw_xn_next.z, raw_xn_next.w)
-    );
-    zn = dc_add(xn_next, delta);
     
-    let zn_re_sq = ds_mul(zn.re, zn.re);
-    let zn_im_sq = ds_mul(zn.im, zn.im);
-    let zn_sq_ds = ds_add(zn_re_sq, zn_im_sq);
-    zn_sq = zn_sq_ds.x;
+    // Compute zn in single precision for escape check & coloring
+    let zn_re = raw_xn_next.x + delta.re.x;
+    let zn_im = raw_xn_next.z + delta.im.x;
+    zn_sq = zn_re * zn_re + zn_im * zn_im;
     
     if (zn_sq > 4.0) {
+        zn_sp = vec2<f32>(zn_re, zn_im);
         i = next_i; 
         break;
     }
@@ -170,7 +172,7 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   
   let col = hsv2rgb(hsv);
   
-  let falloff = 0.996 + 0.06 * rand(uv + vec2<f32>(zn.im.x, zn.re.x));
+  let falloff = 0.996 + 0.06 * rand(uv + vec2<f32>(zn_sp.y, zn_sp.x));
 
   return vec4<f32>(col * falloff, 1.0);
 }
