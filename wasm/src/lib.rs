@@ -38,6 +38,12 @@ fn is_aborted(abort_flag: &Option<js_sys::Int32Array>) -> bool {
     false
 }
 
+fn split_f64_to_f32(val: f64) -> (f32, f32) {
+    let high = val as f32;
+    let low = (val - (high as f64)) as f32;
+    (high, low)
+}
+
 #[wasm_bindgen]
 pub fn calculate_reference(
     c_re_str: String,
@@ -63,7 +69,7 @@ pub fn calculate_reference(
 
     // ⚡ Bolt: Pre-allocate with resize to avoid repeated bounds checking and
     // potential reallocation overhead from push() inside the hot loop.
-    let required_len = (max_iter as usize + 1) * 2;
+    let required_len = (max_iter as usize + 1) * 4;
     let mut orbit = vec![0.0; required_len];
 
     // Constant 4.0 and 2.0
@@ -78,9 +84,14 @@ pub fn calculate_reference(
         let zx_f64 = zx.to_f64().value();
         let zy_f64 = zy.to_f64().value();
 
-        let idx = (iter_idx as usize) * 2;
-        orbit[idx] = zx_f64 as f32;
-        orbit[idx + 1] = zy_f64 as f32;
+        let (zx_high, zx_low) = split_f64_to_f32(zx_f64);
+        let (zy_high, zy_low) = split_f64_to_f32(zy_f64);
+
+        let idx = (iter_idx as usize) * 4;
+        orbit[idx] = zx_high;
+        orbit[idx + 1] = zx_low;
+        orbit[idx + 2] = zy_high;
+        orbit[idx + 3] = zy_low;
 
         let zx2 = (&zx * &zx).with_precision(prec).value();
         let zy2 = (&zy * &zy).with_precision(prec).value();
@@ -274,8 +285,8 @@ mod tests {
     #[wasm_bindgen_test]
     fn test_calculate_reference_origin() {
         let result = calculate_reference("0.0".to_string(), "0.0".to_string(), 2, 53, None);
-        // max_iter = 2 -> required_len = (2 + 1) * 2 = 6
-        assert_eq!(result, vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+        // max_iter = 2 -> required_len = (2 + 1) * 4 = 12
+        assert_eq!(result, vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
     }
 
     #[wasm_bindgen_test]
@@ -283,8 +294,9 @@ mod tests {
         let result = calculate_reference("3.0".to_string(), "0.0".to_string(), 2, 53, None);
         // Iter 0: z=0,0 -> pushed 0,0. New z = 3,0
         // Iter 1: z=3,0 -> pushed 3,0. (3^2 + 0^2 > 4) -> breaks
-        // Required len is 6, so pads with 0,0 until len 6
-        assert_eq!(result, vec![0.0, 0.0, 3.0, 0.0, 0.0, 0.0]);
+        // Required len is 12, so pads with 0,0 until len 12
+        // zx_high=3, zx_low=0, zy_high=0, zy_low=0
+        assert_eq!(result, vec![0.0, 0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
     }
 
     #[wasm_bindgen_test]
@@ -295,16 +307,22 @@ mod tests {
         // Iter 1: z = (-1, 0) -> pushed -1, 0. z_new = (-1)^2+c = (1,0) + (-1,0) = (0, 0)
         // Iter 2: z = (0, 0) -> pushed 0, 0. z_new = (0)^2+c = (-1, 0)
         // Iter 3: z = (-1, 0) -> pushed -1, 0. z_new = (-1)^2+c = (0, 0)
-        // max_iter = 3 -> required_len = 8
-        assert_eq!(result, vec![0.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0, 0.0]);
+        // max_iter = 3 -> required_len = 16
+        // Vec structure for each iteration: [zx_high, zx_low, zy_high, zy_low]
+        assert_eq!(result, vec![
+            0.0, 0.0, 0.0, 0.0,
+            -1.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0,
+            -1.0, 0.0, 0.0, 0.0
+        ]);
     }
 
     #[wasm_bindgen_test]
     fn test_calculate_reference_invalid_input() {
         // We pass "invalid" so it defaults to 0.0 but we must pass precision > 0
         let result = calculate_reference("invalid".to_string(), "invalid".to_string(), 2, 53, None);
-        // Should fall back to 0.0
-        assert_eq!(result, vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+        // Should fall back to 0.0, which spans (2 + 1) * 4 = 12 elements
+        assert_eq!(result, vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
     }
 
     #[wasm_bindgen_test]

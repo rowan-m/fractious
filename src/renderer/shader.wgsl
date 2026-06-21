@@ -9,7 +9,7 @@ struct Uniforms {
 };
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-@group(0) @binding(1) var<storage, read> reference_orbit: array<vec2<f32>>; // Passed as interleaved f32 (Real, Imag)
+@group(0) @binding(1) var<storage, read> reference_orbit: array<vec4<f32>>; // Passed as interleaved f32 (Real High, Real Low, Imag High, Imag Low)
 
 struct VertexOutput {
   @builtin(position) position: vec4<f32>,
@@ -69,7 +69,8 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     if (i >= uniforms.iter) { break; }
     
     // Load Xn (Reference)
-    let xn = reference_orbit[i]; 
+    let raw_xn = reference_orbit[i]; 
+    let xn = vec2<f32>(raw_xn.x, raw_xn.z);
     
     // delta_{n+1} = 2 X_n delta_n + delta_n^2 + delta_0
     let two_xn_delta = 2.0 * vec2<f32>(
@@ -85,7 +86,8 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     delta = two_xn_delta + delta_sq + c_delta;
     
     let next_i = i + 1u;
-    let xn_next = reference_orbit[next_i];
+    let raw_xn_next = reference_orbit[next_i];
+    let xn_next = vec2<f32>(raw_xn_next.x, raw_xn_next.z);
     zn = xn_next + delta;
     zn_sq = dot(zn, zn);
     if (zn_sq > 4.0) {
