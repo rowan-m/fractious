@@ -89,8 +89,8 @@ export default {
       severity: 'error',
       comment:
         'Web workers must not import DOM-dependent UI or Renderer modules.',
-      from: {path: '^src/worker\\.js$'},
-      to: {path: '^src/(Renderer|InteractionManager|main)\\.js$'},
+      from: { path: '^src/worker\\.js$' },
+      to: { path: '^src/(Renderer|InteractionManager|main)\\.js$' },
     },
     {
       name: 'no-dev-dependencies',
@@ -101,7 +101,7 @@ export default {
         pathNot:
           '\\.(spec|test)\\.(js|mjs|cjs|ts|ls|coffee|litcoffee|coffee\\.md)$',
       },
-      to: {dependencyTypes: ['npm-dev']},
+      to: { dependencyTypes: ['npm-dev'] },
     },
   ],
   options: {

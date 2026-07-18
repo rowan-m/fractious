@@ -1,8 +1,8 @@
-import {createDefaultConfig, createDefaultState} from './State.js';
-import {Renderer} from './Renderer.js';
-import {WorkerManager} from './WorkerManager.js';
-import {InteractionManager} from './InteractionManager.js';
-import {Fractious} from './Fractious.js';
+import { createDefaultConfig, createDefaultState } from './State.js';
+import { Renderer } from './Renderer.js';
+import { WorkerManager } from './WorkerManager.js';
+import { InteractionManager } from './InteractionManager.js';
+import { Fractious } from './Fractious.js';
 import './style.css';
 
 const config = createDefaultConfig();

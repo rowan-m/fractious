@@ -15,7 +15,7 @@ export default [
       },
     },
     rules: {
-      'sonarjs/no-duplicate-string': ['error', {threshold: 5}],
+      'sonarjs/no-duplicate-string': ['error', { threshold: 5 }],
       'sonarjs/cognitive-complexity': ['error', 15],
       'sonarjs/no-identical-functions': 'error',
       'sonarjs/no-inverted-boolean-check': 'error',

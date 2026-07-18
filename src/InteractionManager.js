@@ -1,4 +1,4 @@
-import {add_coord, sub_coord} from '../wasm/pkg/fractious_lib.js';
+import { add_coord, sub_coord } from '../wasm/pkg/fractious_lib.js';
 
 export class InteractionManager {
   constructor(elements, config, state, callbacks) {
@@ -20,7 +20,7 @@ export class InteractionManager {
   }
 
   updateUI() {
-    const {inputs} = this.el;
+    const { inputs } = this.el;
 
     this._setVal(inputs.c_re, this.config.centerX);
     this._setVal(inputs.c_im, this.config.centerY);
@@ -47,7 +47,7 @@ export class InteractionManager {
   }
 
   handlePointerDown(e) {
-    this.state.pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
+    this.state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     this.el.canvas.setPointerCapture(e.pointerId);
 
     if (this.state.pointers.size === 1) {
@@ -164,7 +164,7 @@ export class InteractionManager {
   }
 
   bindEvents() {
-    const {canvas} = this.el;
+    const { canvas } = this.el;
 
     const observer = new ResizeObserver(() => {
       this.callbacks.onResize();
@@ -177,14 +177,14 @@ export class InteractionManager {
     ['pointerup', 'pointercancel', 'pointerout', 'pointerleave'].forEach(e =>
       canvas.addEventListener(e, this.handlePointerUp)
     );
-    canvas.addEventListener('wheel', this.handleWheel, {passive: false});
+    canvas.addEventListener('wheel', this.handleWheel, { passive: false });
 
     this.bindInputEvents();
     this.bindButtonEvents();
   }
 
   bindInputEvents() {
-    const {inputs} = this.el;
+    const { inputs } = this.el;
 
     inputs.c_re.addEventListener('change', () => {
       this.config.centerX = inputs.c_re.value;

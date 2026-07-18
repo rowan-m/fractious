@@ -1,4 +1,4 @@
-import init, {init_hooks, sub_coord} from '../wasm/pkg/fractious_lib.js';
+import init, { init_hooks, sub_coord } from '../wasm/pkg/fractious_lib.js';
 
 export class Fractious {
   constructor(config, state, renderer, workerManager, interactionManager) {

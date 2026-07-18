@@ -1,5 +1,5 @@
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {InteractionManager} from './InteractionManager.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { InteractionManager } from './InteractionManager.js';
 
 vi.mock('../wasm/pkg/fractious_lib.js', () => ({
   add_coord: vi.fn(),
@@ -27,13 +27,13 @@ describe('InteractionManager updateUI', () => {
 
     elements = {
       inputs: {
-        c_re: {value: ''},
-        c_im: {value: ''},
-        zoom: {value: ''},
-        rotation: {value: ''},
-        iterations: {value: ''},
-        hue: {value: ''},
-        hueStep: {value: ''},
+        c_re: { value: '' },
+        c_im: { value: '' },
+        zoom: { value: '' },
+        rotation: { value: '' },
+        iterations: { value: '' },
+        hue: { value: '' },
+        hueStep: { value: '' },
       },
     };
 
@@ -44,7 +44,7 @@ describe('InteractionManager updateUI', () => {
     };
 
     // Stub document to simulate active element
-    vi.stubGlobal('document', {activeElement: null});
+    vi.stubGlobal('document', { activeElement: null });
 
     interactionManager = new InteractionManager(
       elements,
@@ -72,7 +72,7 @@ describe('InteractionManager updateUI', () => {
 
   it('should not update UI input value if it is the active element', () => {
     // Make c_re the active element
-    vi.stubGlobal('document', {activeElement: elements.inputs.c_re});
+    vi.stubGlobal('document', { activeElement: elements.inputs.c_re });
     elements.inputs.c_re.value = 'user_typing';
 
     interactionManager.updateUI();

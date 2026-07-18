@@ -67,30 +67,30 @@ export class Renderer {
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
 
-    const module = this.device.createShaderModule({code: shaderCode});
+    const module = this.device.createShaderModule({ code: shaderCode });
 
     this.pipeline = this.device.createRenderPipeline({
       layout: 'auto',
-      vertex: {module, entryPoint: 'vs_main'},
+      vertex: { module, entryPoint: 'vs_main' },
       fragment: {
         module,
         entryPoint: 'fs_main',
-        targets: [{format: this.format}],
+        targets: [{ format: this.format }],
       },
-      primitive: {topology: 'triangle-list'},
+      primitive: { topology: 'triangle-list' },
     });
 
-    const postModule = this.device.createShaderModule({code: postShaderCode});
+    const postModule = this.device.createShaderModule({ code: postShaderCode });
 
     this.postPipeline = this.device.createRenderPipeline({
       layout: 'auto',
-      vertex: {module: postModule, entryPoint: 'vs_main'},
+      vertex: { module: postModule, entryPoint: 'vs_main' },
       fragment: {
         module: postModule,
         entryPoint: 'fs_main',
-        targets: [{format: this.format}],
+        targets: [{ format: this.format }],
       },
-      primitive: {topology: 'triangle-list'},
+      primitive: { topology: 'triangle-list' },
     });
 
     this.sampler = this.device.createSampler({
@@ -105,8 +105,8 @@ export class Renderer {
     this.bindGroup = this.device.createBindGroup({
       layout: this.pipeline.getBindGroupLayout(0),
       entries: [
-        {binding: 0, resource: {buffer: this.uniformBuffer}},
-        {binding: 1, resource: {buffer: this.referenceOrbitBuffer}},
+        { binding: 0, resource: { buffer: this.uniformBuffer } },
+        { binding: 1, resource: { buffer: this.referenceOrbitBuffer } },
       ],
     });
   }
@@ -160,14 +160,14 @@ export class Renderer {
     this.postBindGroup = this.device.createBindGroup({
       layout: this.postPipeline.getBindGroupLayout(0),
       entries: [
-        {binding: 0, resource: this.offscreenTextureView},
-        {binding: 1, resource: this.sampler},
+        { binding: 0, resource: this.offscreenTextureView },
+        { binding: 1, resource: this.sampler },
       ],
     });
   }
 
   _calculatePassesAndResize(config, state) {
-    const {dpr, width, height, currentPixels, workerBusy, isPendingUpdate} =
+    const { dpr, width, height, currentPixels, workerBusy, isPendingUpdate } =
       state;
     let targetScale = 1.0;
 
@@ -273,7 +273,7 @@ export class Renderer {
         colorAttachments: [
           {
             view: this.offscreenTextureView,
-            clearValue: {r: 0, g: 0, b: 0, a: 0},
+            clearValue: { r: 0, g: 0, b: 0, a: 0 },
             loadOp: state.currentPass === 0 ? 'clear' : 'load',
             storeOp: 'store',
           },
@@ -315,7 +315,7 @@ export class Renderer {
         colorAttachments: [
           {
             view: destTexture.createView(),
-            clearValue: {r: 0, g: 0, b: 0, a: 0},
+            clearValue: { r: 0, g: 0, b: 0, a: 0 },
             loadOp: 'clear',
             storeOp: 'store',
           },

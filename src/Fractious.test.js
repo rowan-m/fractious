@@ -1,5 +1,5 @@
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {Fractious} from './Fractious.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Fractious } from './Fractious.js';
 
 vi.mock('../wasm/pkg/fractious_lib.js', () => ({
   default: vi.fn(),
@@ -23,7 +23,7 @@ describe('Fractious URL parsing', () => {
     };
 
     // Mock window using vi.stubGlobal
-    vi.stubGlobal('window', {location: {search: ''}});
+    vi.stubGlobal('window', { location: { search: '' } });
 
     fractious = new Fractious(config, state, {}, {}, {});
   });
@@ -60,8 +60,8 @@ describe('Fractious URL parsing', () => {
 
   it('should update URL parameters correctly', () => {
     vi.stubGlobal('window', {
-      location: {search: ''},
-      history: {replaceState: vi.fn()},
+      location: { search: '' },
+      history: { replaceState: vi.fn() },
     });
 
     config.centerX = '2.0';

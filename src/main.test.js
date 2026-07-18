@@ -1,5 +1,5 @@
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {Window} from 'happy-dom';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Window } from 'happy-dom';
 
 vi.mock('../wasm/pkg/fractious_lib.js', () => ({
   default: vi.fn(),
@@ -28,7 +28,7 @@ describe('main.js initialization', () => {
   let document;
 
   beforeEach(() => {
-    window = new Window({url: 'http://localhost/?x=-1.5&y=0.0'});
+    window = new Window({ url: 'http://localhost/?x=-1.5&y=0.0' });
     document = window.document;
     vi.stubGlobal('window', window);
     vi.stubGlobal('document', document);
@@ -71,7 +71,7 @@ describe('main.js initialization', () => {
       }
     );
 
-    vi.stubGlobal('import', {meta: {url: 'file:///app/src/main.js'}});
+    vi.stubGlobal('import', { meta: { url: 'file:///app/src/main.js' } });
   });
 
   afterEach(() => {
@@ -82,7 +82,7 @@ describe('main.js initialization', () => {
   });
 
   it('should initialize app and update UI', async () => {
-    vi.stubGlobal('process', {env: {NODE_ENV: 'production'}});
+    vi.stubGlobal('process', { env: { NODE_ENV: 'production' } });
 
     await import('./main.js');
 
