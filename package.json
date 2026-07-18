@@ -28,27 +28,27 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitest/coverage-v8": "^4.1.9",
-    "dependency-cruiser": "^17.4.3",
+    "@vitest/coverage-v8": "^4.1.10",
+    "dependency-cruiser": "^18.1.0",
     "esbuild": "^0.28.1",
-    "eslint": "^10.5.0",
+    "eslint": "^10.7.0",
     "eslint-plugin-no-unsanitized": "^4.1.5",
     "eslint-plugin-security": "^4.0.1",
-    "eslint-plugin-sonarjs": "^4.1.0",
-    "globals": "^17.6.0",
+    "eslint-plugin-sonarjs": "^4.2.0",
+    "globals": "^17.7.0",
     "happy-dom": "^20.10.6",
-    "prettier": "^3.8.4",
+    "prettier": "^3.9.5",
     "rimraf": "^6.1.3",
-    "vite": "^8.0.16",
+    "vite": "^8.1.5",
     "vite-plugin-pwa": "^1.3.0",
     "vite-plugin-top-level-await": "^1.6.0",
     "vite-plugin-wasm": "^3.6.0",
-    "vitest": "^4.1.9",
+    "vitest": "^4.1.10",
     "wasm-pack": "^0.15.0"
   },
   "allowScripts": {
-    "@swc/core@1.15.41": true,
     "wasm-pack@0.15.0": true,
-    "esbuild@0.28.1": true
+    "esbuild@0.28.1": true,
+    "@swc/core@1.15.43": true
   }
 }
