@@ -1,4 +1,4 @@
-import init, { init_hooks, sub_coord } from "../wasm/pkg/fractious_lib.js";
+import init, {init_hooks, sub_coord} from '../wasm/pkg/fractious_lib.js';
 
 export class Fractious {
   constructor(config, state, renderer, workerManager, interactionManager) {
@@ -33,7 +33,7 @@ export class Fractious {
   setupWorker() {
     this.workerManager.init();
 
-    this.workerManager.onResult = (payload) => {
+    this.workerManager.onResult = payload => {
       this.state.refX = payload.refX;
       this.state.refY = payload.refY;
 
@@ -50,8 +50,8 @@ export class Fractious {
       this.requestRender();
     };
 
-    this.workerManager.onError = (error) => {
-      console.error("Worker error:", error);
+    this.workerManager.onError = error => {
+      console.error('Worker error:', error);
       this.state.isPendingUpdate = false;
       this.state.workerBusy = false;
     };
@@ -83,16 +83,16 @@ export class Fractious {
       }
     };
 
-    parseNumStr("x", (x) => (this.config.centerX = x));
-    parseNumStr("y", (y) => (this.config.centerY = y));
+    parseNumStr('x', x => (this.config.centerX = x));
+    parseNumStr('y', y => (this.config.centerY = y));
 
     this.state.refX = this.config.centerX;
     this.state.refY = this.config.centerY;
 
-    parseNum("z", (z) => (this.config.zoom = Math.pow(10, -z)));
-    parseNum("r", (r) => (this.config.rotation = r));
-    parseNum("h", (h) => (this.config.hue = h));
-    parseNum("s", (s) => (this.config.hueStep = s));
+    parseNum('z', z => (this.config.zoom = Math.pow(10, -z)));
+    parseNum('r', r => (this.config.rotation = r));
+    parseNum('h', h => (this.config.hue = h));
+    parseNum('s', s => (this.config.hueStep = s));
 
     this.state.targetZoom = this.config.zoom;
 
@@ -108,13 +108,13 @@ export class Fractious {
       this._urlParams = new URLSearchParams(window.location.search);
     }
     const params = this._urlParams;
-    params.set("x", this.config.centerX);
-    params.set("y", this.config.centerY);
-    params.set("z", (-Math.log10(this.config.zoom)).toFixed(3));
-    params.set("r", this.config.rotation.toFixed(3));
-    params.set("h", this.config.hue.toFixed(3));
-    params.set("s", this.config.hueStep.toFixed(3));
-    window.history.replaceState({}, "", `?${params.toString()}`);
+    params.set('x', this.config.centerX);
+    params.set('y', this.config.centerY);
+    params.set('z', (-Math.log10(this.config.zoom)).toFixed(3));
+    params.set('r', this.config.rotation.toFixed(3));
+    params.set('h', this.config.hue.toFixed(3));
+    params.set('s', this.config.hueStep.toFixed(3));
+    window.history.replaceState({}, '', `?${params.toString()}`);
   }
 
   updateReference() {
@@ -122,7 +122,7 @@ export class Fractious {
     this.workerManager.updateReference(
       this.config,
       this.interactionManager.el.canvas.width,
-      this.interactionManager.el.canvas.height,
+      this.interactionManager.el.canvas.height
     );
   }
 

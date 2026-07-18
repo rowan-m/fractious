@@ -136,19 +136,19 @@ canvas:active {
   border-radius: 2px;
 }
 
-input[name="centerx"],
-input[name="centery"] {
+input[name='centerx'],
+input[name='centery'] {
   width: 17ch;
 }
 
-input[name="zoom"] {
+input[name='zoom'] {
   width: 10ch;
 }
 
-input[name="hue"],
-input[name="huestep"],
-input[name="rotation"],
-input[name="iterations"] {
+input[name='hue'],
+input[name='huestep'],
+input[name='rotation'],
+input[name='iterations'] {
   width: 7ch;
 }
 

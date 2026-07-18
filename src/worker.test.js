@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import {describe, it, expect, vi, beforeEach} from 'vitest';
 
 const mockPostMessage = vi.fn();
 const mockSelf = {
@@ -6,31 +6,31 @@ const mockSelf = {
   onmessage: null,
 };
 
-vi.stubGlobal("self", mockSelf);
+vi.stubGlobal('self', mockSelf);
 
 // Mock the wasm dependency to throw an error
-vi.mock("../wasm/pkg/fractious_lib.js", () => {
+vi.mock('../wasm/pkg/fractious_lib.js', () => {
   return {
     default: vi.fn().mockResolvedValue(), // init
     find_best_anchor: vi.fn().mockImplementation(() => {
-      throw new Error("Test worker error");
+      throw new Error('Test worker error');
     }),
     calculate_reference: vi.fn(),
   };
 });
 
-describe("worker.js", () => {
+describe('worker.js', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("should catch errors and post an error message", async () => {
+  it('should catch errors and post an error message', async () => {
     // Dynamically import worker.js so it registers `self.onmessage` after mocking
-    await import("./worker.js");
+    await import('./worker.js');
 
     const messageEvent = {
       data: {
-        type: "calculate_reference",
+        type: 'calculate_reference',
         payload: {
           centerX: 0,
           centerY: 0,
@@ -43,15 +43,15 @@ describe("worker.js", () => {
 
     // Suppress console.error for the expected error to keep test output clean
     const consoleErrorSpy = vi
-      .spyOn(console, "error")
+      .spyOn(console, 'error')
       .mockImplementation(() => {});
 
     // Call the worker's onmessage handler
     await self.onmessage(messageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith({
-      type: "error",
-      error: "Error: Test worker error",
+      type: 'error',
+      error: 'Error: Test worker error',
     });
 
     consoleErrorSpy.mockRestore();

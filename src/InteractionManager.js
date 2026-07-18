@@ -1,4 +1,4 @@
-import { add_coord, sub_coord } from "../wasm/pkg/fractious_lib.js";
+import {add_coord, sub_coord} from '../wasm/pkg/fractious_lib.js';
 
 export class InteractionManager {
   constructor(elements, config, state, callbacks) {
@@ -20,14 +20,14 @@ export class InteractionManager {
   }
 
   updateUI() {
-    const { inputs } = this.el;
+    const {inputs} = this.el;
 
     this._setVal(inputs.c_re, this.config.centerX);
     this._setVal(inputs.c_im, this.config.centerY);
     this._setVal(inputs.zoom, (-Math.log10(this.config.zoom)).toFixed(2));
     this._setVal(
       inputs.rotation,
-      (((this.config.rotation * 180) / Math.PI) % 360).toFixed(1),
+      (((this.config.rotation * 180) / Math.PI) % 360).toFixed(1)
     );
 
     this._setVal(inputs.iterations, this.config.iter);
@@ -47,13 +47,13 @@ export class InteractionManager {
   }
 
   handlePointerDown(e) {
-    this.state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    this.state.pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
     this.el.canvas.setPointerCapture(e.pointerId);
 
     if (this.state.pointers.size === 1) {
       this.state.lastX = e.clientX;
       this.state.lastY = e.clientY;
-      this.el.crosshair.classList.add("moving");
+      this.el.crosshair.classList.add('moving');
     } else if (this.state.pointers.size === 2) {
       const iter = this.state.pointers.values();
       const p1 = iter.next().value;
@@ -151,7 +151,7 @@ export class InteractionManager {
       this.state.lastX = point.x;
       this.state.lastY = point.y;
     } else if (this.state.pointers.size === 0) {
-      this.el.crosshair.classList.remove("moving");
+      this.el.crosshair.classList.remove('moving');
     }
     this.callbacks.onRequestRender();
   }
@@ -164,7 +164,7 @@ export class InteractionManager {
   }
 
   bindEvents() {
-    const { canvas } = this.el;
+    const {canvas} = this.el;
 
     const observer = new ResizeObserver(() => {
       this.callbacks.onResize();
@@ -172,33 +172,33 @@ export class InteractionManager {
     });
     observer.observe(canvas);
 
-    canvas.addEventListener("pointerdown", this.handlePointerDown);
-    canvas.addEventListener("pointermove", this.handlePointerMove);
-    ["pointerup", "pointercancel", "pointerout", "pointerleave"].forEach((e) =>
-      canvas.addEventListener(e, this.handlePointerUp),
+    canvas.addEventListener('pointerdown', this.handlePointerDown);
+    canvas.addEventListener('pointermove', this.handlePointerMove);
+    ['pointerup', 'pointercancel', 'pointerout', 'pointerleave'].forEach(e =>
+      canvas.addEventListener(e, this.handlePointerUp)
     );
-    canvas.addEventListener("wheel", this.handleWheel, { passive: false });
+    canvas.addEventListener('wheel', this.handleWheel, {passive: false});
 
     this.bindInputEvents();
     this.bindButtonEvents();
   }
 
   bindInputEvents() {
-    const { inputs } = this.el;
+    const {inputs} = this.el;
 
-    inputs.c_re.addEventListener("change", () => {
+    inputs.c_re.addEventListener('change', () => {
       this.config.centerX = inputs.c_re.value;
       this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
       this.callbacks.onInteract(true);
     });
 
-    inputs.c_im.addEventListener("change", () => {
+    inputs.c_im.addEventListener('change', () => {
       this.config.centerY = inputs.c_im.value;
       this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
       this.callbacks.onInteract(true);
     });
 
-    inputs.zoom.addEventListener("change", () => {
+    inputs.zoom.addEventListener('change', () => {
       const level = parseFloat(inputs.zoom.value);
       if (!isNaN(level)) {
         this.config.zoom = Math.pow(10, -level);
@@ -207,7 +207,7 @@ export class InteractionManager {
       } else this.updateUI();
     });
 
-    inputs.rotation.addEventListener("change", () => {
+    inputs.rotation.addEventListener('change', () => {
       const deg = parseFloat(inputs.rotation.value);
       if (!isNaN(deg)) {
         this.config.rotation = (deg * Math.PI) / 180;
@@ -215,7 +215,7 @@ export class InteractionManager {
       } else this.updateUI();
     });
 
-    inputs.hue.addEventListener("change", () => {
+    inputs.hue.addEventListener('change', () => {
       const v = parseFloat(inputs.hue.value);
       if (!isNaN(v)) {
         this.config.hue = v;
@@ -223,7 +223,7 @@ export class InteractionManager {
       } else this.updateUI();
     });
 
-    inputs.hueStep.addEventListener("change", () => {
+    inputs.hueStep.addEventListener('change', () => {
       const v = parseFloat(inputs.hueStep.value);
       if (!isNaN(v)) {
         this.config.hueStep = v;
@@ -254,64 +254,64 @@ export class InteractionManager {
     const moveStep = 0.1;
     const aspect = () => this.el.canvas.width / this.el.canvas.height;
 
-    this._bindBtn("btn-up", () =>
-      this._moveView(0, moveStep * this.config.zoom),
+    this._bindBtn('btn-up', () =>
+      this._moveView(0, moveStep * this.config.zoom)
     );
-    this._bindBtn("btn-down", () =>
-      this._moveView(0, -moveStep * this.config.zoom),
+    this._bindBtn('btn-down', () =>
+      this._moveView(0, -moveStep * this.config.zoom)
     );
-    this._bindBtn("btn-left", () =>
-      this._moveView(-moveStep * this.config.zoom * aspect(), 0),
+    this._bindBtn('btn-left', () =>
+      this._moveView(-moveStep * this.config.zoom * aspect(), 0)
     );
-    this._bindBtn("btn-right", () =>
-      this._moveView(moveStep * this.config.zoom * aspect(), 0),
+    this._bindBtn('btn-right', () =>
+      this._moveView(moveStep * this.config.zoom * aspect(), 0)
     );
   }
 
   _bindTransformButtons() {
-    this._bindBtn("btn-zoom-in", () => {
+    this._bindBtn('btn-zoom-in', () => {
       this.state.targetZoom /= 1.5;
       this.callbacks.onInteract(true);
     });
-    this._bindBtn("btn-zoom-out", () => {
+    this._bindBtn('btn-zoom-out', () => {
       this.state.targetZoom *= 1.5;
       this.callbacks.onInteract(true);
     });
-    this._bindBtn("btn-rotate-cw", () => {
+    this._bindBtn('btn-rotate-cw', () => {
       this.config.rotation += Math.PI / 12;
       this.callbacks.onInteract(false);
     });
-    this._bindBtn("btn-rotate-ccw", () => {
+    this._bindBtn('btn-rotate-ccw', () => {
       this.config.rotation -= Math.PI / 12;
       this.callbacks.onInteract(false);
     });
   }
 
   _bindColorButtons() {
-    this._bindBtn("btn-cycle-in", () => {
+    this._bindBtn('btn-cycle-in', () => {
       this.config.hueStep += 0.05;
       this.callbacks.onInteract(false);
     });
-    this._bindBtn("btn-cycle-out", () => {
+    this._bindBtn('btn-cycle-out', () => {
       this.config.hueStep -= 0.05;
       this.callbacks.onInteract(false);
     });
-    this._bindBtn("btn-hue-left", () => {
+    this._bindBtn('btn-hue-left', () => {
       this.config.hue -= 0.05;
       this.callbacks.onInteract(false);
     });
-    this._bindBtn("btn-hue-right", () => {
+    this._bindBtn('btn-hue-right', () => {
       this.config.hue += 0.05;
       this.callbacks.onInteract(false);
     });
   }
 
   _bindUtilityButtons() {
-    this._bindBtn("btn-screenshot", () => {
+    this._bindBtn('btn-screenshot', () => {
       this.callbacks.onScreenshotRequest();
     });
 
-    const btnFullscreen = document.getElementById("btn-fullscreen");
+    const btnFullscreen = document.getElementById('btn-fullscreen');
     if (btnFullscreen) {
       btnFullscreen.onclick = () => {
         if (!document.fullscreenElement)
@@ -319,12 +319,12 @@ export class InteractionManager {
         else if (document.exitFullscreen) document.exitFullscreen();
       };
 
-      document.addEventListener("fullscreenchange", () => {
-        const span = btnFullscreen.querySelector("span");
+      document.addEventListener('fullscreenchange', () => {
+        const span = btnFullscreen.querySelector('span');
         if (span) {
-          span.textContent = document.fullscreenElement ? "⏬" : "⏫";
+          span.textContent = document.fullscreenElement ? '⏬' : '⏫';
         } else {
-          btnFullscreen.textContent = document.fullscreenElement ? "⏬" : "⏫";
+          btnFullscreen.textContent = document.fullscreenElement ? '⏬' : '⏫';
         }
       });
     }

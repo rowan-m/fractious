@@ -1,7 +1,7 @@
 export function createDefaultConfig() {
   return {
-    centerX: "-1.7",
-    centerY: "0.0",
+    centerX: '-1.7',
+    centerY: '0.0',
     zoom: 2.0,
     rotation: 0.0,
     iter: 200,
@@ -12,8 +12,8 @@ export function createDefaultConfig() {
 
 export function createDefaultState() {
   return {
-    refX: "-1.7",
-    refY: "0.0",
+    refX: '-1.7',
+    refY: '0.0',
     offsetX: 0.0,
     offsetY: 0.0,
     targetZoom: 2.0,

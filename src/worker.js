@@ -1,7 +1,7 @@
 import init, {
   calculate_reference,
   find_best_anchor,
-} from "../wasm/pkg/fractious_lib.js";
+} from '../wasm/pkg/fractious_lib.js';
 
 let isInitialized = false;
 
@@ -31,14 +31,14 @@ async function handleCalculateReference(payload) {
   await initialize();
 
   try {
-    const { centerX, centerY, scale, aspect, iter, abortBuffer } = payload;
+    const {centerX, centerY, scale, aspect, iter, abortBuffer} = payload;
     const abortArray = abortBuffer ? new Int32Array(abortBuffer) : null;
 
     // ⚡ Bolt: Early return optimization. If the main thread has already
     // signalled an abort (e.g. user panned/zoomed quickly), exit immediately
     // before doing expensive precision or anchor calculations.
     if (abortArray && Atomics.load(abortArray, 0) === 1) {
-      return self.postMessage({ type: "result", payload: { aborted: true } });
+      return self.postMessage({type: 'result', payload: {aborted: true}});
     }
 
     const prec = calculatePrecision(scale);
@@ -51,10 +51,10 @@ async function handleCalculateReference(payload) {
       aspect,
       searchLimit,
       prec,
-      abortArray,
+      abortArray
     );
     if (abortArray && Atomics.load(abortArray, 0) === 1) {
-      return self.postMessage({ type: "result", payload: { aborted: true } });
+      return self.postMessage({type: 'result', payload: {aborted: true}});
     }
 
     const calcIter = calculateUpgradedIter(iter, anchor.iter, searchLimit);
@@ -63,29 +63,29 @@ async function handleCalculateReference(payload) {
       anchor.y,
       calcIter,
       prec,
-      abortArray,
+      abortArray
     );
 
     if (abortArray && Atomics.load(abortArray, 0) === 1) {
-      return self.postMessage({ type: "result", payload: { aborted: true } });
+      return self.postMessage({type: 'result', payload: {aborted: true}});
     }
 
     self.postMessage(
       {
-        type: "result",
-        payload: { orbit, refX: anchor.x, refY: anchor.y, iter: calcIter },
+        type: 'result',
+        payload: {orbit, refX: anchor.x, refY: anchor.y, iter: calcIter},
       },
-      [orbit.buffer],
+      [orbit.buffer]
     );
   } catch (error) {
-    console.error("Worker error:", error);
-    self.postMessage({ type: "error", error: error.toString() });
+    console.error('Worker error:', error);
+    self.postMessage({type: 'error', error: error.toString()});
   }
 }
 
-self.onmessage = async (e) => {
-  const { type, payload } = e.data;
-  if (type === "calculate_reference") {
+self.onmessage = async e => {
+  const {type, payload} = e.data;
+  if (type === 'calculate_reference') {
     await handleCalculateReference(payload);
   }
 };

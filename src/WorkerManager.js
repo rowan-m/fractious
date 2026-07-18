@@ -8,19 +8,19 @@ export class WorkerManager {
 
   init() {
     if (this.worker) return;
-    this.worker = new Worker(new URL("./worker.js", import.meta.url), {
-      type: "module",
+    this.worker = new Worker(new URL('./worker.js', import.meta.url), {
+      type: 'module',
     });
 
-    this.worker.onmessage = (e) => {
-      const { type, payload, error } = e.data;
+    this.worker.onmessage = e => {
+      const {type, payload, error} = e.data;
 
-      if (type === "error") {
+      if (type === 'error') {
         if (this.onError) this.onError(error);
         return;
       }
 
-      if (type !== "result") return;
+      if (type !== 'result') return;
       if (payload.aborted) return;
       if (this.onResult) this.onResult(payload);
     };
@@ -36,7 +36,7 @@ export class WorkerManager {
     const requestedIter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
 
     let abortBuffer = null;
-    if (typeof SharedArrayBuffer !== "undefined") {
+    if (typeof SharedArrayBuffer !== 'undefined') {
       abortBuffer = new SharedArrayBuffer(4);
       this.currentAbortArray = new Int32Array(abortBuffer);
     } else {
@@ -44,7 +44,7 @@ export class WorkerManager {
     }
 
     this.worker.postMessage({
-      type: "calculate_reference",
+      type: 'calculate_reference',
       payload: {
         centerX: config.centerX,
         centerY: config.centerY,
