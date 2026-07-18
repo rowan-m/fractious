@@ -227,13 +227,15 @@ struct Uniforms {
   center1: vec2<f32>,
   center2: vec2<f32>,
   center3: vec2<f32>,
-  zoom: f32,
+  zoom: vec4<f32>,
   aspect_ratio: f32,
   iter: u32,
   hue: f32,
   huestep: f32,
   rotation: f32,
-  padding: vec2<f32>,
+  pad0: f32,
+  pad1: f32,
+  pad2: f32,
 };
 
 struct OrbitPoint {
@@ -293,8 +295,9 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   let center_x_qs = vec4<f32>(uniforms.center0.x, uniforms.center1.x, uniforms.center2.x, uniforms.center3.x);
   let center_y_qs = vec4<f32>(uniforms.center0.y, uniforms.center1.y, uniforms.center2.y, uniforms.center3.y);
   
-  let dx_qs = vec4<f32>(rotated.x * uniforms.zoom, 0.0, 0.0, 0.0);
-  let dy_qs = vec4<f32>(rotated.y * uniforms.zoom, 0.0, 0.0, 0.0);
+  // Compute pixel offsets in full Quad-Single precision using qs_mul
+  let dx_qs = qs_mul(uniforms.zoom, vec4<f32>(rotated.x, 0.0, 0.0, 0.0));
+  let dy_qs = qs_mul(uniforms.zoom, vec4<f32>(rotated.y, 0.0, 0.0, 0.0));
 
   let c_delta_re = qs_add(center_x_qs, dx_qs);
   let c_delta_im = qs_add(center_y_qs, dy_qs);
@@ -314,7 +317,7 @@ fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     let raw_xn = reference_orbit[i]; 
     let xn = qs_complex(raw_xn.re, raw_xn.im);
     
-    // delta_{n+1} = 2 X_n delta_n + delta_n^2 + delta_0
+    // delta_{n+1} = 2 * X_n * delta_n + delta_n^2 + delta_0
     let xn_delta = qc_mul(xn, delta);
     let two_xn_delta = qs_complex(xn_delta.re * 2.0, xn_delta.im * 2.0);
     

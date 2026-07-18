@@ -25,8 +25,8 @@ pub struct Anchor {
 }
 
 fn to_fbig(d: DBig, prec: usize) -> FBig {
-    // Correct way: d.to_binary().value().with_precision(prec).value()
-    d.to_binary().value().with_precision(prec).value()
+    let d_prec = d.with_precision(prec).value();
+    d_prec.to_binary().value().with_precision(prec).value()
 }
 
 fn is_aborted(abort_flag: &Option<js_sys::Int32Array>) -> bool {
@@ -40,11 +40,17 @@ fn is_aborted(abort_flag: &Option<js_sys::Int32Array>) -> bool {
 
 fn split_fbig_to_4_f32(val: &FBig, prec: usize) -> (f32, f32, f32, f32) {
     let part0 = val.to_f32().value();
-    let r1 = (val - FBig::try_from(part0).unwrap()).with_precision(prec).value();
+    let r1 = (val - FBig::try_from(part0).unwrap())
+        .with_precision(prec)
+        .value();
     let part1 = r1.to_f32().value();
-    let r2 = (&r1 - &FBig::try_from(part1).unwrap()).with_precision(prec).value();
+    let r2 = (&r1 - &FBig::try_from(part1).unwrap())
+        .with_precision(prec)
+        .value();
     let part2 = r2.to_f32().value();
-    let r3 = (&r2 - &FBig::try_from(part2).unwrap()).with_precision(prec).value();
+    let r3 = (&r2 - &FBig::try_from(part2).unwrap())
+        .with_precision(prec)
+        .value();
     let part3 = r3.to_f32().value();
     (part0, part1, part2, part3)
 }
@@ -155,17 +161,23 @@ pub fn find_best_anchor(
     abort_flag: Option<js_sys::Int32Array>,
 ) -> Anchor {
     let prec = prec as usize;
-    let center_x = DBig::from_str(&cx_str).unwrap_or(DBig::ZERO);
-    let center_y = DBig::from_str(&cy_str).unwrap_or(DBig::ZERO);
+    let center_x = DBig::from_str(&cx_str)
+        .unwrap_or(DBig::ZERO)
+        .with_precision(prec)
+        .value();
+    let center_y = DBig::from_str(&cy_str)
+        .unwrap_or(DBig::ZERO)
+        .with_precision(prec)
+        .value();
 
     // Scale is the vertical span (approx).
     // Multiply x-step by aspect to cover wide screen
     // Dense Grid: Step 0.22 allows 5 points (-2 to 2) to cover approx -0.44 to 0.44 (90% view)
     let step_y = Rational::try_from(scale * 0.22)
-        .map(DBig::from)
+        .map(|r| DBig::from(r).with_precision(prec).value())
         .unwrap_or(DBig::ZERO);
     let step_x = Rational::try_from(scale * 0.22 * aspect)
-        .map(DBig::from)
+        .map(|r| DBig::from(r).with_precision(prec).value())
         .unwrap_or(DBig::ZERO);
 
     let f4: FBig = FBig::from(4).with_precision(prec).value();
@@ -272,11 +284,33 @@ mod tests {
     use wasm_bindgen_test::*;
 
     #[wasm_bindgen_test]
+    fn test_split_fbig() {
+        let d = DBig::from_str("-0.743643887037158704752191506114774").unwrap();
+        let f = d.to_binary().value().with_precision(256).value();
+        let (p0, p1, p2, p3) = split_fbig_to_4_f32(&f, 256);
+        let reconstructed = (p0 as f64) + (p1 as f64) + (p2 as f64) + (p3 as f64);
+        let diff = (reconstructed - -0.7436438870371587_f64).abs();
+        assert!(diff < 1e-15);
+    }
+
+    #[wasm_bindgen_test]
     fn test_add_coord() {
         let val = String::from("1.5");
         let delta = 0.5;
         let result = add_coord(val, delta);
         assert_eq!(result, "2");
+    }
+
+    #[wasm_bindgen_test]
+    fn test_add_coord_precision() {
+        let val = String::from("-0.743643887037158704752191506114774");
+        let delta = 1e-22;
+        let result = add_coord(val.clone(), delta);
+        // If it lost precision, result would be equal to val
+        assert_ne!(result, val);
+        assert!(
+            result.contains("1000000") || result.contains("99999") || result.contains("209150")
+        );
     }
 
     #[wasm_bindgen_test]
@@ -317,7 +351,7 @@ mod tests {
         // max_iter = 3 -> required_len = 32
         // Vec structure for each iteration: [zx0..zx3, zy0..zy3]
         let mut expected = vec![0.0; 32];
-        expected[8] = -1.0;  // Iter 1: z=(-1, 0) -> zx0 = -1.0
+        expected[8] = -1.0; // Iter 1: z=(-1, 0) -> zx0 = -1.0
         expected[24] = -1.0; // Iter 3: z=(-1, 0) -> zx0 = -1.0
         assert_eq!(result, expected);
     }

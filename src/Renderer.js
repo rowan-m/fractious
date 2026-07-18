@@ -1,5 +1,5 @@
-import shaderCode from "./renderer/shader.wgsl?raw";
-import postShaderCode from "./renderer/post.wgsl?raw";
+import shaderCode from './renderer/shader.wgsl?raw';
+import postShaderCode from './renderer/post.wgsl?raw';
 
 const INTERACTION_MAX_OPS = 40000000;
 const PROGRESSIVE_MAX_OPS = 200000000;
@@ -23,32 +23,32 @@ export class Renderer {
     this.referenceOrbitSize = 0;
     this.offscreenTexture = null;
     this.offscreenTextureView = null;
-    this.uniformBufferSize = 64;
+    this.uniformBufferSize = 80;
     this.uniformData = new ArrayBuffer(this.uniformBufferSize);
     this.uniformDataView = new DataView(this.uniformData);
   }
 
   async init() {
     if (!navigator.gpu) {
-      console.error("WebGPU not supported");
-      document.body.textContent = "WebGPU not supported in this browser.";
+      console.error('WebGPU not supported');
+      document.body.textContent = 'WebGPU not supported in this browser.';
       return false;
     }
 
     const adapter = await navigator.gpu.requestAdapter();
     if (!adapter) {
-      console.error("No WebGPU adapter found");
+      console.error('No WebGPU adapter found');
       return false;
     }
 
     this.device = await adapter.requestDevice();
     this.format = navigator.gpu.getPreferredCanvasFormat();
-    this.context = this.canvas.getContext("webgpu");
+    this.context = this.canvas.getContext('webgpu');
 
     this.context.configure({
       device: this.device,
       format: this.format,
-      alphaMode: "premultiplied",
+      alphaMode: 'premultiplied',
       usage:
         GPUTextureUsage.RENDER_ATTACHMENT |
         GPUTextureUsage.COPY_SRC |
@@ -67,35 +67,35 @@ export class Renderer {
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
 
-    const module = this.device.createShaderModule({ code: shaderCode });
+    const module = this.device.createShaderModule({code: shaderCode});
 
     this.pipeline = this.device.createRenderPipeline({
-      layout: "auto",
-      vertex: { module, entryPoint: "vs_main" },
+      layout: 'auto',
+      vertex: {module, entryPoint: 'vs_main'},
       fragment: {
         module,
-        entryPoint: "fs_main",
-        targets: [{ format: this.format }],
+        entryPoint: 'fs_main',
+        targets: [{format: this.format}],
       },
-      primitive: { topology: "triangle-list" },
+      primitive: {topology: 'triangle-list'},
     });
 
-    const postModule = this.device.createShaderModule({ code: postShaderCode });
+    const postModule = this.device.createShaderModule({code: postShaderCode});
 
     this.postPipeline = this.device.createRenderPipeline({
-      layout: "auto",
-      vertex: { module: postModule, entryPoint: "vs_main" },
+      layout: 'auto',
+      vertex: {module: postModule, entryPoint: 'vs_main'},
       fragment: {
         module: postModule,
-        entryPoint: "fs_main",
-        targets: [{ format: this.format }],
+        entryPoint: 'fs_main',
+        targets: [{format: this.format}],
       },
-      primitive: { topology: "triangle-list" },
+      primitive: {topology: 'triangle-list'},
     });
 
     this.sampler = this.device.createSampler({
-      magFilter: "linear",
-      minFilter: "linear",
+      magFilter: 'linear',
+      minFilter: 'linear',
     });
 
     return true;
@@ -105,8 +105,8 @@ export class Renderer {
     this.bindGroup = this.device.createBindGroup({
       layout: this.pipeline.getBindGroupLayout(0),
       entries: [
-        { binding: 0, resource: { buffer: this.uniformBuffer } },
-        { binding: 1, resource: { buffer: this.referenceOrbitBuffer } },
+        {binding: 0, resource: {buffer: this.uniformBuffer}},
+        {binding: 1, resource: {buffer: this.referenceOrbitBuffer}},
       ],
     });
   }
@@ -125,7 +125,7 @@ export class Renderer {
     this.device.queue.writeBuffer(
       this.referenceOrbitBuffer,
       0,
-      orbitArrayBuffer,
+      orbitArrayBuffer
     );
 
     // ⚡ Bolt: Avoid redundant GPUBindGroup re-creation. writeBuffer updates
@@ -160,14 +160,14 @@ export class Renderer {
     this.postBindGroup = this.device.createBindGroup({
       layout: this.postPipeline.getBindGroupLayout(0),
       entries: [
-        { binding: 0, resource: this.offscreenTextureView },
-        { binding: 1, resource: this.sampler },
+        {binding: 0, resource: this.offscreenTextureView},
+        {binding: 1, resource: this.sampler},
       ],
     });
   }
 
   _calculatePassesAndResize(config, state) {
-    const { dpr, width, height, currentPixels, workerBusy, isPendingUpdate } =
+    const {dpr, width, height, currentPixels, workerBusy, isPendingUpdate} =
       state;
     let targetScale = 1.0;
 
@@ -182,7 +182,7 @@ export class Renderer {
       const totalOps = currentPixels * config.iter;
       state.totalPasses = Math.max(
         1,
-        Math.ceil(totalOps / PROGRESSIVE_MAX_OPS),
+        Math.ceil(totalOps / PROGRESSIVE_MAX_OPS)
       );
     }
 
@@ -191,15 +191,15 @@ export class Renderer {
         1,
         Math.min(
           Math.floor(width * dpr * targetScale),
-          this.device.limits.maxTextureDimension2D,
-        ),
+          this.device.limits.maxTextureDimension2D
+        )
       );
       const targetHeight = Math.max(
         1,
         Math.min(
           Math.floor(height * dpr * targetScale),
-          this.device.limits.maxTextureDimension2D,
-        ),
+          this.device.limits.maxTextureDimension2D
+        )
       );
 
       if (
@@ -217,7 +217,7 @@ export class Renderer {
     const aspect = this.canvas.width / this.canvas.height;
     const dv = this.uniformDataView;
 
-    const splitF64To4F32 = (val) => {
+    const splitF64To4F32 = val => {
       const fround = Math.fround;
       const part0 = fround(val);
       const r1 = val - part0;
@@ -229,8 +229,10 @@ export class Renderer {
       return [part0, part1, part2, part3];
     };
 
+    const zoom = config.zoom || 1.0;
     const splitX = splitF64To4F32(state.offsetX);
     const splitY = splitF64To4F32(state.offsetY);
+    const splitZoom = splitF64To4F32(zoom);
 
     dv.setFloat32(0, splitX[0], true);
     dv.setFloat32(4, splitY[0], true);
@@ -240,14 +242,18 @@ export class Renderer {
     dv.setFloat32(20, splitY[2], true);
     dv.setFloat32(24, splitX[3], true);
     dv.setFloat32(28, splitY[3], true);
-    dv.setFloat32(32, config.zoom, true);
-    dv.setFloat32(36, aspect, true);
-    dv.setUint32(40, config.iter, true);
-    dv.setFloat32(44, config.hue, true);
-    dv.setFloat32(48, config.hueStep, true);
-    dv.setFloat32(52, config.rotation, true);
-    dv.setFloat32(56, 0.0, true);
-    dv.setFloat32(60, 0.0, true);
+    dv.setFloat32(32, splitZoom[0], true);
+    dv.setFloat32(36, splitZoom[1], true);
+    dv.setFloat32(40, splitZoom[2], true);
+    dv.setFloat32(44, splitZoom[3], true);
+    dv.setFloat32(48, aspect, true);
+    dv.setUint32(52, config.iter, true);
+    dv.setFloat32(56, config.hue, true);
+    dv.setFloat32(60, config.hueStep, true);
+    dv.setFloat32(64, config.rotation, true);
+    dv.setFloat32(68, 0.0, true);
+    dv.setFloat32(72, 0.0, true);
+    dv.setFloat32(76, 0.0, true);
 
     this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);
   }
@@ -260,16 +266,16 @@ export class Renderer {
       const yOffset = state.currentPass * sliceHeight;
       const currentSliceHeight = Math.min(
         sliceHeight,
-        this.canvas.height - yOffset,
+        this.canvas.height - yOffset
       );
 
       const passEncoder = commandEncoder.beginRenderPass({
         colorAttachments: [
           {
             view: this.offscreenTextureView,
-            clearValue: { r: 0, g: 0, b: 0, a: 0 },
-            loadOp: state.currentPass === 0 ? "clear" : "load",
-            storeOp: "store",
+            clearValue: {r: 0, g: 0, b: 0, a: 0},
+            loadOp: state.currentPass === 0 ? 'clear' : 'load',
+            storeOp: 'store',
           },
         ],
       });
@@ -281,14 +287,14 @@ export class Renderer {
         this.canvas.width,
         this.canvas.height,
         0,
-        1,
+        1
       );
       if (currentSliceHeight > 0) {
         passEncoder.setScissorRect(
           0,
           yOffset,
           this.canvas.width,
-          currentSliceHeight,
+          currentSliceHeight
         );
       }
 
@@ -309,9 +315,9 @@ export class Renderer {
         colorAttachments: [
           {
             view: destTexture.createView(),
-            clearValue: { r: 0, g: 0, b: 0, a: 0 },
-            loadOp: "clear",
-            storeOp: "store",
+            clearValue: {r: 0, g: 0, b: 0, a: 0},
+            loadOp: 'clear',
+            storeOp: 'store',
           },
         ],
       });
@@ -332,7 +338,7 @@ export class Renderer {
       this.canvas.height > 0 &&
       this.bgCanvas
     ) {
-      const bgCtx = this.bgCanvas.getContext("2d", {
+      const bgCtx = this.bgCanvas.getContext('2d', {
         alpha: false,
         desynchronized: true,
       });
@@ -352,22 +358,22 @@ export class Renderer {
       state.screenshotRequested = false;
       const d = new Date();
       const timestamp =
-        "" +
+        '' +
         d.getFullYear() +
-        (d.getMonth() + 1).toString().padStart(2, "0") +
-        d.getDate().toString().padStart(2, "0") +
-        d.getHours().toString().padStart(2, "0") +
-        d.getMinutes().toString().padStart(2, "0") +
-        d.getSeconds().toString().padStart(2, "0");
+        (d.getMonth() + 1).toString().padStart(2, '0') +
+        d.getDate().toString().padStart(2, '0') +
+        d.getHours().toString().padStart(2, '0') +
+        d.getMinutes().toString().padStart(2, '0') +
+        d.getSeconds().toString().padStart(2, '0');
 
-      this.canvas.toBlob((blob) => {
+      this.canvas.toBlob(blob => {
         const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
+        const link = document.createElement('a');
         link.download = `fractious-${timestamp}.png`;
         link.href = url;
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-      }, "image/png");
+      }, 'image/png');
     }
   }
 
