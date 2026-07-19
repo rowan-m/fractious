@@ -80,3 +80,78 @@ describe('Fractious URL parsing', () => {
     );
   });
 });
+
+describe('Fractious interaction debouncing', () => {
+  let fractious;
+  let config;
+  let state;
+  let renderer;
+  let workerManager;
+  let interactionManager;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubGlobal('requestAnimationFrame', vi.fn(cb => setTimeout(cb, 16)));
+
+    config = {
+      centerX: '0.0',
+      centerY: '0.0',
+      zoom: 1.0,
+      iter: 1000,
+    };
+    state = {
+      isPendingUpdate: false,
+      workerBusy: false,
+    };
+    renderer = {
+      init: vi.fn(),
+      render: vi.fn(),
+    };
+    workerManager = {
+      init: vi.fn(),
+      updateReference: vi.fn(),
+    };
+    interactionManager = {
+      updateUI: vi.fn(),
+      el: {
+        canvas: {
+          width: 800,
+          height: 600,
+        },
+      },
+    };
+
+    fractious = new Fractious(config, state, renderer, workerManager, interactionManager);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should call updateReference immediately when needsNewReference is true', () => {
+    fractious.interact(true);
+
+    expect(workerManager.updateReference).toHaveBeenCalledTimes(1);
+    expect(state.isPendingUpdate).toBe(true);
+  });
+
+  it('should debounce updateReference when needsNewReference is false', () => {
+    fractious.interact(false);
+
+    // Should not call updateReference immediately
+    expect(workerManager.updateReference).not.toHaveBeenCalled();
+    expect(state.isPendingUpdate).toBe(true);
+
+    // Call again to verify reset of timeout (coalescing)
+    vi.advanceTimersByTime(100);
+    fractious.interact(false);
+
+    vi.advanceTimersByTime(150);
+    // Still shouldn't be called because the timer was reset
+    expect(workerManager.updateReference).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(50);
+    // Now it should be called exactly once
+    expect(workerManager.updateReference).toHaveBeenCalledTimes(1);
+  });
+});

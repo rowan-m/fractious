@@ -133,7 +133,7 @@ export class InteractionManager {
 
     this.config.centerX = add_coord(this.state.refX, this.state.offsetX);
     this.config.centerY = add_coord(this.state.refY, this.state.offsetY);
-    this.callbacks.onInteract(true);
+    this.callbacks.onInteract(false);
   }
 
   handlePointerUp(e) {
@@ -150,17 +150,18 @@ export class InteractionManager {
       const point = this.state.pointers.values().next().value;
       this.state.lastX = point.x;
       this.state.lastY = point.y;
+      this.callbacks.onRequestRender();
     } else if (this.state.pointers.size === 0) {
       this.el.crosshair.classList.remove('moving');
+      this.callbacks.onInteract(true);
     }
-    this.callbacks.onRequestRender();
   }
 
   handleWheel(e) {
     e.preventDefault();
     const factor = e.deltaY > 0 ? 1.05 : 1.0 / 1.05;
     this.state.targetZoom *= factor;
-    this.callbacks.onInteract(true);
+    this.callbacks.onInteract(false);
   }
 
   bindEvents() {

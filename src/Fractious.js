@@ -131,14 +131,17 @@ export class Fractious {
     this.interactionManager.updateUI();
     this.requestRender();
 
+    if (this._interactionTimeout) {
+      clearTimeout(this._interactionTimeout);
+      this._interactionTimeout = null;
+    }
+
     if (needsNewReference) {
       this.updateReference();
     } else {
-      if (this._interactionTimeout) clearTimeout(this._interactionTimeout);
       this._interactionTimeout = setTimeout(() => {
-        this.state.isPendingUpdate = false;
-        this.requestRender();
-      }, 250);
+        this.updateReference();
+      }, 200); // Debounce Web Worker reference update to 200ms of inactivity
     }
   }
 
