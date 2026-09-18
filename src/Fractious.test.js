@@ -91,7 +91,10 @@ describe('Fractious interaction debouncing', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.stubGlobal('requestAnimationFrame', vi.fn(cb => setTimeout(cb, 16)));
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(cb => setTimeout(cb, 16))
+    );
 
     config = {
       centerX: '0.0',
@@ -121,7 +124,13 @@ describe('Fractious interaction debouncing', () => {
       },
     };
 
-    fractious = new Fractious(config, state, renderer, workerManager, interactionManager);
+    fractious = new Fractious(
+      config,
+      state,
+      renderer,
+      workerManager,
+      interactionManager
+    );
   });
 
   afterEach(() => {
