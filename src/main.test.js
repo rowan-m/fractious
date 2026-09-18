@@ -42,7 +42,7 @@ describe('main.js initialization', () => {
       class ResizeObserver {
         observe() {}
         unobserve() {}
-      }
+      },
     );
 
     document.body.innerHTML = `
@@ -68,7 +68,7 @@ describe('main.js initialization', () => {
       class {
         postMessage() {}
         addEventListener() {}
-      }
+      },
     );
 
     vi.stubGlobal('import', { meta: { url: 'file:///app/src/main.js' } });
@@ -87,7 +87,7 @@ describe('main.js initialization', () => {
     await import('./main.js');
 
     // Wait a small tick for async init to complete
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(document.getElementById('c_re').value).toBe('-1.5');
     expect(document.getElementById('c_im').value).toBe('0.0');

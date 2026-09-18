@@ -33,7 +33,7 @@ export class Fractious {
   setupWorker() {
     this.workerManager.init();
 
-    this.workerManager.onResult = payload => {
+    this.workerManager.onResult = (payload) => {
       this.state.refX = payload.refX;
       this.state.refY = payload.refY;
 
@@ -50,7 +50,7 @@ export class Fractious {
       this.requestRender();
     };
 
-    this.workerManager.onError = error => {
+    this.workerManager.onError = (error) => {
       console.error('Worker error:', error);
       this.state.isPendingUpdate = false;
       this.state.workerBusy = false;
@@ -83,16 +83,16 @@ export class Fractious {
       }
     };
 
-    parseNumStr('x', x => (this.config.centerX = x));
-    parseNumStr('y', y => (this.config.centerY = y));
+    parseNumStr('x', (x) => (this.config.centerX = x));
+    parseNumStr('y', (y) => (this.config.centerY = y));
 
     this.state.refX = this.config.centerX;
     this.state.refY = this.config.centerY;
 
-    parseNum('z', z => (this.config.zoom = Math.pow(10, -z)));
-    parseNum('r', r => (this.config.rotation = r));
-    parseNum('h', h => (this.config.hue = h));
-    parseNum('s', s => (this.config.hueStep = s));
+    parseNum('z', (z) => (this.config.zoom = Math.pow(10, -z)));
+    parseNum('r', (r) => (this.config.rotation = r));
+    parseNum('h', (h) => (this.config.hue = h));
+    parseNum('s', (s) => (this.config.hueStep = s));
 
     this.state.targetZoom = this.config.zoom;
 
@@ -122,7 +122,7 @@ export class Fractious {
     this.workerManager.updateReference(
       this.config,
       this.interactionManager.el.canvas.width,
-      this.interactionManager.el.canvas.height
+      this.interactionManager.el.canvas.height,
     );
   }
 

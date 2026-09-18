@@ -26,8 +26,6 @@ const elements = {
 const renderer = new Renderer(elements.canvas, elements.bgCanvas);
 const workerManager = new WorkerManager();
 
-let app;
-
 const interactionCallbacks = {
   onInteract: (needsNewReference = true) => app.interact(needsNewReference),
   onRequestRender: () => app.requestRender(),
@@ -39,10 +37,16 @@ const interactionManager = new InteractionManager(
   elements,
   config,
   state,
-  interactionCallbacks
+  interactionCallbacks,
 );
 
-app = new Fractious(config, state, renderer, workerManager, interactionManager);
+const app = new Fractious(
+  config,
+  state,
+  renderer,
+  workerManager,
+  interactionManager,
+);
 
 // Allow test environments to import this without running it immediately if needed
 // eslint-disable-next-line no-undef

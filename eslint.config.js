@@ -36,6 +36,10 @@ export default [
       'security/detect-eval-with-expression': 'error',
       'no-unsanitized/method': 'error',
       'no-unsanitized/property': 'error',
+      eqeqeq: ['error', 'always', { null: 'ignore' }],
+      'no-var': 'error',
+      'prefer-const': 'error',
+      'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
     },
   },
 ];

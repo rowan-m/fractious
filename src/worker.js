@@ -13,7 +13,7 @@ async function initialize() {
 }
 
 function calculatePrecision(scale) {
-  let bits = Math.ceil(-Math.log2(scale)) + 128;
+  const bits = Math.ceil(-Math.log2(scale)) + 128;
   return Math.min(Math.max(bits, 128), 4096);
 }
 
@@ -51,7 +51,7 @@ async function handleCalculateReference(payload) {
       aspect,
       searchLimit,
       prec,
-      abortArray
+      abortArray,
     );
     if (abortArray && Atomics.load(abortArray, 0) === 1) {
       return self.postMessage({ type: 'result', payload: { aborted: true } });
@@ -63,7 +63,7 @@ async function handleCalculateReference(payload) {
       anchor.y,
       calcIter,
       prec,
-      abortArray
+      abortArray,
     );
 
     if (abortArray && Atomics.load(abortArray, 0) === 1) {
@@ -75,7 +75,7 @@ async function handleCalculateReference(payload) {
         type: 'result',
         payload: { orbit, refX: anchor.x, refY: anchor.y, iter: calcIter },
       },
-      [orbit.buffer]
+      [orbit.buffer],
     );
   } catch (error) {
     console.error('Worker error:', error);
@@ -83,7 +83,7 @@ async function handleCalculateReference(payload) {
   }
 }
 
-self.onmessage = async e => {
+self.onmessage = async (e) => {
   const { type, payload } = e.data;
   if (type === 'calculate_reference') {
     await handleCalculateReference(payload);

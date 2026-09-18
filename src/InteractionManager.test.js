@@ -50,7 +50,7 @@ describe('InteractionManager updateUI', () => {
       elements,
       config,
       state,
-      callbacks
+      callbacks,
     );
   });
 

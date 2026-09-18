@@ -27,7 +27,7 @@ export class InteractionManager {
     this._setVal(inputs.zoom, (-Math.log10(this.config.zoom)).toFixed(2));
     this._setVal(
       inputs.rotation,
-      (((this.config.rotation * 180) / Math.PI) % 360).toFixed(1)
+      (((this.config.rotation * 180) / Math.PI) % 360).toFixed(1),
     );
 
     this._setVal(inputs.iterations, this.config.iter);
@@ -175,8 +175,8 @@ export class InteractionManager {
 
     canvas.addEventListener('pointerdown', this.handlePointerDown);
     canvas.addEventListener('pointermove', this.handlePointerMove);
-    ['pointerup', 'pointercancel', 'pointerout', 'pointerleave'].forEach(e =>
-      canvas.addEventListener(e, this.handlePointerUp)
+    ['pointerup', 'pointercancel', 'pointerout', 'pointerleave'].forEach((e) =>
+      canvas.addEventListener(e, this.handlePointerUp),
     );
     canvas.addEventListener('wheel', this.handleWheel, { passive: false });
 
@@ -256,16 +256,16 @@ export class InteractionManager {
     const aspect = () => this.el.canvas.width / this.el.canvas.height;
 
     this._bindBtn('btn-up', () =>
-      this._moveView(0, moveStep * this.config.zoom)
+      this._moveView(0, moveStep * this.config.zoom),
     );
     this._bindBtn('btn-down', () =>
-      this._moveView(0, -moveStep * this.config.zoom)
+      this._moveView(0, -moveStep * this.config.zoom),
     );
     this._bindBtn('btn-left', () =>
-      this._moveView(-moveStep * this.config.zoom * aspect(), 0)
+      this._moveView(-moveStep * this.config.zoom * aspect(), 0),
     );
     this._bindBtn('btn-right', () =>
-      this._moveView(moveStep * this.config.zoom * aspect(), 0)
+      this._moveView(moveStep * this.config.zoom * aspect(), 0),
     );
   }
 

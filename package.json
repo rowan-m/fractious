@@ -61,19 +61,19 @@
   "bundlesize": [
     {
       "path": "./dist/assets/index-*.js",
-      "maxSize": "50 kB"
-    },
-    {
-      "path": "./dist/assets/fractious_lib_bg-*.wasm",
-      "maxSize": "300 kB"
-    },
-    {
-      "path": "./dist/assets/worker-*.js",
       "maxSize": "15 kB"
     },
     {
-      "path": "./dist/assets/index-*.css",
+      "path": "./dist/assets/fractious_lib_bg-*.wasm",
+      "maxSize": "110 kB"
+    },
+    {
+      "path": "./dist/assets/worker-*.js",
       "maxSize": "5 kB"
+    },
+    {
+      "path": "./dist/assets/index-*.css",
+      "maxSize": "2 kB"
     }
   ]
 }

@@ -76,7 +76,7 @@ describe('Fractious URL parsing', () => {
     expect(window.history.replaceState).toHaveBeenCalledWith(
       {},
       '',
-      '?x=2.0&y=1.0&z=2.000&r=3.142&h=0.500&s=0.100'
+      '?x=2.0&y=1.0&z=2.000&r=3.142&h=0.500&s=0.100',
     );
   });
 });
@@ -93,7 +93,7 @@ describe('Fractious interaction debouncing', () => {
     vi.useFakeTimers();
     vi.stubGlobal(
       'requestAnimationFrame',
-      vi.fn(cb => setTimeout(cb, 16))
+      vi.fn((cb) => setTimeout(cb, 16)),
     );
 
     config = {
@@ -129,7 +129,7 @@ describe('Fractious interaction debouncing', () => {
       state,
       renderer,
       workerManager,
-      interactionManager
+      interactionManager,
     );
   });
 

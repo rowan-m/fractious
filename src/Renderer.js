@@ -125,7 +125,7 @@ export class Renderer {
     this.device.queue.writeBuffer(
       this.referenceOrbitBuffer,
       0,
-      orbitArrayBuffer
+      orbitArrayBuffer,
     );
 
     // ⚡ Bolt: Avoid redundant GPUBindGroup re-creation. writeBuffer updates
@@ -182,7 +182,7 @@ export class Renderer {
       const totalOps = currentPixels * config.iter;
       state.totalPasses = Math.max(
         1,
-        Math.ceil(totalOps / PROGRESSIVE_MAX_OPS)
+        Math.ceil(totalOps / PROGRESSIVE_MAX_OPS),
       );
     }
 
@@ -191,15 +191,15 @@ export class Renderer {
         1,
         Math.min(
           Math.floor(width * dpr * targetScale),
-          this.device.limits.maxTextureDimension2D
-        )
+          this.device.limits.maxTextureDimension2D,
+        ),
       );
       const targetHeight = Math.max(
         1,
         Math.min(
           Math.floor(height * dpr * targetScale),
-          this.device.limits.maxTextureDimension2D
-        )
+          this.device.limits.maxTextureDimension2D,
+        ),
       );
 
       if (
@@ -217,7 +217,7 @@ export class Renderer {
     const aspect = this.canvas.width / this.canvas.height;
     const dv = this.uniformDataView;
 
-    const splitF64To4F32 = val => {
+    const splitF64To4F32 = (val) => {
       const fround = Math.fround;
       const part0 = fround(val);
       const r1 = val - part0;
@@ -266,7 +266,7 @@ export class Renderer {
       const yOffset = state.currentPass * sliceHeight;
       const currentSliceHeight = Math.min(
         sliceHeight,
-        this.canvas.height - yOffset
+        this.canvas.height - yOffset,
       );
 
       const passEncoder = commandEncoder.beginRenderPass({
@@ -287,14 +287,14 @@ export class Renderer {
         this.canvas.width,
         this.canvas.height,
         0,
-        1
+        1,
       );
       if (currentSliceHeight > 0) {
         passEncoder.setScissorRect(
           0,
           yOffset,
           this.canvas.width,
-          currentSliceHeight
+          currentSliceHeight,
         );
       }
 
@@ -366,7 +366,7 @@ export class Renderer {
         d.getMinutes().toString().padStart(2, '0') +
         d.getSeconds().toString().padStart(2, '0');
 
-      this.canvas.toBlob(blob => {
+      this.canvas.toBlob((blob) => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.download = `fractious-${timestamp}.png`;

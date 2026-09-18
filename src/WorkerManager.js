@@ -12,7 +12,7 @@ export class WorkerManager {
       type: 'module',
     });
 
-    this.worker.onmessage = e => {
+    this.worker.onmessage = (e) => {
       const { type, payload, error } = e.data;
 
       if (type === 'error') {
