@@ -4,10 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "audit:node": "audit-ci --config audit-ci.json",
+    "audit:rust": "cd wasm && cargo audit",
     "build": "npm run build:wasm && npm run build:web",
     "build:wasm": "wasm-pack build wasm --target web",
     "build:web": "vite build",
-    "check": "npm run lint && npm run lint:rust && npm run depcruise",
+    "check": "npm run lint && npm run lint:rust && npm run lint:shaders && npm run audit:node && npm run depcruise",
+    "check:size": "bundlesize",
     "clean": "rimraf dist wasm/pkg wasm/target",
     "depcruise": "depcruise src",
     "dev": "vite",
@@ -19,6 +22,7 @@
     "format:web": "prettier --write .",
     "lint": "eslint src",
     "lint:rust": "cd wasm && cargo clippy --all-targets -- -D warnings",
+    "lint:shaders": "wgslender validate src/renderer/shader.wgsl src/renderer/post.wgsl",
     "preview": "vite preview",
     "test": "npm run test:wasm && npm run test:web",
     "test:wasm": "cd wasm && wasm-pack test --node",
@@ -28,6 +32,8 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@vitest/coverage-v8": "^5.0.1",
+    "audit-ci": "^7.1.0",
+    "bundlesize": "^0.18.2",
     "dependency-cruiser": "^18.3.1",
     "esbuild": "^0.28.2",
     "eslint": "^10.11.0",
@@ -44,11 +50,30 @@
     "vite-plugin-top-level-await": "^1.6.0",
     "vite-plugin-wasm": "^3.6.0",
     "vitest": "^5.0.1",
-    "wasm-pack": "^0.15.0"
+    "wasm-pack": "^0.15.0",
+    "wgslender": "^1.4.1"
   },
   "allowScripts": {
     "wasm-pack@0.15.0": true,
     "@swc/core@1.16.2": true,
     "esbuild@0.28.2": true
-  }
+  },
+  "bundlesize": [
+    {
+      "path": "./dist/assets/index-*.js",
+      "maxSize": "50 kB"
+    },
+    {
+      "path": "./dist/assets/fractious_lib_bg-*.wasm",
+      "maxSize": "300 kB"
+    },
+    {
+      "path": "./dist/assets/worker-*.js",
+      "maxSize": "15 kB"
+    },
+    {
+      "path": "./dist/assets/index-*.css",
+      "maxSize": "5 kB"
+    }
+  ]
 }
