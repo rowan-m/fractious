@@ -131,8 +131,6 @@ export class InteractionManager {
       this._handlePan(e, scaleY);
     }
 
-    this.config.centerX = add_coord(this.state.refX, this.state.offsetX);
-    this.config.centerY = add_coord(this.state.refY, this.state.offsetY);
     this.callbacks.onInteract(false);
   }
 

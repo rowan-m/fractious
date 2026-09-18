@@ -5,6 +5,7 @@ vi.mock('../wasm/pkg/fractious_lib.js', () => ({
   default: vi.fn(),
   init_hooks: vi.fn(),
   sub_coord: vi.fn(),
+  add_coord: vi.fn((val) => val),
 }));
 
 describe('Fractious URL parsing', () => {

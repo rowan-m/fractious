@@ -1,4 +1,8 @@
-import init, { init_hooks, sub_coord } from '../wasm/pkg/fractious_lib.js';
+import init, {
+  init_hooks,
+  sub_coord,
+  add_coord,
+} from '../wasm/pkg/fractious_lib.js';
 
 export class Fractious {
   constructor(config, state, renderer, workerManager, interactionManager) {
@@ -118,6 +122,10 @@ export class Fractious {
   }
 
   updateReference() {
+    this.config.centerX = add_coord(this.state.refX, this.state.offsetX);
+    this.config.centerY = add_coord(this.state.refY, this.state.offsetY);
+    this.interactionManager.updateUI();
+
     this.state.workerBusy = true;
     this.workerManager.updateReference(
       this.config,

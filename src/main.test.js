@@ -4,7 +4,7 @@ import { Window } from 'happy-dom';
 vi.mock('../wasm/pkg/fractious_lib.js', () => ({
   default: vi.fn(),
   init_hooks: vi.fn(),
-  add_coord: vi.fn(),
+  add_coord: vi.fn((val) => val),
   sub_coord: vi.fn(),
 }));
 
