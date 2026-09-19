@@ -8,3 +8,4 @@ wasm/pkg/
 wasm/target/
 package-lock.json
 pnpm-lock.yaml
+t*.json

@@ -202,6 +202,11 @@ export class Renderer {
         ),
       );
 
+      // Clamp total progressive passes to the physical canvas height to avoid empty/redundant draw calls.
+      if (!(isDragging || workerBusy || isPendingUpdate)) {
+        state.totalPasses = Math.min(state.totalPasses, targetHeight);
+      }
+
       if (
         this.canvas.width !== targetWidth ||
         this.canvas.height !== targetHeight
@@ -234,6 +239,21 @@ export class Renderer {
     const splitY = splitF64To4F32(state.offsetY);
     const splitZoom = splitF64To4F32(zoom);
 
+    // Calculate geometry-slice scale and offset for uniforms (pad0 and pad1 fields)
+    let sliceScale = 1.0;
+    let sliceOffset = 0.0;
+    if (state.totalPasses > 1 && this.canvas.height > 0) {
+      const sliceHeight = Math.ceil(this.canvas.height / state.totalPasses);
+      const yOffset = state.currentPass * sliceHeight;
+      const currentSliceHeight = Math.min(
+        sliceHeight,
+        this.canvas.height - yOffset,
+      );
+      sliceScale = currentSliceHeight / this.canvas.height;
+      sliceOffset =
+        -1.0 + (2.0 * yOffset + currentSliceHeight) / this.canvas.height;
+    }
+
     dv.setFloat32(0, splitX[0], true);
     dv.setFloat32(4, splitY[0], true);
     dv.setFloat32(8, splitX[1], true);
@@ -251,8 +271,8 @@ export class Renderer {
     dv.setFloat32(56, config.hue, true);
     dv.setFloat32(60, config.hueStep, true);
     dv.setFloat32(64, config.rotation, true);
-    dv.setFloat32(68, 0.0, true);
-    dv.setFloat32(72, 0.0, true);
+    dv.setFloat32(68, sliceScale, true);
+    dv.setFloat32(72, sliceOffset, true);
     dv.setFloat32(76, 0.0, true);
 
     this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);

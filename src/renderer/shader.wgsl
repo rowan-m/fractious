@@ -233,8 +233,8 @@ struct Uniforms {
   hue: f32,
   huestep: f32,
   rotation: f32,
-  pad0: f32,
-  pad1: f32,
+  slice_scale: f32,
+  slice_offset: f32,
   pad2: f32,
 };
 
@@ -273,8 +273,14 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
   );
   
   var output: VertexOutput;
-  output.position = vec4<f32>(pos[vertex_index], 0.0, 1.0);
-  output.uv = pos[vertex_index]; // [-1, 1]
+  let original_pos = pos[vertex_index];
+  
+  // Geometry-slice: Scale and offset the Y coordinate of the vertex pos to restrict rasterization to the slice.
+  // This physically limits fragment shader invocations to ONLY the current rendering slice.
+  let slice_y = original_pos.y * uniforms.slice_scale + uniforms.slice_offset;
+  
+  output.position = vec4<f32>(original_pos.x, slice_y, 0.0, 1.0);
+  output.uv = original_pos; // Keep the original [-1, 1] coordinates as UV for pixel math!
   return output;
 }
 
