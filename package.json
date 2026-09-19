@@ -9,7 +9,7 @@
     "build": "npm run build:wasm && npm run build:web",
     "build:wasm": "wasm-pack build wasm --target web",
     "build:web": "vite build",
-    "check": "npm run lint && npm run lint:rust && npm run lint:shaders && npm run audit:node && npm run depcruise",
+    "check": "npm run format:check && npm run lint && npm run lint:rust && npm run lint:shaders && npm run audit:node && npm run depcruise",
     "check:size": "bundlesize",
     "clean": "rimraf dist wasm/pkg wasm/target",
     "depcruise": "depcruise src",
