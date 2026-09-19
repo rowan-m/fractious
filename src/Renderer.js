@@ -400,10 +400,65 @@ export class Renderer {
     }
   }
 
+  _handleShare(state) {
+    if (state.shareRequested && state.currentPass >= state.totalPasses) {
+      state.shareRequested = false;
+
+      this.canvas.toBlob((blob) => {
+        if (!blob) return;
+        const file = new File([blob], 'mandelbrot-fractious.png', {
+          type: 'image/png',
+        });
+
+        const shareData = {
+          title: 'Fractious Mandelbrot',
+          text: 'Look what I found in the Mandelbrot fractal with #fractious',
+          url: window.location.href,
+        };
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          shareData.files = [file];
+        }
+
+        if (navigator.share) {
+          navigator.share(shareData).catch((err) => {
+            console.error('Error sharing:', err);
+          });
+        } else {
+          // Fallback if navigator.share is not supported (e.g. some desktop browsers)
+          // We can copy the link to clipboard and download the screenshot, or alert the user
+          alert(
+            'Web Share is not supported in this browser. Downloading screenshot and copying link to clipboard!',
+          );
+
+          // Copy link to clipboard
+          navigator.clipboard
+            .writeText(window.location.href)
+            .then(() => {
+              // Download screenshot
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.download = 'mandelbrot-fractious.png';
+              link.href = url;
+              link.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            })
+            .catch((err) => {
+              console.error('Error copying link:', err);
+            });
+        }
+      }, 'image/png');
+    }
+  }
+
   render(config, state) {
     this._calculatePassesAndResize(config, state);
 
-    if (state.currentPass >= state.totalPasses && !state.screenshotRequested) {
+    if (
+      state.currentPass >= state.totalPasses &&
+      !state.screenshotRequested &&
+      !state.shareRequested
+    ) {
       return false; // No more passes needed
     }
 
@@ -418,8 +473,13 @@ export class Renderer {
 
     this._updateBackgroundCanvas(state);
     this._handleScreenshot(state);
+    this._handleShare(state);
 
-    return state.currentPass < state.totalPasses || state.screenshotRequested;
+    return (
+      state.currentPass < state.totalPasses ||
+      state.screenshotRequested ||
+      state.shareRequested
+    );
   }
 
   onSubmittedWorkDone() {

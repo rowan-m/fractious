@@ -310,6 +310,10 @@ export class InteractionManager {
       this.callbacks.onScreenshotRequest();
     });
 
+    this._bindBtn('btn-share', () => {
+      this.callbacks.onShareRequest();
+    });
+
     const btnFullscreen = document.getElementById('btn-fullscreen');
     if (btnFullscreen) {
       btnFullscreen.onclick = () => {

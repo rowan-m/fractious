@@ -31,6 +31,7 @@ const interactionCallbacks = {
   onRequestRender: () => app.requestRender(),
   onResize: () => app.handleResize(),
   onScreenshotRequest: () => app.requestScreenshot(),
+  onShareRequest: () => app.requestShare(),
 };
 
 const interactionManager = new InteractionManager(

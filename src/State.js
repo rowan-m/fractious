@@ -23,6 +23,7 @@ export function createDefaultState() {
 
     isFrameScheduled: false,
     screenshotRequested: false,
+    shareRequested: false,
 
     currentPass: 0,
     totalPasses: 1,
