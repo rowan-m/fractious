@@ -12,28 +12,49 @@ body {
 }
 
 header {
-  background-color: rgba(0, 0, 0, 0.2);
-  color: oldlace;
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 10;
+  background-color: rgba(10, 10, 15, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.3rem 0.6rem;
   display: flex;
-  justify-content: space-between;
-  padding: 0.2rem 0.4rem 0.1rem 0.4rem;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 h1 {
   font-size: var(--font-size);
-  font-weight: 100;
+  font-weight: 600;
   margin: 0;
   padding: 0;
+  color: #fff;
+}
+
+header div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .version {
   font-style: italic;
   font-weight: 100;
-  color: silver;
+  color: #94a3b8;
+  font-size: 0.65rem;
 }
 
 a {
-  color: palegoldenrod;
+  color: #93c5fd;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+a:hover {
+  color: #3b82f6;
 }
 
 .render-area {
@@ -98,9 +119,15 @@ canvas:active {
 }
 
 .stats {
-  background-color: rgba(0, 0, 0, 0.2);
-  color: oldlace;
-  padding: 0rem 0.4rem 0.2rem 0.4rem;
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  background-color: rgba(10, 10, 15, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.2rem 0.4rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 .stats > form {
@@ -110,25 +137,32 @@ canvas:active {
 }
 
 .stats label {
-  border: 1px solid oldlace;
-  padding: 0.2rem 0.1rem 0.2rem 0.1rem;
-  margin: 0.1rem 0.1rem 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+  padding: 0.15rem 0.3rem;
+  margin: 0.1rem 0.15rem 0.1rem 0.15rem;
   font-size: var(--font-size);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #cbd5e1;
 }
 
 .stats input {
-  color: oldlace;
-  background-color: rgba(0, 0, 0, 0.2);
+  color: #f1f5f9;
+  background-color: transparent;
   border: none;
   font-family: monospace;
   font-size: var(--font-size);
   max-width: 20vw;
+  outline: none;
 }
 
 .stats input[readonly] {
   cursor: default;
   opacity: 0.7;
-  color: silver;
+  color: #94a3b8;
 }
 
 .stats input:focus {
@@ -138,38 +172,45 @@ canvas:active {
 
 input[name='centerx'],
 input[name='centery'] {
-  width: 17ch;
+  width: 14ch;
 }
 
 input[name='zoom'] {
-  width: 10ch;
+  width: 8ch;
 }
 
 input[name='hue'],
 input[name='huestep'],
 input[name='rotation'],
 input[name='iterations'] {
-  width: 7ch;
+  width: 6ch;
 }
 
 footer {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: auto;
+  max-width: 95%;
 }
 
 .controls {
   position: relative;
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(10, 10, 15, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.15rem 0.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .controls form {
   display: flex;
   flex-flow: row wrap;
-  justify-content: space-evenly;
+  justify-content: center;
   align-items: center;
-  align-content: center;
+  gap: 0.4rem;
 }
 
 .controls fieldset {
@@ -177,7 +218,7 @@ footer {
   flex-flow: column nowrap;
   align-items: center;
   align-content: center;
-  margin: 0.5rem;
+  margin: 0.15rem;
   font-size: 16px;
   border: none;
   padding: 0;
@@ -185,13 +226,13 @@ footer {
 
 .icon {
   display: inline-block;
-  margin: 0.3rem;
+  margin: 0.15rem;
   user-select: none;
 }
 
 .controls button,
 .controls a {
-  font-size: 28px;
+  font-size: 22px; /* Compressed button sizes for high clarity but much less footprint */
   padding: 0;
   margin: 0;
   background: none;
@@ -219,4 +260,82 @@ footer {
 .controls button:active,
 .controls a:active {
   transform: scale(0.9);
+}
+
+/* Responsive Overrides for Mobile & Tablet */
+@media (max-width: 768px) {
+  header {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    z-index: 10;
+    justify-content: space-between;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  header a .link-text {
+    display: none; /* Hide link text but keep the visual icons visible */
+  }
+
+  header div {
+    display: flex;
+    gap: 0.6rem;
+  }
+
+  .stats {
+    top: 2.3rem; /* Positioned neatly right below the thin header */
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    border-radius: 8px;
+    padding: 0.15rem;
+  }
+
+  .stats > form {
+    justify-content: flex-start;
+    gap: 0.4rem;
+  }
+
+  .stats label {
+    margin: 0;
+    padding: 0.15rem 0.3rem;
+  }
+
+  .stats input {
+    max-width: 25vw;
+  }
+
+  footer {
+    bottom: 0.5rem;
+    width: 95%;
+  }
+
+  .controls {
+    border-radius: 12px;
+    padding: 0.4rem 0.5rem;
+  }
+
+  /* Form transitions to a balanced 4-column grid on mobile */
+  /* This neatly splits our 8 fieldsets into 2 rows of 4 items each */
+  /* Row 1: Parameter controls (Movement, Zoom, Rotate, Color) */
+  /* Row 2: Action utilities (Fullscreen, Screenshot, Share, Reset) */
+  .controls form {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    justify-content: center;
+    gap: 0.6rem;
+  }
+
+  .controls button,
+  .controls a {
+    font-size: 26px; /* Large, comfortable touch targets for easy and accurate tapping on mobile screens */
+  }
+
+  .controls fieldset {
+    margin: 0.05rem;
+  }
 }
