@@ -250,8 +250,11 @@ export class Renderer {
         this.canvas.height - yOffset,
       );
       sliceScale = currentSliceHeight / this.canvas.height;
+      // Invert Y coordinate mapping because WebGPU Scissor Rect Y starts at TOP (0),
+      // but WebGPU NDC Y starts at BOTTOM (-1.0).
+      const yOffsetBottom = this.canvas.height - yOffset - currentSliceHeight;
       sliceOffset =
-        -1.0 + (2.0 * yOffset + currentSliceHeight) / this.canvas.height;
+        -1.0 + (2.0 * yOffsetBottom + currentSliceHeight) / this.canvas.height;
     }
 
     dv.setFloat32(0, splitX[0], true);
