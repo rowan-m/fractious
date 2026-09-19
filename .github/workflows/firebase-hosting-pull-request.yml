@@ -20,10 +20,25 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo dependencies
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            wasm -> target
+
       - run: npm ci
-      - run: npm run build
+
+      - name: Compile WASM Release Target
+        run: npm run build:wasm
+
       - run: npm run check
-      - run: npm run test
+      - run: npm test
+      - run: npm run build:web
       - run: npm run check:size
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
