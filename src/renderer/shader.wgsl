@@ -280,7 +280,7 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
   let slice_y = original_pos.y * uniforms.slice_scale + uniforms.slice_offset;
   
   output.position = vec4<f32>(original_pos.x, slice_y, 0.0, 1.0);
-  output.uv = original_pos; // Keep the original [-1, 1] coordinates as UV for pixel math!
+  output.uv = vec2<f32>(original_pos.x, slice_y); // Map UV to the actual geometry position to avoid vertical squishing!
   return output;
 }
 
