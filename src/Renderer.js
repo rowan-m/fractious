@@ -18,7 +18,9 @@ export class Renderer {
     this.pipelineQS = null;
     this.postPipeline = null;
     this.sampler = null;
-    this.bindGroup = null;
+    this.bindGroupF32 = null;
+    this.bindGroupDS = null;
+    this.bindGroupQS = null;
     this.postBindGroup = null;
     this.uniformBuffer = null;
     this.referenceOrbitBuffer = null;
@@ -131,7 +133,21 @@ export class Renderer {
   }
 
   createBindGroup() {
-    this.bindGroup = this.device.createBindGroup({
+    this.bindGroupF32 = this.device.createBindGroup({
+      layout: this.pipelineF32.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: this.uniformBuffer } },
+        { binding: 1, resource: { buffer: this.referenceOrbitBuffer } },
+      ],
+    });
+    this.bindGroupDS = this.device.createBindGroup({
+      layout: this.pipelineDS.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: this.uniformBuffer } },
+        { binding: 1, resource: { buffer: this.referenceOrbitBuffer } },
+      ],
+    });
+    this.bindGroupQS = this.device.createBindGroup({
       layout: this.pipelineQS.getBindGroupLayout(0),
       entries: [
         { binding: 0, resource: { buffer: this.uniformBuffer } },
@@ -159,7 +175,7 @@ export class Renderer {
 
     // ⚡ Bolt: Avoid redundant GPUBindGroup re-creation. writeBuffer updates
     // data in-place. Only re-create if the buffer itself was newly allocated.
-    if (bufferRecreated || !this.bindGroup) {
+    if (bufferRecreated || !this.bindGroupQS) {
       this.createBindGroup();
     }
   }
@@ -335,12 +351,16 @@ export class Renderer {
       // Select the pipeline corresponding to the current zoom level to optimize rendering performance
       const logZoom = -Math.log10(state.targetZoom);
       let activePipeline;
+      let activeBindGroup;
       if (logZoom < 7.0) {
         activePipeline = this.pipelineF32;
+        activeBindGroup = this.bindGroupF32;
       } else if (logZoom < 14.0) {
         activePipeline = this.pipelineDS;
+        activeBindGroup = this.bindGroupDS;
       } else {
         activePipeline = this.pipelineQS;
+        activeBindGroup = this.bindGroupQS;
       }
       passEncoder.setPipeline(activePipeline);
       passEncoder.setViewport(
@@ -360,8 +380,8 @@ export class Renderer {
         );
       }
 
-      if (this.bindGroup) {
-        passEncoder.setBindGroup(0, this.bindGroup);
+      if (activeBindGroup) {
+        passEncoder.setBindGroup(0, activeBindGroup);
         passEncoder.draw(6);
       }
       passEncoder.end();
