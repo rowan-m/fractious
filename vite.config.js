@@ -9,9 +9,12 @@ export default defineConfig({
     wasm(),
     topLevelAwait(),
     VitePWA({
+      registerType: 'autoUpdate',
       injectRegister: 'auto',
       manifest: false,
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,wasm,wgsl}'],
       },
     }),
