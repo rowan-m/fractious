@@ -31,44 +31,30 @@
   </head>
   <body>
     <header>
-      <h1>Fractious</h1>
-      <div>
+      <div class="header-brand-row">
+        <h1>Fractious</h1>
         <span class="version">v20260919b</span>
-        <a href="https://rowan.fyi" aria-label="Website rowan.fyi"
-          ><span aria-hidden="true">🌐</span> rowan.fyi</a
-        >
-        <a href="https://github.com/rowan-m/fractious"
-          ><span aria-hidden="true">🧑‍💻</span>
-          <span class="link-text">Code</span></a
-        >
-        <a
-          href="https://bsky.app/profile/rowan.fyi"
-          aria-label="Bluesky profile rowan.fyi"
-          ><span aria-hidden="true">🦋</span>
-          <span class="link-text">rowan.fyi</span></a
-        >
-        <a
-          href="https://mastodon.social/@rowan_m"
-          aria-label="Mastodon profile rowan_m@mastodon.social"
-          ><span aria-hidden="true">🦣</span>
-          <span class="link-text">rowan_m@mastodon.social</span></a
-        >
-      </div>
-    </header>
-    <main>
-      <div class="render-area">
-        <canvas id="fractal-bg" aria-hidden="true"></canvas>
-        <canvas
-          height="512"
-          width="512"
-          draggable="false"
-          id="fractal"
-          role="img"
-          aria-label="Interactive Mandelbrot set rendering"
-        ></canvas>
-      </div>
-      <div class="pin">
-        <span class="pinpoint" id="crosshair" aria-hidden="true">📍</span>
+        <div class="header-links">
+          <a href="https://rowan.fyi" aria-label="Website rowan.fyi"
+            ><span aria-hidden="true">🌐</span> rowan.fyi</a
+          >
+          <a href="https://github.com/rowan-m/fractious"
+            ><span aria-hidden="true">🧑‍💻</span>
+            <span class="link-text">Code</span></a
+          >
+          <a
+            href="https://bsky.app/profile/rowan.fyi"
+            aria-label="Bluesky profile rowan.fyi"
+            ><span aria-hidden="true">🦋</span>
+            <span class="link-text">rowan.fyi</span></a
+          >
+          <a
+            href="https://mastodon.social/@rowan_m"
+            aria-label="Mastodon profile rowan_m@mastodon.social"
+            ><span aria-hidden="true">🦣</span>
+            <span class="link-text">rowan_m@mastodon.social</span></a
+          >
+        </div>
       </div>
       <nav class="stats" aria-label="Statistics">
         <form>
@@ -133,184 +119,204 @@
           /></label>
         </form>
       </nav>
+    </header>
+    <main>
+      <div class="render-area">
+        <canvas id="fractal-bg" aria-hidden="true"></canvas>
+        <canvas
+          height="512"
+          width="512"
+          draggable="false"
+          id="fractal"
+          role="img"
+          aria-label="Interactive Mandelbrot set rendering"
+        ></canvas>
+      </div>
+      <div class="pin">
+        <span class="pinpoint" id="crosshair" aria-hidden="true">📍</span>
+      </div>
     </main>
     <footer>
       <nav class="controls" aria-label="Controls">
         <form>
-          <fieldset>
-            <button
-              type="button"
-              class="incdec"
-              name="incy"
-              title="Move up"
-              aria-label="Move up"
-              id="btn-up"
-            >
-              <span aria-hidden="true">🔼</span>
-            </button>
-            <span>
+          <div>
+            <fieldset>
               <button
                 type="button"
                 class="incdec"
-                name="decx"
-                title="Move left"
-                aria-label="Move left"
-                id="btn-left"
+                name="incy"
+                title="Move up"
+                aria-label="Move up"
+                id="btn-up"
               >
-                <span aria-hidden="true">◀️</span>
+                <span aria-hidden="true">🔼</span>
               </button>
-              <span class="icon" aria-hidden="true">📍</span>
+              <span>
+                <button
+                  type="button"
+                  class="incdec"
+                  name="decx"
+                  title="Move left"
+                  aria-label="Move left"
+                  id="btn-left"
+                >
+                  <span aria-hidden="true">◀️</span>
+                </button>
+                <span class="icon" aria-hidden="true">📍</span>
+                <button
+                  type="button"
+                  class="incdec"
+                  name="incx"
+                  title="Move right"
+                  aria-label="Move right"
+                  id="btn-right"
+                >
+                  <span aria-hidden="true">▶️</span>
+                </button>
+              </span>
               <button
                 type="button"
                 class="incdec"
-                name="incx"
-                title="Move right"
-                aria-label="Move right"
-                id="btn-right"
+                name="decy"
+                title="Move down"
+                aria-label="Move down"
+                id="btn-down"
               >
-                <span aria-hidden="true">▶️</span>
+                <span aria-hidden="true">🔽</span>
               </button>
-            </span>
-            <button
-              type="button"
-              class="incdec"
-              name="decy"
-              title="Move down"
-              aria-label="Move down"
-              id="btn-down"
-            >
-              <span aria-hidden="true">🔽</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <button
-              type="button"
-              class="incdec"
-              name="inczoom"
-              title="Zoom in"
-              aria-label="Zoom in"
-              id="btn-zoom-in"
-            >
-              <span aria-hidden="true">🔼</span>
-            </button>
-            <span class="icon" aria-hidden="true">🔎</span>
-            <button
-              type="button"
-              class="incdec"
-              name="deczoom"
-              title="Zoom out"
-              aria-label="Zoom out"
-              id="btn-zoom-out"
-            >
-              <span aria-hidden="true">🔽</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <button
-              type="button"
-              class="incdec"
-              name="incrotate"
-              title="Rotate clockwise"
-              aria-label="Rotate clockwise"
-              id="btn-rotate-cw"
-            >
-              <span aria-hidden="true">🔼</span>
-            </button>
-            <span class="icon" aria-hidden="true">🔄</span>
-            <button
-              type="button"
-              class="incdec"
-              name="decrotate"
-              title="Rotate counter-clockwise"
-              aria-label="Rotate counter-clockwise"
-              id="btn-rotate-ccw"
-            >
-              <span aria-hidden="true">🔽</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <button
-              type="button"
-              class="incdec"
-              name="inchuestep"
-              title="Increase colour cycling"
-              aria-label="Increase colour cycling"
-              id="btn-cycle-in"
-            >
-              <span aria-hidden="true">🔼</span>
-            </button>
-            <span>
+            </fieldset>
+            <fieldset>
               <button
                 type="button"
                 class="incdec"
-                name="dechue"
-                title="Shift colours"
-                aria-label="Shift colours left"
-                id="btn-hue-left"
+                name="inczoom"
+                title="Zoom in"
+                aria-label="Zoom in"
+                id="btn-zoom-in"
               >
-                <span aria-hidden="true">◀️</span>
+                <span aria-hidden="true">🔼</span>
               </button>
-              <span class="icon" aria-hidden="true">🎨</span>
+              <span class="icon" aria-hidden="true">🔎</span>
               <button
                 type="button"
                 class="incdec"
-                name="inchue"
-                title="Shift colours"
-                aria-label="Shift colours right"
-                id="btn-hue-right"
+                name="deczoom"
+                title="Zoom out"
+                aria-label="Zoom out"
+                id="btn-zoom-out"
               >
-                <span aria-hidden="true">▶️</span>
+                <span aria-hidden="true">🔽</span>
               </button>
-            </span>
-            <button
-              type="button"
-              class="incdec"
-              name="dechuestep"
-              title="Decrease colour cycling"
-              aria-label="Decrease colour cycling"
-              id="btn-cycle-out"
-            >
-              <span aria-hidden="true">🔽</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <button
-              type="button"
-              class="fullscreen"
-              title="Toggle fullscreen display"
-              aria-label="Toggle fullscreen display"
-              id="btn-fullscreen"
-            >
-              <span aria-hidden="true">⏫</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <button
-              type="button"
-              class="fullscreen"
-              title="Download screenshot"
-              aria-label="Download screenshot"
-              id="btn-screenshot"
-            >
-              <span aria-hidden="true">🖼️</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <button
-              type="button"
-              class="fullscreen"
-              title="Share"
-              aria-label="Share location and screenshot"
-              id="btn-share"
-            >
-              <span aria-hidden="true">⏏️</span>
-            </button>
-          </fieldset>
-          <fieldset>
-            <a href="." class="" title="Reset" aria-label="Reset"
-              ><span aria-hidden="true">🔁</span></a
-            >
-          </fieldset>
+            </fieldset>
+            <fieldset>
+              <button
+                type="button"
+                class="incdec"
+                name="incrotate"
+                title="Rotate clockwise"
+                aria-label="Rotate clockwise"
+                id="btn-rotate-cw"
+              >
+                <span aria-hidden="true">🔼</span>
+              </button>
+              <span class="icon" aria-hidden="true">🔄</span>
+              <button
+                type="button"
+                class="incdec"
+                name="decrotate"
+                title="Rotate counter-clockwise"
+                aria-label="Rotate counter-clockwise"
+                id="btn-rotate-ccw"
+              >
+                <span aria-hidden="true">🔽</span>
+              </button>
+            </fieldset>
+            <fieldset>
+              <button
+                type="button"
+                class="incdec"
+                name="inchuestep"
+                title="Increase colour cycling"
+                aria-label="Increase colour cycling"
+                id="btn-cycle-in"
+              >
+                <span aria-hidden="true">🔼</span>
+              </button>
+              <span>
+                <button
+                  type="button"
+                  class="incdec"
+                  name="dechue"
+                  title="Shift colours"
+                  aria-label="Shift colours left"
+                  id="btn-hue-left"
+                >
+                  <span aria-hidden="true">◀️</span>
+                </button>
+                <span class="icon" aria-hidden="true">🎨</span>
+                <button
+                  type="button"
+                  class="incdec"
+                  name="inchue"
+                  title="Shift colours"
+                  aria-label="Shift colours right"
+                  id="btn-hue-right"
+                >
+                  <span aria-hidden="true">▶️</span>
+                </button>
+              </span>
+              <button
+                type="button"
+                class="incdec"
+                name="dechuestep"
+                title="Decrease colour cycling"
+                aria-label="Decrease colour cycling"
+                id="btn-cycle-out"
+              >
+                <span aria-hidden="true">🔽</span>
+              </button>
+            </fieldset>
+          </div>
+          <div>
+            <fieldset>
+              <button
+                type="button"
+                class="fullscreen"
+                title="Toggle fullscreen display"
+                aria-label="Toggle fullscreen display"
+                id="btn-fullscreen"
+              >
+                <span aria-hidden="true">⏫</span>
+              </button>
+            </fieldset>
+            <fieldset>
+              <button
+                type="button"
+                class="fullscreen"
+                title="Download screenshot"
+                aria-label="Download screenshot"
+                id="btn-screenshot"
+              >
+                <span aria-hidden="true">🖼️</span>
+              </button>
+            </fieldset>
+            <fieldset>
+              <button
+                type="button"
+                class="fullscreen"
+                title="Share"
+                aria-label="Share location and screenshot"
+                id="btn-share"
+              >
+                <span aria-hidden="true">⏏️</span>
+              </button>
+            </fieldset>
+            <fieldset>
+              <a href="." class="" title="Reset" aria-label="Reset"
+                ><span aria-hidden="true">🔁</span></a
+              >
+            </fieldset>
+          </div>
         </form>
       </nav>
     </footer>

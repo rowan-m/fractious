@@ -9,21 +9,35 @@ body {
   font-size: var(--font-size);
   overflow: hidden;
   background-color: black;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
 }
 
 header {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  z-index: 10;
+  position: relative;
+  z-index: 2;
   background-color: rgba(10, 10, 15, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 0.3rem 0.6rem;
+  padding: 0.5rem;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  margin: 0.5rem 0.5rem 0 0.5rem;
+  align-self: flex-start;
+}
+
+main {
+  flex: 1;
+}
+.header-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: flex-start;
 }
 
 h1 {
@@ -34,17 +48,18 @@ h1 {
   color: #fff;
 }
 
-header div {
+.header-links {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  margin-inline-start: auto;
 }
 
 .version {
   font-style: italic;
   font-weight: 100;
   color: #94a3b8;
-  font-size: 0.65rem;
+  font-size: var(--font-size) * 0.8;
 }
 
 a {
@@ -65,7 +80,7 @@ a:hover {
   right: 0;
   user-select: none;
   touch-action: none;
-  z-index: -1;
+  z-index: 1;
 }
 
 canvas {
@@ -119,15 +134,11 @@ canvas:active {
 }
 
 .stats {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 10;
-  background-color: rgba(10, 10, 15, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 0.2rem 0.4rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  /* Inherits backgrounds and boundaries of the parent header on desktop */
+  background: none;
+  border: none;
+  padding: 0;
+  box-shadow: none;
 }
 
 .stats > form {
@@ -155,7 +166,6 @@ canvas:active {
   border: none;
   font-family: monospace;
   font-size: var(--font-size);
-  max-width: 20vw;
   outline: none;
 }
 
@@ -187,17 +197,14 @@ input[name='iterations'] {
 }
 
 footer {
-  position: absolute;
-  bottom: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  width: auto;
+  position: relative;
+  z-index: 2;
   max-width: 95%;
+  margin: 0.5rem auto 1rem auto;
+  align-self: center;
 }
 
 .controls {
-  position: relative;
   background-color: rgba(10, 10, 15, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
@@ -213,15 +220,25 @@ footer {
   gap: 0.4rem;
 }
 
+.controls form > div {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .controls fieldset {
   display: flex;
   flex-flow: column nowrap;
   align-items: center;
   align-content: center;
   margin: 0.15rem;
-  font-size: 16px;
+  font-size: calc(var(--font-size) * 2);
   border: none;
   padding: 0;
+  flex: 1 0 auto;
+  min-width: max-content;
 }
 
 .icon {
@@ -232,11 +249,11 @@ footer {
 
 .controls button,
 .controls a {
-  font-size: 22px; /* Compressed button sizes for high clarity but much less footprint */
   padding: 0;
   margin: 0;
   background: none;
   border: none;
+  font-size: calc(var(--font-size) * 2);
   text-shadow: -2px -2px 4px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 166, 0, 0);
   user-select: none;
@@ -262,80 +279,8 @@ footer {
   transform: scale(0.9);
 }
 
-/* Responsive Overrides for Mobile & Tablet */
-@media (max-width: 768px) {
-  header {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
-    right: 0.5rem;
-    width: auto;
-    z-index: 10;
-    justify-content: space-between;
-    padding: 0.25rem 0.5rem;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  }
-
+@media (max-width: 540px) {
   header a .link-text {
-    display: none; /* Hide link text but keep the visual icons visible */
-  }
-
-  header div {
-    display: flex;
-    gap: 0.6rem;
-  }
-
-  .stats {
-    top: 2.3rem; /* Positioned neatly right below the thin header */
-    left: 0.5rem;
-    right: 0.5rem;
-    width: auto;
-    border-radius: 8px;
-    padding: 0.15rem;
-  }
-
-  .stats > form {
-    justify-content: flex-start;
-    gap: 0.4rem;
-  }
-
-  .stats label {
-    margin: 0;
-    padding: 0.15rem 0.3rem;
-  }
-
-  .stats input {
-    max-width: 25vw;
-  }
-
-  footer {
-    bottom: 0.5rem;
-    width: 95%;
-  }
-
-  .controls {
-    border-radius: 12px;
-    padding: 0.4rem 0.5rem;
-  }
-
-  /* Form transitions to a balanced 4-column grid on mobile */
-  /* This neatly splits our 8 fieldsets into 2 rows of 4 items each */
-  /* Row 1: Parameter controls (Movement, Zoom, Rotate, Color) */
-  /* Row 2: Action utilities (Fullscreen, Screenshot, Share, Reset) */
-  .controls form {
-    display: grid;
-    grid-template-columns: repeat(4, auto);
-    justify-content: center;
-    gap: 0.6rem;
-  }
-
-  .controls button,
-  .controls a {
-    font-size: 26px; /* Large, comfortable touch targets for easy and accurate tapping on mobile screens */
-  }
-
-  .controls fieldset {
-    margin: 0.05rem;
+    display: none; /* Hide verbose link text but keep the visual icons visible */
   }
 }
