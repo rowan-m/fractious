@@ -68,30 +68,34 @@ export class Renderer {
     });
 
     const module = this.device.createShaderModule({ code: shaderCode });
-
-    this.pipeline = this.device.createRenderPipeline({
-      layout: 'auto',
-      vertex: { module, entryPoint: 'vs_main' },
-      fragment: {
-        module,
-        entryPoint: 'fs_main',
-        targets: [{ format: this.format }],
-      },
-      primitive: { topology: 'triangle-list' },
-    });
-
     const postModule = this.device.createShaderModule({ code: postShaderCode });
 
-    this.postPipeline = this.device.createRenderPipeline({
-      layout: 'auto',
-      vertex: { module: postModule, entryPoint: 'vs_main' },
-      fragment: {
-        module: postModule,
-        entryPoint: 'fs_main',
-        targets: [{ format: this.format }],
-      },
-      primitive: { topology: 'triangle-list' },
-    });
+    // Parallelize pipeline compilations asynchronously on background helper threads
+    const [pipeline, postPipeline] = await Promise.all([
+      this.device.createRenderPipelineAsync({
+        layout: 'auto',
+        vertex: { module, entryPoint: 'vs_main' },
+        fragment: {
+          module,
+          entryPoint: 'fs_main',
+          targets: [{ format: this.format }],
+        },
+        primitive: { topology: 'triangle-list' },
+      }),
+      this.device.createRenderPipelineAsync({
+        layout: 'auto',
+        vertex: { module: postModule, entryPoint: 'vs_main' },
+        fragment: {
+          module: postModule,
+          entryPoint: 'fs_main',
+          targets: [{ format: this.format }],
+        },
+        primitive: { topology: 'triangle-list' },
+      }),
+    ]);
+
+    this.pipeline = pipeline;
+    this.postPipeline = postPipeline;
 
     this.sampler = this.device.createSampler({
       magFilter: 'linear',
