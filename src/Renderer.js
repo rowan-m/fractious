@@ -13,7 +13,9 @@ export class Renderer {
     this.device = null;
     this.context = null;
     this.format = null;
-    this.pipeline = null;
+    this.pipelineF32 = null;
+    this.pipelineDS = null;
+    this.pipelineQS = null;
     this.postPipeline = null;
     this.sampler = null;
     this.bindGroup = null;
@@ -71,30 +73,53 @@ export class Renderer {
     const postModule = this.device.createShaderModule({ code: postShaderCode });
 
     // Parallelize pipeline compilations asynchronously on background helper threads
-    const [pipeline, postPipeline] = await Promise.all([
-      this.device.createRenderPipelineAsync({
-        layout: 'auto',
-        vertex: { module, entryPoint: 'vs_main' },
-        fragment: {
-          module,
-          entryPoint: 'fs_main',
-          targets: [{ format: this.format }],
-        },
-        primitive: { topology: 'triangle-list' },
-      }),
-      this.device.createRenderPipelineAsync({
-        layout: 'auto',
-        vertex: { module: postModule, entryPoint: 'vs_main' },
-        fragment: {
-          module: postModule,
-          entryPoint: 'fs_main',
-          targets: [{ format: this.format }],
-        },
-        primitive: { topology: 'triangle-list' },
-      }),
-    ]);
+    const [pipelineF32, pipelineDS, pipelineQS, postPipeline] =
+      await Promise.all([
+        this.device.createRenderPipelineAsync({
+          layout: 'auto',
+          vertex: { module, entryPoint: 'vs_main' },
+          fragment: {
+            module,
+            entryPoint: 'fs_main_f32',
+            targets: [{ format: this.format }],
+          },
+          primitive: { topology: 'triangle-list' },
+        }),
+        this.device.createRenderPipelineAsync({
+          layout: 'auto',
+          vertex: { module, entryPoint: 'vs_main' },
+          fragment: {
+            module,
+            entryPoint: 'fs_main_ds',
+            targets: [{ format: this.format }],
+          },
+          primitive: { topology: 'triangle-list' },
+        }),
+        this.device.createRenderPipelineAsync({
+          layout: 'auto',
+          vertex: { module, entryPoint: 'vs_main' },
+          fragment: {
+            module,
+            entryPoint: 'fs_main_qs',
+            targets: [{ format: this.format }],
+          },
+          primitive: { topology: 'triangle-list' },
+        }),
+        this.device.createRenderPipelineAsync({
+          layout: 'auto',
+          vertex: { module: postModule, entryPoint: 'vs_main' },
+          fragment: {
+            module: postModule,
+            entryPoint: 'fs_main',
+            targets: [{ format: this.format }],
+          },
+          primitive: { topology: 'triangle-list' },
+        }),
+      ]);
 
-    this.pipeline = pipeline;
+    this.pipelineF32 = pipelineF32;
+    this.pipelineDS = pipelineDS;
+    this.pipelineQS = pipelineQS;
     this.postPipeline = postPipeline;
 
     this.sampler = this.device.createSampler({
@@ -107,7 +132,7 @@ export class Renderer {
 
   createBindGroup() {
     this.bindGroup = this.device.createBindGroup({
-      layout: this.pipeline.getBindGroupLayout(0),
+      layout: this.pipelineQS.getBindGroupLayout(0),
       entries: [
         { binding: 0, resource: { buffer: this.uniformBuffer } },
         { binding: 1, resource: { buffer: this.referenceOrbitBuffer } },
@@ -307,7 +332,17 @@ export class Renderer {
         ],
       });
 
-      passEncoder.setPipeline(this.pipeline);
+      // Select the pipeline corresponding to the current zoom level to optimize rendering performance
+      const logZoom = -Math.log10(state.targetZoom);
+      let activePipeline;
+      if (logZoom < 7.0) {
+        activePipeline = this.pipelineF32;
+      } else if (logZoom < 14.0) {
+        activePipeline = this.pipelineDS;
+      } else {
+        activePipeline = this.pipelineQS;
+      }
+      passEncoder.setPipeline(activePipeline);
       passEncoder.setViewport(
         0,
         0,

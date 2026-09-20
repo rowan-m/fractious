@@ -261,6 +261,52 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
   return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
+struct ds_complex {
+  re: vec2<f32>,
+  im: vec2<f32>,
+};
+
+fn ds_add(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+  let s = a.x + b.x;
+  let v = s - a.x;
+  let e = (a.x - (s - v)) + (b.x - v) + a.y + b.y;
+  let hi = s + e;
+  let lo = e - (hi - s);
+  return vec2<f32>(hi, lo);
+}
+
+fn ds_sub(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+  return ds_add(a, -b);
+}
+
+fn ds_mul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+  let p = a.x * b.x;
+  let e1 = fma(a.x, b.x, -p);
+  let e2 = a.y * b.x + a.x * b.y;
+  let hi = p + e2;
+  let lo = e1 + e2 - (hi - p);
+  return vec2<f32>(hi, lo);
+}
+
+fn dc_add(a: ds_complex, b: ds_complex) -> ds_complex {
+  return ds_complex(ds_add(a.re, b.re), ds_add(a.im, b.im));
+}
+
+fn dc_mul(a: ds_complex, b: ds_complex) -> ds_complex {
+  let re_term1 = ds_mul(a.re, b.re);
+  let re_term2 = ds_mul(a.im, b.im);
+  let im_term1 = ds_mul(a.re, b.im);
+  let im_term2 = ds_mul(a.im, b.re);
+  return ds_complex(ds_sub(re_term1, re_term2), ds_add(im_term1, im_term2));
+}
+
+fn dc_sq(a: ds_complex) -> ds_complex {
+  let re_term1 = ds_mul(a.re, a.re);
+  let re_term2 = ds_mul(a.im, a.im);
+  let im_term = ds_mul(a.re, a.im);
+  return ds_complex(ds_sub(re_term1, re_term2), ds_add(im_term, im_term));
+}
+
 @vertex
 fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
   var pos = array<vec2<f32>, 6>(
@@ -285,7 +331,178 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
 }
 
 @fragment
-fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+fn fs_main_f32(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+  // Correction for aspect ratio
+  var c_delta = uv;
+  c_delta.x = c_delta.x * uniforms.aspect_ratio;
+  
+  // Rotation
+  let cos_r = cos(uniforms.rotation);
+  let sin_r = sin(uniforms.rotation);
+  let rotated = vec2<f32>(
+      c_delta.x * cos_r - c_delta.y * sin_r,
+      c_delta.x * sin_r + c_delta.y * cos_r
+  );
+
+  let center_x = uniforms.center0.x;
+  let center_y = uniforms.center0.y;
+  
+  // Compute pixel offsets in native single-precision
+  let dx = rotated.x * uniforms.zoom.x;
+  let dy = rotated.y * uniforms.zoom.x;
+
+  let c_delta_re = center_x + dx;
+  let c_delta_im = center_y + dy;
+  
+  var delta_re = 0.0;
+  var delta_im = 0.0;
+  
+  var i: u32 = 0u;
+  var zn_sq: f32 = 0.0;
+  var zn_sp = vec2<f32>(0.0, 0.0);
+
+  loop {
+    if (i >= uniforms.iter) { break; }
+    
+    // Load Xn (Reference in F32)
+    let raw_xn = reference_orbit[i]; 
+    let x_re = raw_xn.re.x;
+    let x_im = raw_xn.im.x;
+    
+    // delta_{n+1} = 2 * X_n * delta_n + delta_n^2 + delta_0
+    let two_xn_delta_re = 2.0 * (x_re * delta_re - x_im * delta_im);
+    let two_xn_delta_im = 2.0 * (x_re * delta_im + x_im * delta_re);
+    
+    let delta_sq_re = delta_re * delta_re - delta_im * delta_im;
+    let delta_sq_im = 2.0 * delta_re * delta_im;
+    
+    delta_re = two_xn_delta_re + delta_sq_re + c_delta_re;
+    delta_im = two_xn_delta_im + delta_sq_im + c_delta_im;
+    
+    let next_i = i + 1u;
+    let raw_xn_next = reference_orbit[next_i];
+    
+    // Compute zn in single precision
+    let zn_re = raw_xn_next.re.x + delta_re;
+    let zn_im = raw_xn_next.im.x + delta_im;
+    zn_sq = zn_re * zn_re + zn_im * zn_im;
+    
+    if (zn_sq > 4.0) {
+        zn_sp = vec2<f32>(zn_re, zn_im);
+        i = next_i; 
+        break;
+    }
+    
+    i = next_i;
+  }
+  
+  if (i >= uniforms.iter) {
+    return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+  }
+  
+  let raw_co = f32(i) + 1.0 - log2(max(1.0, log2(zn_sq)));
+  let co = sqrt(max(0.0, raw_co) / 256.0) * uniforms.huestep;
+  
+  var hsv: vec3<f32>;
+  hsv.x = fract(uniforms.hue + 1.0 + sin(6.2831 * co) * 0.5);
+  hsv.y = 0.25 + 0.6 * (sin(6.2831 * co) + 1.0) * 0.5;
+  hsv.z = 0.1 + 0.85 * (sin(6.2831 * co * 1.2) + 1.0) * 0.5;
+  
+  let col = hsv2rgb(hsv);
+  
+  let falloff = 0.996 + 0.06 * rand(uv + vec2<f32>(zn_sp.y, zn_sp.x));
+
+  return vec4<f32>(col * falloff, 1.0);
+}
+
+@fragment
+fn fs_main_ds(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+  // Correction for aspect ratio
+  var c_delta = uv;
+  c_delta.x = c_delta.x * uniforms.aspect_ratio;
+  
+  // Rotation
+  let cos_r = cos(uniforms.rotation);
+  let sin_r = sin(uniforms.rotation);
+  let rotated = vec2<f32>(
+      c_delta.x * cos_r - c_delta.y * sin_r,
+      c_delta.x * sin_r + c_delta.y * cos_r
+  );
+
+  let center_x_ds = vec2<f32>(uniforms.center0.x, uniforms.center1.x);
+  let center_y_ds = vec2<f32>(uniforms.center0.y, uniforms.center1.y);
+  let zoom_ds = vec2<f32>(uniforms.zoom.x, uniforms.zoom.y);
+  
+  // Compute pixel offsets in emulated Double-Single precision
+  let dx_ds = ds_mul(zoom_ds, vec2<f32>(rotated.x, 0.0));
+  let dy_ds = ds_mul(zoom_ds, vec2<f32>(rotated.y, 0.0));
+
+  let c_delta_re = ds_add(center_x_ds, dx_ds);
+  let c_delta_im = ds_add(center_y_ds, dy_ds);
+  
+  let c_delta_ds = ds_complex(c_delta_re, c_delta_im);
+  
+  var delta = ds_complex(vec2<f32>(0.0), vec2<f32>(0.0));
+  
+  var i: u32 = 0u;
+  var zn_sq: f32 = 0.0;
+  var zn_sp = vec2<f32>(0.0, 0.0);
+
+  loop {
+    if (i >= uniforms.iter) { break; }
+    
+    // Load Xn (Reference in Double-Single)
+    let raw_xn = reference_orbit[i]; 
+    let x_re = vec2<f32>(raw_xn.re.x, raw_xn.re.y);
+    let x_im = vec2<f32>(raw_xn.im.x, raw_xn.im.y);
+    let xn = ds_complex(x_re, x_im);
+    
+    // delta_{n+1} = 2 * X_n * delta_n + delta_n^2 + delta_0
+    let xn_delta = dc_mul(xn, delta);
+    let two_xn_delta = ds_complex(xn_delta.re * 2.0, xn_delta.im * 2.0);
+    
+    let delta_sq = dc_sq(delta);
+    
+    delta = dc_add(dc_add(two_xn_delta, delta_sq), c_delta_ds);
+    
+    let next_i = i + 1u;
+    let raw_xn_next = reference_orbit[next_i];
+    
+    // Compute zn in single precision
+    let zn_re = raw_xn_next.re.x + delta.re.x;
+    let zn_im = raw_xn_next.im.x + delta.im.x;
+    zn_sq = zn_re * zn_re + zn_im * zn_im;
+    
+    if (zn_sq > 4.0) {
+        zn_sp = vec2<f32>(zn_re, zn_im);
+        i = next_i; 
+        break;
+    }
+    
+    i = next_i;
+  }
+  
+  if (i >= uniforms.iter) {
+    return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+  }
+  
+  let raw_co = f32(i) + 1.0 - log2(max(1.0, log2(zn_sq)));
+  let co = sqrt(max(0.0, raw_co) / 256.0) * uniforms.huestep;
+  
+  var hsv: vec3<f32>;
+  hsv.x = fract(uniforms.hue + 1.0 + sin(6.2831 * co) * 0.5);
+  hsv.y = 0.25 + 0.6 * (sin(6.2831 * co) + 1.0) * 0.5;
+  hsv.z = 0.1 + 0.85 * (sin(6.2831 * co * 1.2) + 1.0) * 0.5;
+  
+  let col = hsv2rgb(hsv);
+  
+  let falloff = 0.996 + 0.06 * rand(uv + vec2<f32>(zn_sp.y, zn_sp.x));
+
+  return vec4<f32>(col * falloff, 1.0);
+}
+
+@fragment
+fn fs_main_qs(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   // Correction for aspect ratio
   var c_delta = uv;
   c_delta.x = c_delta.x * uniforms.aspect_ratio;
