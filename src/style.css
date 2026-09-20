@@ -103,6 +103,7 @@ canvas:active {
 }
 
 .pin {
+  z-index: 2;
   position: absolute;
   width: 0px;
   height: 0px;

@@ -13,16 +13,21 @@ export class Renderer {
     this.device = null;
     this.context = null;
     this.format = null;
-    this.pipeline = null;
+    this.pipelineF32 = null;
+    this.pipelineDS = null;
+    this.pipelineQS = null;
     this.postPipeline = null;
     this.sampler = null;
-    this.bindGroup = null;
+    this.bindGroupF32 = null;
+    this.bindGroupDS = null;
+    this.bindGroupQS = null;
     this.postBindGroup = null;
     this.uniformBuffer = null;
     this.referenceOrbitBuffer = null;
     this.referenceOrbitSize = 0;
     this.offscreenTexture = null;
     this.offscreenTextureView = null;
+    this.lastPipelineName = null;
     this.uniformBufferSize = 80;
     this.uniformData = new ArrayBuffer(this.uniformBufferSize);
     this.uniformDataView = new DataView(this.uniformData);
@@ -71,30 +76,53 @@ export class Renderer {
     const postModule = this.device.createShaderModule({ code: postShaderCode });
 
     // Parallelize pipeline compilations asynchronously on background helper threads
-    const [pipeline, postPipeline] = await Promise.all([
-      this.device.createRenderPipelineAsync({
-        layout: 'auto',
-        vertex: { module, entryPoint: 'vs_main' },
-        fragment: {
-          module,
-          entryPoint: 'fs_main',
-          targets: [{ format: this.format }],
-        },
-        primitive: { topology: 'triangle-list' },
-      }),
-      this.device.createRenderPipelineAsync({
-        layout: 'auto',
-        vertex: { module: postModule, entryPoint: 'vs_main' },
-        fragment: {
-          module: postModule,
-          entryPoint: 'fs_main',
-          targets: [{ format: this.format }],
-        },
-        primitive: { topology: 'triangle-list' },
-      }),
-    ]);
+    const [pipelineF32, pipelineDS, pipelineQS, postPipeline] =
+      await Promise.all([
+        this.device.createRenderPipelineAsync({
+          layout: 'auto',
+          vertex: { module, entryPoint: 'vs_main' },
+          fragment: {
+            module,
+            entryPoint: 'fs_main_f32',
+            targets: [{ format: this.format }],
+          },
+          primitive: { topology: 'triangle-list' },
+        }),
+        this.device.createRenderPipelineAsync({
+          layout: 'auto',
+          vertex: { module, entryPoint: 'vs_main' },
+          fragment: {
+            module,
+            entryPoint: 'fs_main_ds',
+            targets: [{ format: this.format }],
+          },
+          primitive: { topology: 'triangle-list' },
+        }),
+        this.device.createRenderPipelineAsync({
+          layout: 'auto',
+          vertex: { module, entryPoint: 'vs_main' },
+          fragment: {
+            module,
+            entryPoint: 'fs_main_qs',
+            targets: [{ format: this.format }],
+          },
+          primitive: { topology: 'triangle-list' },
+        }),
+        this.device.createRenderPipelineAsync({
+          layout: 'auto',
+          vertex: { module: postModule, entryPoint: 'vs_main' },
+          fragment: {
+            module: postModule,
+            entryPoint: 'fs_main',
+            targets: [{ format: this.format }],
+          },
+          primitive: { topology: 'triangle-list' },
+        }),
+      ]);
 
-    this.pipeline = pipeline;
+    this.pipelineF32 = pipelineF32;
+    this.pipelineDS = pipelineDS;
+    this.pipelineQS = pipelineQS;
     this.postPipeline = postPipeline;
 
     this.sampler = this.device.createSampler({
@@ -106,8 +134,22 @@ export class Renderer {
   }
 
   createBindGroup() {
-    this.bindGroup = this.device.createBindGroup({
-      layout: this.pipeline.getBindGroupLayout(0),
+    this.bindGroupF32 = this.device.createBindGroup({
+      layout: this.pipelineF32.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: this.uniformBuffer } },
+        { binding: 1, resource: { buffer: this.referenceOrbitBuffer } },
+      ],
+    });
+    this.bindGroupDS = this.device.createBindGroup({
+      layout: this.pipelineDS.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: this.uniformBuffer } },
+        { binding: 1, resource: { buffer: this.referenceOrbitBuffer } },
+      ],
+    });
+    this.bindGroupQS = this.device.createBindGroup({
+      layout: this.pipelineQS.getBindGroupLayout(0),
       entries: [
         { binding: 0, resource: { buffer: this.uniformBuffer } },
         { binding: 1, resource: { buffer: this.referenceOrbitBuffer } },
@@ -134,7 +176,7 @@ export class Renderer {
 
     // ⚡ Bolt: Avoid redundant GPUBindGroup re-creation. writeBuffer updates
     // data in-place. Only re-create if the buffer itself was newly allocated.
-    if (bufferRecreated || !this.bindGroup) {
+    if (bufferRecreated || !this.bindGroupQS) {
       this.createBindGroup();
     }
   }
@@ -183,10 +225,22 @@ export class Renderer {
       targetScale = Math.min(INTERACTION_SCALE_LIMIT, targetScale);
       state.totalPasses = 1;
     } else {
+      // Determine active precision tier to dynamically scale operations capability.
+      // Since hardware F32 is extremely cheap, we can compute 20x more ops in a single frame.
+      const logZoom = -Math.log10(state.targetZoom);
+      let opsMultiplier;
+      if (logZoom < 7.0) {
+        opsMultiplier = 20.0; // Tier 1: F32 is native and extremely fast (4 Billion ops/frame)
+      } else if (logZoom < 14.0) {
+        opsMultiplier = 4.0; // Tier 2: Double-Single is moderately fast (800 Million ops/frame)
+      } else {
+        opsMultiplier = 1.0; // Tier 3: Quad-Single (default 200 Million ops/frame)
+      }
+
       const totalOps = currentPixels * config.iter;
       state.totalPasses = Math.max(
         1,
-        Math.ceil(totalOps / PROGRESSIVE_MAX_OPS),
+        Math.ceil(totalOps / (PROGRESSIVE_MAX_OPS * opsMultiplier)),
       );
     }
 
@@ -307,7 +361,33 @@ export class Renderer {
         ],
       });
 
-      passEncoder.setPipeline(this.pipeline);
+      // Select the pipeline corresponding to the current zoom level to optimize rendering performance
+      const logZoom = -Math.log10(state.targetZoom);
+      let activePipeline;
+      let activeBindGroup;
+      let pipelineName;
+      if (logZoom < 7.0) {
+        activePipeline = this.pipelineF32;
+        activeBindGroup = this.bindGroupF32;
+        pipelineName = 'F32 (Tier 1 - Native Hardware)';
+      } else if (logZoom < 14.0) {
+        activePipeline = this.pipelineDS;
+        activeBindGroup = this.bindGroupDS;
+        pipelineName = 'Double-Single (Tier 2 - Emulated 64-bit)';
+      } else {
+        activePipeline = this.pipelineQS;
+        activeBindGroup = this.bindGroupQS;
+        pipelineName = 'Quad-Single (Tier 3 - Emulated 128-bit)';
+      }
+
+      if (pipelineName !== this.lastPipelineName) {
+        console.info(
+          `[WebGPU] Active Precision: ${pipelineName} (Log10 Zoom: -${logZoom.toFixed(2)})`,
+        );
+        this.lastPipelineName = pipelineName;
+      }
+
+      passEncoder.setPipeline(activePipeline);
       passEncoder.setViewport(
         0,
         0,
@@ -325,8 +405,8 @@ export class Renderer {
         );
       }
 
-      if (this.bindGroup) {
-        passEncoder.setBindGroup(0, this.bindGroup);
+      if (activeBindGroup) {
+        passEncoder.setBindGroup(0, activeBindGroup);
         passEncoder.draw(6);
       }
       passEncoder.end();
