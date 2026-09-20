@@ -34,7 +34,7 @@
     "@vitest/coverage-v8": "^5.0.1",
     "audit-ci": "^7.1.0",
     "bundlesize": "^0.18.2",
-    "dependency-cruiser": "^18.3.1",
+    "dependency-cruiser": "^18.4.0",
     "esbuild": "^0.28.2",
     "eslint": "^10.11.0",
     "eslint-plugin-no-unsanitized": "^4.1.5",
@@ -56,7 +56,8 @@
   "allowScripts": {
     "wasm-pack@0.15.0": true,
     "@swc/core@1.16.2": true,
-    "esbuild@0.28.2": true
+    "esbuild@0.28.2": true,
+    "iltorb@2.4.5": true
   },
   "bundlesize": [
     {
