@@ -244,9 +244,9 @@ export class InteractionManager {
     const dx = shiftX * c - shiftY * s;
     const dy = shiftX * s + shiftY * c;
 
-    this.config.centerX = add_coord(this.config.centerX, dx.toString());
+    this.config.centerX = add_coord(this.config.centerX, dx);
     this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
-    this.config.centerY = add_coord(this.config.centerY, dy.toString());
+    this.config.centerY = add_coord(this.config.centerY, dy);
     this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
     this.callbacks.onInteract(true);
   }
