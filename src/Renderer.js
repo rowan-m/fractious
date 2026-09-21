@@ -43,6 +43,7 @@ export class Renderer {
     const adapter = await navigator.gpu.requestAdapter();
     if (!adapter) {
       console.error('No WebGPU adapter found');
+      document.body.textContent = 'No WebGPU adapter found in this browser.';
       return false;
     }
 
