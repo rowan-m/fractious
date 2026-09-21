@@ -187,13 +187,15 @@ export class InteractionManager {
 
     inputs.c_re.addEventListener('change', () => {
       this.config.centerX = inputs.c_re.value;
-      this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
+      this.state.refX = this.config.centerX;
+      this.state.offsetX = 0;
       this.callbacks.onInteract(true);
     });
 
     inputs.c_im.addEventListener('change', () => {
       this.config.centerY = inputs.c_im.value;
-      this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
+      this.state.refY = this.config.centerY;
+      this.state.offsetY = 0;
       this.callbacks.onInteract(true);
     });
 
