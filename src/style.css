@@ -60,7 +60,7 @@ h1 {
   font-style: italic;
   font-weight: 100;
   color: #94a3b8;
-  font-size: var(--font-size) * 0.8;
+  font-size: calc(var(--font-size) * 0.8);
 }
 
 a {
@@ -195,7 +195,7 @@ input[name='hue'],
 input[name='huestep'],
 input[name='rotation'],
 input[name='iterations'] {
-  width: 6ch;
+  width: 8ch;
 }
 
 footer {
