@@ -330,19 +330,41 @@ fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
   return output;
 }
 
-@fragment
-fn fs_main_f32(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
-  // Correction for aspect ratio
+fn compute_rotated_uv(uv: vec2<f32>) -> vec2<f32> {
   var c_delta = uv;
   c_delta.x = c_delta.x * uniforms.aspect_ratio;
-  
-  // Rotation
+
   let cos_r = cos(uniforms.rotation);
   let sin_r = sin(uniforms.rotation);
-  let rotated = vec2<f32>(
+  return vec2<f32>(
       c_delta.x * cos_r - c_delta.y * sin_r,
       c_delta.x * sin_r + c_delta.y * cos_r
   );
+}
+
+fn compute_color(i: u32, zn_sq: f32, zn_sp: vec2<f32>, uv: vec2<f32>) -> vec4<f32> {
+  if (i >= uniforms.iter) {
+    return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+  }
+
+  let raw_co = f32(i) + 1.0 - log2(max(1.0, log2(zn_sq)));
+  let co = sqrt(max(0.0, raw_co) / 256.0) * uniforms.huestep;
+
+  var hsv: vec3<f32>;
+  hsv.x = fract(uniforms.hue + 1.0 + sin(6.2831 * co) * 0.5);
+  hsv.y = 0.25 + 0.6 * (sin(6.2831 * co) + 1.0) * 0.5;
+  hsv.z = 0.1 + 0.85 * (sin(6.2831 * co * 1.2) + 1.0) * 0.5;
+
+  let col = hsv2rgb(hsv);
+
+  let falloff = 0.996 + 0.06 * rand(uv + vec2<f32>(zn_sp.y, zn_sp.x));
+
+  return vec4<f32>(col * falloff, 1.0);
+}
+
+@fragment
+fn fs_main_f32(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+  let rotated = compute_rotated_uv(uv);
 
   let center_x = uniforms.center0.x;
   let center_y = uniforms.center0.y;
@@ -396,38 +418,12 @@ fn fs_main_f32(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     i = next_i;
   }
   
-  if (i >= uniforms.iter) {
-    return vec4<f32>(0.0, 0.0, 0.0, 1.0);
-  }
-  
-  let raw_co = f32(i) + 1.0 - log2(max(1.0, log2(zn_sq)));
-  let co = sqrt(max(0.0, raw_co) / 256.0) * uniforms.huestep;
-  
-  var hsv: vec3<f32>;
-  hsv.x = fract(uniforms.hue + 1.0 + sin(6.2831 * co) * 0.5);
-  hsv.y = 0.25 + 0.6 * (sin(6.2831 * co) + 1.0) * 0.5;
-  hsv.z = 0.1 + 0.85 * (sin(6.2831 * co * 1.2) + 1.0) * 0.5;
-  
-  let col = hsv2rgb(hsv);
-  
-  let falloff = 0.996 + 0.06 * rand(uv + vec2<f32>(zn_sp.y, zn_sp.x));
-
-  return vec4<f32>(col * falloff, 1.0);
+  return compute_color(i, zn_sq, zn_sp, uv);
 }
 
 @fragment
 fn fs_main_ds(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
-  // Correction for aspect ratio
-  var c_delta = uv;
-  c_delta.x = c_delta.x * uniforms.aspect_ratio;
-  
-  // Rotation
-  let cos_r = cos(uniforms.rotation);
-  let sin_r = sin(uniforms.rotation);
-  let rotated = vec2<f32>(
-      c_delta.x * cos_r - c_delta.y * sin_r,
-      c_delta.x * sin_r + c_delta.y * cos_r
-  );
+  let rotated = compute_rotated_uv(uv);
 
   let center_x_ds = vec2<f32>(uniforms.center0.x, uniforms.center1.x);
   let center_y_ds = vec2<f32>(uniforms.center0.y, uniforms.center1.y);
@@ -482,38 +478,12 @@ fn fs_main_ds(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     i = next_i;
   }
   
-  if (i >= uniforms.iter) {
-    return vec4<f32>(0.0, 0.0, 0.0, 1.0);
-  }
-  
-  let raw_co = f32(i) + 1.0 - log2(max(1.0, log2(zn_sq)));
-  let co = sqrt(max(0.0, raw_co) / 256.0) * uniforms.huestep;
-  
-  var hsv: vec3<f32>;
-  hsv.x = fract(uniforms.hue + 1.0 + sin(6.2831 * co) * 0.5);
-  hsv.y = 0.25 + 0.6 * (sin(6.2831 * co) + 1.0) * 0.5;
-  hsv.z = 0.1 + 0.85 * (sin(6.2831 * co * 1.2) + 1.0) * 0.5;
-  
-  let col = hsv2rgb(hsv);
-  
-  let falloff = 0.996 + 0.06 * rand(uv + vec2<f32>(zn_sp.y, zn_sp.x));
-
-  return vec4<f32>(col * falloff, 1.0);
+  return compute_color(i, zn_sq, zn_sp, uv);
 }
 
 @fragment
 fn fs_main_qs(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
-  // Correction for aspect ratio
-  var c_delta = uv;
-  c_delta.x = c_delta.x * uniforms.aspect_ratio;
-  
-  // Rotation
-  let cos_r = cos(uniforms.rotation);
-  let sin_r = sin(uniforms.rotation);
-  let rotated = vec2<f32>(
-      c_delta.x * cos_r - c_delta.y * sin_r,
-      c_delta.x * sin_r + c_delta.y * cos_r
-  );
+  let rotated = compute_rotated_uv(uv);
 
   let center_x_qs = vec4<f32>(uniforms.center0.x, uniforms.center1.x, uniforms.center2.x, uniforms.center3.x);
   let center_y_qs = vec4<f32>(uniforms.center0.y, uniforms.center1.y, uniforms.center2.y, uniforms.center3.y);
@@ -565,21 +535,5 @@ fn fs_main_qs(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     i = next_i;
   }
   
-  if (i >= uniforms.iter) {
-    return vec4<f32>(0.0, 0.0, 0.0, 1.0);
-  }
-  
-  let raw_co = f32(i) + 1.0 - log2(max(1.0, log2(zn_sq)));
-  let co = sqrt(max(0.0, raw_co) / 256.0) * uniforms.huestep;
-  
-  var hsv: vec3<f32>;
-  hsv.x = fract(uniforms.hue + 1.0 + sin(6.2831 * co) * 0.5);
-  hsv.y = 0.25 + 0.6 * (sin(6.2831 * co) + 1.0) * 0.5;
-  hsv.z = 0.1 + 0.85 * (sin(6.2831 * co * 1.2) + 1.0) * 0.5;
-  
-  let col = hsv2rgb(hsv);
-  
-  let falloff = 0.996 + 0.06 * rand(uv + vec2<f32>(zn_sp.y, zn_sp.x));
-
-  return vec4<f32>(col * falloff, 1.0);
+  return compute_color(i, zn_sq, zn_sp, uv);
 }
