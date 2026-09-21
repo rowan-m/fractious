@@ -76,7 +76,9 @@ export class Fractious {
     const parseNumStr = (key, callback) => {
       if (params.has(key)) {
         const val = params.get(key);
-        if (!isNaN(parseFloat(val)) && isFinite(val)) callback(val);
+        if (val.length <= 2000 && !isNaN(parseFloat(val)) && isFinite(val)) {
+          callback(val);
+        }
       }
     };
 
