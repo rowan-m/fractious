@@ -65,6 +65,6 @@ npm run test
 If you add new dependencies, make sure you run a full install and commit the lock file.
 
 ```
-npm run i
-git add package.json package-lock.json`
+npm i
+git add package.json package-lock.json
 ```

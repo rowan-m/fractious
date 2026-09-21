@@ -24,7 +24,7 @@
     "lint:rust": "cd wasm && cargo clippy --all-targets -- -D warnings",
     "lint:shaders": "wgslender validate src/renderer/shader.wgsl src/renderer/post.wgsl",
     "preview": "vite preview",
-    "test": "npm run test:wasm && npm run test:web",
+    "test": "npm run build:wasm && npm run test:wasm && npm run test:web",
     "test:wasm": "cd wasm && wasm-pack test --node",
     "test:web": "vitest run",
     "update:wasm": "cd wasm && cargo update"
