@@ -66,7 +66,7 @@ export class Renderer {
     });
 
     // initial minimal size, will be updated when orbit arrives
-    this.referenceOrbitSize = 200 * 8 * 4;
+    this.referenceOrbitSize = (200 + 1) * 8 * 4;
     this.referenceOrbitBuffer = this.device.createBuffer({
       size: Math.max(this.referenceOrbitSize, 16),
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
@@ -327,8 +327,14 @@ export class Renderer {
     dv.setFloat32(36, splitZoom[1], true);
     dv.setFloat32(40, splitZoom[2], true);
     dv.setFloat32(44, splitZoom[3], true);
+    const maxBufferIter = Math.max(
+      0,
+      Math.floor(this.referenceOrbitSize / 32) - 1,
+    );
+    const clampedIter = Math.min(config.iter, maxBufferIter);
+
     dv.setFloat32(48, aspect, true);
-    dv.setUint32(52, config.iter, true);
+    dv.setUint32(52, clampedIter, true);
     dv.setFloat32(56, config.hue, true);
     dv.setFloat32(60, config.hueStep, true);
     dv.setFloat32(64, config.rotation, true);
