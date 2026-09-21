@@ -440,7 +440,7 @@ export class Renderer {
 
   _updateBackgroundCanvas(state) {
     if (
-      state.totalPasses === 1 &&
+      state.currentPass >= state.totalPasses &&
       this.canvas.width > 0 &&
       this.canvas.height > 0 &&
       this.bgCanvas
