@@ -162,6 +162,10 @@ canvas:active {
   color: #cbd5e1;
 }
 
+.stats label.locked {
+  border-color: rgba(255, 166, 0, 0.45);
+}
+
 .stats input {
   color: #f1f5f9;
   background-color: transparent;
@@ -171,15 +175,47 @@ canvas:active {
   outline: none;
 }
 
-.stats input[readonly] {
-  cursor: default;
-  opacity: 0.7;
+.stats label:not(.locked) input[name='iterations']:not(:focus) {
+  opacity: 0.75;
   color: #94a3b8;
 }
 
 .stats input:focus {
   outline: 1px solid rgba(255, 166, 0, 0.5);
   border-radius: 2px;
+}
+
+.iter-lock {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 0 0.1rem;
+  margin: 0;
+  font-size: var(--font-size);
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.75;
+  user-select: none;
+  transition:
+    opacity 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.stats label.locked .iter-lock,
+.iter-lock:hover,
+.iter-lock:focus-visible {
+  opacity: 1;
+}
+
+.iter-lock:hover,
+.iter-lock:focus-visible {
+  border-color: rgba(255, 166, 0, 0.5);
+  outline: none;
+}
+
+.iter-lock:active {
+  transform: scale(0.9);
 }
 
 input[name='centerx'],

@@ -5,6 +5,7 @@ export function createDefaultConfig() {
     zoom: 2.0,
     rotation: 0.0,
     iter: 200,
+    manualIter: false,
     hue: 0.6,
     hueStep: 1.0,
   };

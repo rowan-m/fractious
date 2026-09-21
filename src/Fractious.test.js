@@ -80,6 +80,45 @@ describe('Fractious URL parsing', () => {
       '?x=2.0&y=1.0&z=2.000&r=3.142&h=0.500&s=0.100',
     );
   });
+
+  it('should parse manual iterations override i from URL and keep it over zoom default', () => {
+    window.location.search = '?z=2&i=50000';
+    fractious.parseURL();
+
+    expect(config.iter).toBe(50000);
+    expect(config.manualIter).toBe(true);
+  });
+
+  it('should include i in URL when manualIter is true and remove it when false', () => {
+    vi.stubGlobal('window', {
+      location: { search: '' },
+      history: { replaceState: vi.fn() },
+    });
+
+    config.centerX = '2.0';
+    config.centerY = '1.0';
+    config.zoom = 0.01;
+    config.rotation = 0;
+    config.hue = 0.5;
+    config.hueStep = 0.1;
+    config.iter = 25000;
+    config.manualIter = true;
+
+    fractious.updateURL();
+    expect(window.history.replaceState).toHaveBeenLastCalledWith(
+      {},
+      '',
+      '?x=2.0&y=1.0&z=2.000&r=0.000&h=0.500&s=0.100&i=25000',
+    );
+
+    config.manualIter = false;
+    fractious.updateURL();
+    expect(window.history.replaceState).toHaveBeenLastCalledWith(
+      {},
+      '',
+      '?x=2.0&y=1.0&z=2.000&r=0.000&h=0.500&s=0.100',
+    );
+  });
 });
 
 describe('Fractious interaction debouncing', () => {

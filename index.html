@@ -109,15 +109,27 @@
               id="huestep"
               aria-label="Hue steps"
           /></label>
-          <label title="Iterations"
+          <label title="Iterations" id="iterations-label"
             ><span aria-hidden="true">⚙️</span
             ><input
               type="number"
               name="iterations"
-              readonly
+              min="1"
+              max="2500000"
+              step="500"
               id="iterations"
               aria-label="Iterations"
-          /></label>
+            /><button
+              type="button"
+              id="btn-iter-lock"
+              class="iter-lock"
+              title="Auto iterations (click to lock current value)"
+              aria-label="Toggle manual iterations lock"
+              aria-pressed="false"
+            >
+              <span aria-hidden="true">🔓</span>
+            </button></label
+          >
         </form>
       </nav>
     </header>

@@ -99,10 +99,17 @@ export class Fractious {
     parseNum('r', (r) => (this.config.rotation = r));
     parseNum('h', (h) => (this.config.hue = h));
     parseNum('s', (s) => (this.config.hueStep = s));
+    parseNum('i', (i) => {
+      const iter = Math.floor(i);
+      if (iter >= 1) {
+        this.config.iter = Math.min(iter, 2500000);
+        this.config.manualIter = true;
+      }
+    });
 
     this.state.targetZoom = this.config.zoom;
 
-    if (this.config.zoom) {
+    if (this.config.zoom && !this.config.manualIter) {
       const logZoom = Math.log10(this.config.zoom);
       this.config.iter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
     }
@@ -120,6 +127,11 @@ export class Fractious {
     params.set('r', this.config.rotation.toFixed(3));
     params.set('h', this.config.hue.toFixed(3));
     params.set('s', this.config.hueStep.toFixed(3));
+    if (this.config.manualIter) {
+      params.set('i', String(Math.round(this.config.iter)));
+    } else {
+      params.delete('i');
+    }
     window.history.replaceState({}, '', `?${params.toString()}`);
   }
 

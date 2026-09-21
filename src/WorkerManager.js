@@ -33,7 +33,9 @@ export class WorkerManager {
 
     const aspect = canvasWidth / canvasHeight;
     const logZoom = Math.log10(config.zoom);
-    const requestedIter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
+    const requestedIter = config.manualIter
+      ? Math.min(Math.max(Math.floor(config.iter), 1), 2500000)
+      : Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
 
     let abortBuffer = null;
     if (typeof SharedArrayBuffer !== 'undefined') {
@@ -51,6 +53,7 @@ export class WorkerManager {
         scale: config.zoom,
         aspect,
         iter: requestedIter,
+        manualIter: Boolean(config.manualIter),
         abortBuffer,
       },
     });

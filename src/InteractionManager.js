@@ -33,6 +33,29 @@ export class InteractionManager {
     this._setVal(inputs.iterations, this.config.iter);
     this._setVal(inputs.hue, this.config.hue.toFixed(3));
     this._setVal(inputs.hueStep, this.config.hueStep.toFixed(3));
+    this._updateIterLockUI();
+  }
+
+  _updateIterLockUI() {
+    const isManual = Boolean(this.config.manualIter);
+    const { iterLock, iterLabel } = this.el;
+    if (iterLabel && iterLabel.classList) {
+      iterLabel.classList.toggle('locked', isManual);
+    }
+    if (iterLock) {
+      if (iterLock.setAttribute) {
+        iterLock.setAttribute('aria-pressed', String(isManual));
+      }
+      iterLock.title = isManual
+        ? 'Manual iterations locked (click to reset to auto)'
+        : 'Auto iterations (click to lock current value)';
+      const span = iterLock.querySelector
+        ? iterLock.querySelector('span')
+        : null;
+      const icon = isManual ? '🔒' : '🔓';
+      if (span) span.textContent = icon;
+      else iterLock.textContent = icon;
+    }
   }
 
   applyRotation(dx, dy, scale) {
@@ -231,6 +254,17 @@ export class InteractionManager {
         this.callbacks.onInteract(false);
       } else this.updateUI();
     });
+
+    if (inputs.iterations && inputs.iterations.addEventListener) {
+      inputs.iterations.addEventListener('change', () => {
+        const v = parseInt(inputs.iterations.value, 10);
+        if (!isNaN(v) && v >= 1) {
+          this.config.iter = Math.min(v, 2500000);
+          this.config.manualIter = true;
+          this.callbacks.onInteract(true);
+        } else this.updateUI();
+      });
+    }
   }
 
   _bindBtn(id, action) {
@@ -307,6 +341,23 @@ export class InteractionManager {
     });
   }
 
+  _bindIterLockButton() {
+    const btnIterLock =
+      this.el.iterLock || document.getElementById('btn-iter-lock');
+    if (btnIterLock) {
+      btnIterLock.onclick = () => {
+        this.config.manualIter = !this.config.manualIter;
+        if (this.config.manualIter && this.el.inputs?.iterations) {
+          const v = parseInt(this.el.inputs.iterations.value, 10);
+          if (!isNaN(v) && v >= 1) {
+            this.config.iter = Math.min(v, 2500000);
+          }
+        }
+        this.callbacks.onInteract(true);
+      };
+    }
+  }
+
   _bindUtilityButtons() {
     this._bindBtn('btn-screenshot', () => {
       this.callbacks.onScreenshotRequest();
@@ -339,6 +390,7 @@ export class InteractionManager {
     this._bindNavigationButtons();
     this._bindTransformButtons();
     this._bindColorButtons();
+    this._bindIterLockButton();
     this._bindUtilityButtons();
   }
 }

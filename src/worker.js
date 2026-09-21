@@ -31,7 +31,8 @@ async function handleCalculateReference(payload) {
   await initialize();
 
   try {
-    const { centerX, centerY, scale, aspect, iter, abortBuffer } = payload;
+    const { centerX, centerY, scale, aspect, iter, manualIter, abortBuffer } =
+      payload;
     const abortArray = abortBuffer ? new Int32Array(abortBuffer) : null;
 
     // ⚡ Bolt: Early return optimization. If the main thread has already
@@ -42,7 +43,10 @@ async function handleCalculateReference(payload) {
     }
 
     const prec = calculatePrecision(scale);
-    const searchLimit = Math.max(iter * 3, 5000);
+    const clampedManualIter = Math.min(Math.max(Math.floor(iter), 1), 2500000);
+    const searchLimit = manualIter
+      ? clampedManualIter
+      : Math.max(iter * 3, 5000);
 
     const anchor = find_best_anchor(
       centerX,
@@ -57,7 +61,9 @@ async function handleCalculateReference(payload) {
       return self.postMessage({ type: 'result', payload: { aborted: true } });
     }
 
-    const calcIter = calculateUpgradedIter(iter, anchor.iter, searchLimit);
+    const calcIter = manualIter
+      ? clampedManualIter
+      : calculateUpgradedIter(iter, anchor.iter, searchLimit);
     const orbit = calculate_reference(
       anchor.x,
       anchor.y,

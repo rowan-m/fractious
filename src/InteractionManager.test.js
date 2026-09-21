@@ -89,4 +89,40 @@ describe('InteractionManager updateUI', () => {
 
     expect(elements.inputs.c_re.value).toBe('1.5');
   });
+
+  it('should update iterations lock icon and label class when manualIter changes', () => {
+    const span = { textContent: '🔓' };
+    elements.iterLock = {
+      title: '',
+      setAttribute: vi.fn(),
+      querySelector: vi.fn(() => span),
+    };
+    elements.iterLabel = {
+      classList: { toggle: vi.fn() },
+    };
+
+    config.manualIter = false;
+    interactionManager.updateUI();
+    expect(span.textContent).toBe('🔓');
+    expect(elements.iterLock.setAttribute).toHaveBeenCalledWith(
+      'aria-pressed',
+      'false',
+    );
+    expect(elements.iterLabel.classList.toggle).toHaveBeenCalledWith(
+      'locked',
+      false,
+    );
+
+    config.manualIter = true;
+    interactionManager.updateUI();
+    expect(span.textContent).toBe('🔒');
+    expect(elements.iterLock.setAttribute).toHaveBeenCalledWith(
+      'aria-pressed',
+      'true',
+    );
+    expect(elements.iterLabel.classList.toggle).toHaveBeenCalledWith(
+      'locked',
+      true,
+    );
+  });
 });
