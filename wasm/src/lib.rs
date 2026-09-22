@@ -149,6 +149,124 @@ pub fn sub_coord(val1: String, val2: String) -> f64 {
     diff.to_f64().value()
 }
 
+fn probe_perturbation_f64(ref_orbit: &[(f64, f64)], dcx: f64, dcy: f64, max_iter: u32) -> u32 {
+    let ref_len = ref_orbit.len();
+    if ref_len <= 1 {
+        return 0;
+    }
+    let ref_max_m = ref_len - 1;
+    let mut dx = 0.0_f64;
+    let mut dy = 0.0_f64;
+    let mut m = 0_usize;
+
+    for i in 0..max_iter {
+        let (xm_r, xm_i) = ref_orbit[m];
+        // delta_{n+1} = 2 * X_m * delta_n + delta_n^2 + dc
+        let two_x_d_r = 2.0 * (xm_r * dx - xm_i * dy);
+        let two_x_d_i = 2.0 * (xm_r * dy + xm_i * dx);
+        let d2_r = dx * dx - dy * dy;
+        let d2_i = 2.0 * dx * dy;
+
+        dx = two_x_d_r + d2_r + dcx;
+        dy = two_x_d_i + d2_i + dcy;
+
+        let next_m = m + 1;
+        let (xnext_r, xnext_i) = ref_orbit[next_m];
+        let zx = xnext_r + dx;
+        let zy = xnext_i + dy;
+        let zn_sq = zx * zx + zy * zy;
+
+        if zn_sq > 4.0 {
+            return i + 1;
+        }
+
+        let d_sq = dx * dx + dy * dy;
+        if zn_sq < d_sq || next_m >= ref_max_m {
+            dx = zx;
+            dy = zy;
+            m = 0;
+        } else {
+            m = next_m;
+        }
+    }
+
+    max_iter
+}
+
+fn find_best_perturbation_offset(
+    ref_orbit: &[(f64, f64)],
+    ref_ox: f64,
+    ref_oy: f64,
+    scale: f64,
+    aspect: f64,
+    max_iter: u32,
+) -> (f64, f64) {
+    let mut best_ox = ref_ox;
+    let mut best_oy = ref_oy;
+    let mut best_iter = 0;
+    let mut best_dist_sq = f64::MAX;
+
+    // Stage 1: Coarse 11x11 survey across [-0.45, 0.45] of viewport
+    let coarse_step_y = scale * 0.09;
+    let coarse_step_x = scale * 0.09 * aspect;
+
+    for gy in -5..=5 {
+        for gx in -5..=5 {
+            let ox = (gx as f64) * coarse_step_x;
+            let oy = (gy as f64) * coarse_step_y;
+            let dcx = ox - ref_ox;
+            let dcy = oy - ref_oy;
+            let iter = probe_perturbation_f64(ref_orbit, dcx, dcy, max_iter);
+            let dist_sq = ox * ox + oy * oy;
+
+            if iter > best_iter || (iter == best_iter && dist_sq < best_dist_sq) {
+                best_iter = iter;
+                best_ox = ox;
+                best_oy = oy;
+                best_dist_sq = dist_sq;
+            }
+        }
+    }
+
+    // Stage 2 & 3: Local hill-climbing refinement (5x5 neighborhood around current best)
+    let mut step_x = coarse_step_x * 0.25;
+    let mut step_y = coarse_step_y * 0.25;
+
+    for _ in 0..2 {
+        if best_iter >= max_iter {
+            break;
+        }
+        let center_ox = best_ox;
+        let center_oy = best_oy;
+
+        for ly in -2..=2 {
+            for lx in -2..=2 {
+                if lx == 0 && ly == 0 {
+                    continue;
+                }
+                let ox = center_ox + (lx as f64) * step_x;
+                let oy = center_oy + (ly as f64) * step_y;
+                let dcx = ox - ref_ox;
+                let dcy = oy - ref_oy;
+                let iter = probe_perturbation_f64(ref_orbit, dcx, dcy, max_iter);
+                let dist_sq = ox * ox + oy * oy;
+
+                if iter > best_iter || (iter == best_iter && dist_sq < best_dist_sq) {
+                    best_iter = iter;
+                    best_ox = ox;
+                    best_oy = oy;
+                    best_dist_sq = dist_sq;
+                }
+            }
+        }
+
+        step_x *= 0.25;
+        step_y *= 0.25;
+    }
+
+    (best_ox, best_oy)
+}
+
 // Return tuple [x_str, y_str]
 #[wasm_bindgen]
 pub fn find_best_anchor(
@@ -172,11 +290,12 @@ pub fn find_best_anchor(
 
     // Scale is the vertical span (approx).
     // Multiply x-step by aspect to cover wide screen
-    // Dense Grid: Step 0.22 allows 5 points (-2 to 2) to cover approx -0.44 to 0.44 (90% view)
-    let step_y = Rational::try_from(scale * 0.22)
+    let step_y_f64 = scale * 0.22;
+    let step_x_f64 = scale * 0.22 * aspect;
+    let step_y = Rational::try_from(step_y_f64)
         .map(|r| DBig::from(r).with_precision(prec).value())
         .unwrap_or(DBig::ZERO);
-    let step_x = Rational::try_from(scale * 0.22 * aspect)
+    let step_x = Rational::try_from(step_x_f64)
         .map(|r| DBig::from(r).with_precision(prec).value())
         .unwrap_or(DBig::ZERO);
 
@@ -185,9 +304,12 @@ pub fn find_best_anchor(
     let mut best_iter = 0;
     let mut best_cx = center_x.clone();
     let mut best_cy = center_y.clone();
+    let mut best_ref_ox = 0.0_f64;
+    let mut best_ref_oy = 0.0_f64;
+    let mut best_ref_orbit: Vec<(f64, f64)> = Vec::new();
 
-    // 5x5 Grid Search: Center-out spiral order for maximum stability
-    let offsets: [(i32, i32); 25] = [
+    // Phase 1: Inner 3x3 center-out spiral in arbitrary precision
+    let inner_offsets: [(i32, i32); 9] = [
         (0, 0),
         (-1, 0),
         (1, 0),
@@ -197,25 +319,9 @@ pub fn find_best_anchor(
         (1, -1),
         (-1, 1),
         (1, 1),
-        (-2, 0),
-        (2, 0),
-        (0, -2),
-        (0, 2),
-        (-2, -1),
-        (-2, 1),
-        (2, -1),
-        (2, 1),
-        (-1, -2),
-        (1, -2),
-        (-1, 2),
-        (1, 2),
-        (-2, -2),
-        (2, -2),
-        (-2, 2),
-        (2, 2),
     ];
 
-    for &(ox_i, oy_i) in offsets.iter() {
+    for &(ox_i, oy_i) in inner_offsets.iter() {
         if is_aborted(&abort_flag) {
             break;
         }
@@ -225,6 +331,83 @@ pub fn find_best_anchor(
 
         let cx_probe = &center_x + (&step_x * dx_val);
         let cy_probe = &center_y + (&step_y * dy_val);
+
+        let cx = to_fbig(cx_probe.clone(), prec);
+        let cy = to_fbig(cy_probe.clone(), prec);
+
+        let mut zx = FBig::ZERO.with_precision(prec).value();
+        let mut zy = FBig::ZERO.with_precision(prec).value();
+        let mut current_orbit: Vec<(f64, f64)> = Vec::with_capacity((max_iter as usize) + 1);
+
+        let mut i = 0;
+        while i < max_iter {
+            if i % 1000 == 0 && is_aborted(&abort_flag) {
+                break;
+            }
+
+            current_orbit.push((zx.to_f64().value(), zy.to_f64().value()));
+
+            let zx2 = (&zx * &zx).with_precision(prec).value();
+            let zy2 = (&zy * &zy).with_precision(prec).value();
+
+            let sum2 = (&zx2 + &zy2).with_precision(prec).value();
+            if sum2 > f4 {
+                break;
+            }
+
+            let mut new_zy = zx;
+            new_zy *= &zy;
+            new_zy <<= 1;
+            new_zy += &cy;
+            zy = new_zy.with_precision(prec).value();
+
+            let mut new_zx = zx2;
+            new_zx -= &zy2;
+            new_zx += &cx;
+            zx = new_zx.with_precision(prec).value();
+            i += 1;
+        }
+
+        if i == max_iter {
+            current_orbit.push((zx.to_f64().value(), zy.to_f64().value()));
+        }
+
+        if i > best_iter {
+            best_iter = i;
+            best_cx = cx_probe;
+            best_cy = cy_probe;
+            best_ref_ox = (ox_i as f64) * step_x_f64;
+            best_ref_oy = (oy_i as f64) * step_y_f64;
+            best_ref_orbit = current_orbit;
+
+            if i >= max_iter {
+                break;
+            }
+        }
+    }
+
+    // Phase 2: If no inner spiral point reached max_iter, run a fast f64 perturbation
+    // coarse-to-fine search (11x11 survey + 2-stage local hill-climbing) using the best
+    // reference orbit found so far, then verify the winning hotspot in arbitrary precision.
+    if best_iter < max_iter && !is_aborted(&abort_flag) && best_ref_orbit.len() > 1 {
+        let (win_ox, win_oy) = find_best_perturbation_offset(
+            &best_ref_orbit,
+            best_ref_ox,
+            best_ref_oy,
+            scale,
+            aspect,
+            max_iter,
+        );
+
+        let dx_dbig = Rational::try_from(win_ox)
+            .map(|r| DBig::from(r).with_precision(prec).value())
+            .unwrap_or(DBig::ZERO);
+        let dy_dbig = Rational::try_from(win_oy)
+            .map(|r| DBig::from(r).with_precision(prec).value())
+            .unwrap_or(DBig::ZERO);
+
+        let cx_probe = &center_x + dx_dbig;
+        let cy_probe = &center_y + dy_dbig;
 
         let cx = to_fbig(cx_probe.clone(), prec);
         let cy = to_fbig(cy_probe.clone(), prec);
@@ -241,7 +424,6 @@ pub fn find_best_anchor(
             let zx2 = (&zx * &zx).with_precision(prec).value();
             let zy2 = (&zy * &zy).with_precision(prec).value();
 
-            // Sum calculation to avoid Approximation allocation (compare to f4 directly)
             let sum2 = (&zx2 + &zy2).with_precision(prec).value();
             if sum2 > f4 {
                 break;
@@ -264,10 +446,6 @@ pub fn find_best_anchor(
             best_iter = i;
             best_cx = cx_probe;
             best_cy = cy_probe;
-
-            if i >= max_iter {
-                break;
-            }
         }
     }
 

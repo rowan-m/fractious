@@ -235,7 +235,7 @@ struct Uniforms {
   rotation: f32,
   slice_scale: f32,
   slice_offset: f32,
-  pad2: f32,
+  ref_iter: u32,
 };
 
 struct OrbitPoint {
@@ -380,42 +380,51 @@ fn fs_main_f32(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   var delta_im = 0.0;
   
   var i: u32 = 0u;
+  var m: u32 = 0u;
   var zn_sq: f32 = 0.0;
   var zn_sp = vec2<f32>(0.0, 0.0);
 
   loop {
     if (i >= uniforms.iter) { break; }
     
-    // Load Xn (Reference in F32)
-    let raw_xn = reference_orbit[i]; 
-    let x_re = raw_xn.re.x;
-    let x_im = raw_xn.im.x;
+    // Load X_m (Reference in F32)
+    let raw_xm = reference_orbit[m]; 
+    let x_re = raw_xm.re.x;
+    let x_im = raw_xm.im.x;
     
-    // delta_{n+1} = 2 * X_n * delta_n + delta_n^2 + delta_0
-    let two_xn_delta_re = 2.0 * (x_re * delta_re - x_im * delta_im);
-    let two_xn_delta_im = 2.0 * (x_re * delta_im + x_im * delta_re);
+    // delta_{n+1} = 2 * X_m * delta_n + delta_n^2 + delta_0
+    let two_xm_delta_re = 2.0 * (x_re * delta_re - x_im * delta_im);
+    let two_xm_delta_im = 2.0 * (x_re * delta_im + x_im * delta_re);
     
     let delta_sq_re = delta_re * delta_re - delta_im * delta_im;
     let delta_sq_im = 2.0 * delta_re * delta_im;
     
-    delta_re = two_xn_delta_re + delta_sq_re + c_delta_re;
-    delta_im = two_xn_delta_im + delta_sq_im + c_delta_im;
+    delta_re = two_xm_delta_re + delta_sq_re + c_delta_re;
+    delta_im = two_xm_delta_im + delta_sq_im + c_delta_im;
     
-    let next_i = i + 1u;
-    let raw_xn_next = reference_orbit[next_i];
+    let next_m = m + 1u;
+    let raw_xm_next = reference_orbit[next_m];
     
     // Compute zn in single precision
-    let zn_re = raw_xn_next.re.x + delta_re;
-    let zn_im = raw_xn_next.im.x + delta_im;
+    let zn_re = raw_xm_next.re.x + delta_re;
+    let zn_im = raw_xm_next.im.x + delta_im;
     zn_sq = zn_re * zn_re + zn_im * zn_im;
     
+    i = i + 1u;
+
     if (zn_sq > 4.0) {
         zn_sp = vec2<f32>(zn_re, zn_im);
-        i = next_i; 
         break;
     }
     
-    i = next_i;
+    let delta_norm_sq = delta_re * delta_re + delta_im * delta_im;
+    if (zn_sq < delta_norm_sq || next_m >= uniforms.ref_iter) {
+        delta_re = zn_re;
+        delta_im = zn_im;
+        m = 0u;
+    } else {
+        m = next_m;
+    }
   }
   
   return compute_color(i, zn_sq, zn_sp, uv);
@@ -441,41 +450,53 @@ fn fs_main_ds(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   var delta = ds_complex(vec2<f32>(0.0), vec2<f32>(0.0));
   
   var i: u32 = 0u;
+  var m: u32 = 0u;
   var zn_sq: f32 = 0.0;
   var zn_sp = vec2<f32>(0.0, 0.0);
 
   loop {
     if (i >= uniforms.iter) { break; }
     
-    // Load Xn (Reference in Double-Single)
-    let raw_xn = reference_orbit[i]; 
-    let x_re = vec2<f32>(raw_xn.re.x, raw_xn.re.y);
-    let x_im = vec2<f32>(raw_xn.im.x, raw_xn.im.y);
-    let xn = ds_complex(x_re, x_im);
+    // Load X_m (Reference in Double-Single)
+    let raw_xm = reference_orbit[m]; 
+    let x_re = vec2<f32>(raw_xm.re.x, raw_xm.re.y);
+    let x_im = vec2<f32>(raw_xm.im.x, raw_xm.im.y);
+    let xm = ds_complex(x_re, x_im);
     
-    // delta_{n+1} = 2 * X_n * delta_n + delta_n^2 + delta_0
-    let xn_delta = dc_mul(xn, delta);
-    let two_xn_delta = ds_complex(xn_delta.re * 2.0, xn_delta.im * 2.0);
+    // delta_{n+1} = 2 * X_m * delta_n + delta_n^2 + delta_0
+    let xm_delta = dc_mul(xm, delta);
+    let two_xm_delta = ds_complex(xm_delta.re * 2.0, xm_delta.im * 2.0);
     
     let delta_sq = dc_sq(delta);
     
-    delta = dc_add(dc_add(two_xn_delta, delta_sq), c_delta_ds);
+    delta = dc_add(dc_add(two_xm_delta, delta_sq), c_delta_ds);
     
-    let next_i = i + 1u;
-    let raw_xn_next = reference_orbit[next_i];
+    let next_m = m + 1u;
+    let raw_xm_next = reference_orbit[next_m];
     
     // Compute zn in single precision
-    let zn_re = raw_xn_next.re.x + delta.re.x;
-    let zn_im = raw_xn_next.im.x + delta.im.x;
+    let zn_re = raw_xm_next.re.x + delta.re.x;
+    let zn_im = raw_xm_next.im.x + delta.im.x;
     zn_sq = zn_re * zn_re + zn_im * zn_im;
     
+    i = i + 1u;
+
     if (zn_sq > 4.0) {
         zn_sp = vec2<f32>(zn_re, zn_im);
-        i = next_i; 
         break;
     }
     
-    i = next_i;
+    let delta_norm_sq = delta.re.x * delta.re.x + delta.im.x * delta.im.x;
+    if (zn_sq < delta_norm_sq || next_m >= uniforms.ref_iter) {
+        let xm_next = ds_complex(
+            vec2<f32>(raw_xm_next.re.x, raw_xm_next.re.y),
+            vec2<f32>(raw_xm_next.im.x, raw_xm_next.im.y)
+        );
+        delta = dc_add(xm_next, delta);
+        m = 0u;
+    } else {
+        m = next_m;
+    }
   }
   
   return compute_color(i, zn_sq, zn_sp, uv);
@@ -500,39 +521,48 @@ fn fs_main_qs(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   var delta = qs_complex(vec4<f32>(0.0), vec4<f32>(0.0));
   
   var i: u32 = 0u;
+  var m: u32 = 0u;
   var zn_sq: f32 = 0.0;
   var zn_sp = vec2<f32>(0.0, 0.0);
 
   loop {
     if (i >= uniforms.iter) { break; }
     
-    // Load Xn (Reference)
-    let raw_xn = reference_orbit[i]; 
-    let xn = qs_complex(raw_xn.re, raw_xn.im);
+    // Load X_m (Reference)
+    let raw_xm = reference_orbit[m]; 
+    let xm = qs_complex(raw_xm.re, raw_xm.im);
     
-    // delta_{n+1} = 2 * X_n * delta_n + delta_n^2 + delta_0
-    let xn_delta = qc_mul(xn, delta);
-    let two_xn_delta = qs_complex(xn_delta.re * 2.0, xn_delta.im * 2.0);
+    // delta_{n+1} = 2 * X_m * delta_n + delta_n^2 + delta_0
+    let xm_delta = qc_mul(xm, delta);
+    let two_xm_delta = qs_complex(xm_delta.re * 2.0, xm_delta.im * 2.0);
     
     let delta_sq = qc_sq(delta);
     
-    delta = qc_add(qc_add(two_xn_delta, delta_sq), c_delta_qs);
+    delta = qc_add(qc_add(two_xm_delta, delta_sq), c_delta_qs);
     
-    let next_i = i + 1u;
-    let raw_xn_next = reference_orbit[next_i];
+    let next_m = m + 1u;
+    let raw_xm_next = reference_orbit[next_m];
     
     // Compute zn in single precision for escape check & coloring
-    let zn_re = raw_xn_next.re.x + delta.re.x;
-    let zn_im = raw_xn_next.im.x + delta.im.x;
+    let zn_re = raw_xm_next.re.x + delta.re.x;
+    let zn_im = raw_xm_next.im.x + delta.im.x;
     zn_sq = zn_re * zn_re + zn_im * zn_im;
     
+    i = i + 1u;
+
     if (zn_sq > 4.0) {
         zn_sp = vec2<f32>(zn_re, zn_im);
-        i = next_i; 
         break;
     }
     
-    i = next_i;
+    let delta_norm_sq = delta.re.x * delta.re.x + delta.im.x * delta.im.x;
+    if (zn_sq < delta_norm_sq || next_m >= uniforms.ref_iter) {
+        let xm_next = qs_complex(raw_xm_next.re, raw_xm_next.im);
+        delta = qc_add(xm_next, delta);
+        m = 0u;
+    } else {
+        m = next_m;
+    }
   }
   
   return compute_color(i, zn_sq, zn_sp, uv);

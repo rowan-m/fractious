@@ -25,6 +25,7 @@ export class Renderer {
     this.uniformBuffer = null;
     this.referenceOrbitBuffer = null;
     this.referenceOrbitSize = 0;
+    this.referenceOrbitMaxIter = 200;
     this.offscreenTexture = null;
     this.offscreenTextureView = null;
     this.lastPipelineName = null;
@@ -160,6 +161,26 @@ export class Renderer {
 
   updateOrbitBuffer(orbitArrayBuffer) {
     const requiredSize = orbitArrayBuffer.byteLength;
+    const rawBuffer = orbitArrayBuffer.buffer || orbitArrayBuffer;
+    const rawOffset = orbitArrayBuffer.byteOffset || 0;
+    const orbitView = new DataView(rawBuffer, rawOffset, requiredSize);
+    const totalPoints = Math.floor(requiredSize / 32);
+    let validMaxIter = Math.max(0, totalPoints - 1);
+    for (let m = 1; m < totalPoints; m++) {
+      const byteOffset = m * 32;
+      const zx =
+        orbitView.getFloat32(byteOffset, true) +
+        orbitView.getFloat32(byteOffset + 4, true);
+      const zy =
+        orbitView.getFloat32(byteOffset + 16, true) +
+        orbitView.getFloat32(byteOffset + 20, true);
+      if (zx * zx + zy * zy > 4.0) {
+        validMaxIter = m;
+        break;
+      }
+    }
+    this.referenceOrbitMaxIter = validMaxIter;
+
     let bufferRecreated = false;
     if (requiredSize > this.referenceOrbitSize) {
       this.referenceOrbitSize = requiredSize;
@@ -332,16 +353,19 @@ export class Renderer {
       0,
       Math.floor(this.referenceOrbitSize / 32) - 1,
     );
-    const clampedIter = Math.min(config.iter, maxBufferIter);
+    const refIter = Math.max(
+      1,
+      Math.min(this.referenceOrbitMaxIter || maxBufferIter, maxBufferIter),
+    );
 
     dv.setFloat32(48, aspect, true);
-    dv.setUint32(52, clampedIter, true);
+    dv.setUint32(52, config.iter, true);
     dv.setFloat32(56, config.hue, true);
     dv.setFloat32(60, config.hueStep, true);
     dv.setFloat32(64, config.rotation, true);
     dv.setFloat32(68, sliceScale, true);
     dv.setFloat32(72, sliceOffset, true);
-    dv.setFloat32(76, 0.0, true);
+    dv.setUint32(76, refIter, true);
 
     this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);
   }
