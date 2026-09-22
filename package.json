@@ -10,7 +10,7 @@
     "build:wasm": "wasm-pack build wasm --target web",
     "build:web": "vite build",
     "check": "npm run format:check && npm run lint && npm run lint:rust && npm run lint:shaders && npm run audit:node && npm run depcruise",
-    "check:size": "bundlesize",
+    "check:size": "node scripts/check-size.js",
     "clean": "rimraf dist wasm/pkg wasm/target",
     "depcruise": "depcruise src",
     "dev": "vite",
@@ -33,7 +33,6 @@
     "@eslint/js": "^10.0.1",
     "@vitest/coverage-v8": "^5.0.1",
     "audit-ci": "^7.1.0",
-    "bundlesize": "^0.18.2",
     "dependency-cruiser": "^18.4.0",
     "esbuild": "^0.28.2",
     "eslint": "^10.11.0",
@@ -56,8 +55,7 @@
   "allowScripts": {
     "wasm-pack@0.15.0": true,
     "@swc/core@1.16.2": true,
-    "esbuild@0.28.2": true,
-    "iltorb@2.4.5": true
+    "esbuild@0.28.2": true
   },
   "bundlesize": [
     {
