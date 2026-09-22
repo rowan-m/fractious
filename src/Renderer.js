@@ -161,7 +161,9 @@ export class Renderer {
 
   updateOrbitBuffer(orbitArrayBuffer) {
     const requiredSize = orbitArrayBuffer.byteLength;
-    const orbitView = new DataView(orbitArrayBuffer);
+    const rawBuffer = orbitArrayBuffer.buffer || orbitArrayBuffer;
+    const rawOffset = orbitArrayBuffer.byteOffset || 0;
+    const orbitView = new DataView(rawBuffer, rawOffset, requiredSize);
     const totalPoints = Math.floor(requiredSize / 32);
     let validMaxIter = Math.max(0, totalPoints - 1);
     for (let m = 1; m < totalPoints; m++) {
