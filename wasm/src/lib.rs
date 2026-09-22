@@ -24,8 +24,13 @@ pub struct Anchor {
     pub iter: u32,
 }
 
+fn bits_to_decimal_digits(bits: usize) -> usize {
+    ((bits as f64 * std::f64::consts::LOG10_2).ceil() as usize).max(20)
+}
+
 fn to_fbig(d: DBig, prec: usize) -> FBig {
-    let d_prec = d.with_precision(prec).value();
+    let dec_prec = bits_to_decimal_digits(prec);
+    let d_prec = d.with_precision(dec_prec).value();
     d_prec.to_binary().value().with_precision(prec).value()
 }
 
@@ -133,11 +138,18 @@ pub fn calculate_reference(
 #[wasm_bindgen]
 pub fn add_coord(val: String, delta: f64) -> String {
     let r_d = DBig::from_str(&val).unwrap_or(DBig::ZERO);
-    let d_d = Rational::try_from(delta)
-        .map(DBig::from)
-        .unwrap_or(DBig::ZERO);
+    if delta == 0.0 || !delta.is_finite() {
+        return r_d.to_string();
+    }
 
-    let res = r_d + d_d;
+    let delta_str = format!("{:.14e}", delta);
+    let d_d = DBig::from_str(&delta_str).unwrap_or(DBig::ZERO);
+    let delta_decimals = (-delta.abs().log10().floor() as isize + 15).max(16) as usize;
+    let target_prec = r_d.precision().max(delta_decimals);
+
+    let res = (r_d.with_precision(target_prec).value() + d_d.with_precision(target_prec).value())
+        .with_precision(target_prec)
+        .value();
     res.to_string()
 }
 
@@ -279,13 +291,14 @@ pub fn find_best_anchor(
     abort_flag: Option<js_sys::Int32Array>,
 ) -> Anchor {
     let prec = prec as usize;
+    let dec_prec = bits_to_decimal_digits(prec);
     let center_x = DBig::from_str(&cx_str)
         .unwrap_or(DBig::ZERO)
-        .with_precision(prec)
+        .with_precision(dec_prec)
         .value();
     let center_y = DBig::from_str(&cy_str)
         .unwrap_or(DBig::ZERO)
-        .with_precision(prec)
+        .with_precision(dec_prec)
         .value();
 
     // Scale is the vertical span (approx).
@@ -293,10 +306,10 @@ pub fn find_best_anchor(
     let step_y_f64 = scale * 0.22;
     let step_x_f64 = scale * 0.22 * aspect;
     let step_y = Rational::try_from(step_y_f64)
-        .map(|r| DBig::from(r).with_precision(prec).value())
+        .map(|r| DBig::from(r).with_precision(dec_prec).value())
         .unwrap_or(DBig::ZERO);
     let step_x = Rational::try_from(step_x_f64)
-        .map(|r| DBig::from(r).with_precision(prec).value())
+        .map(|r| DBig::from(r).with_precision(dec_prec).value())
         .unwrap_or(DBig::ZERO);
 
     let f4: FBig = FBig::from(4).with_precision(prec).value();
@@ -400,10 +413,10 @@ pub fn find_best_anchor(
         );
 
         let dx_dbig = Rational::try_from(win_ox)
-            .map(|r| DBig::from(r).with_precision(prec).value())
+            .map(|r| DBig::from(r).with_precision(dec_prec).value())
             .unwrap_or(DBig::ZERO);
         let dy_dbig = Rational::try_from(win_oy)
-            .map(|r| DBig::from(r).with_precision(prec).value())
+            .map(|r| DBig::from(r).with_precision(dec_prec).value())
             .unwrap_or(DBig::ZERO);
 
         let cx_probe = &center_x + dx_dbig;
@@ -477,6 +490,14 @@ mod tests {
         let delta = 0.5;
         let result = add_coord(val, delta);
         assert_eq!(result, "2");
+    }
+
+    #[wasm_bindgen_test]
+    fn test_add_coord_no_binary_noise() {
+        let val = String::from("-1.7");
+        let delta = 0.1;
+        let result = add_coord(val, delta);
+        assert_eq!(result, "-1.6");
     }
 
     #[wasm_bindgen_test]
