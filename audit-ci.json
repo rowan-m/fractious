@@ -1,35 +1,5 @@
 {
   "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
   "moderate": true,
-  "allowlist": [
-    "GHSA-35jp-ww65-95wh|bundlesize>github-build>axios",
-    "GHSA-3g43-6gmg-66jw|bundlesize>github-build>axios",
-    "GHSA-3p68-rc4w-qgx5|bundlesize>github-build>axios",
-    "GHSA-3w6x-2g7m-8v23|bundlesize>github-build>axios",
-    "GHSA-42h9-826w-cgv3|bundlesize>github-build>axios",
-    "GHSA-43fc-jf86-j433|bundlesize>github-build>axios",
-    "GHSA-445q-vr5w-6q77|bundlesize>github-build>axios",
-    "GHSA-4hjh-wcwx-xvwj|bundlesize>github-build>axios",
-    "GHSA-5c9x-8gcm-mpgx|bundlesize>github-build>axios",
-    "GHSA-62hf-57xw-28j9|bundlesize>github-build>axios",
-    "GHSA-6chq-wfr3-2hj9|bundlesize>github-build>axios",
-    "GHSA-7q8q-rj6j-mhjq|bundlesize>github-build>axios",
-    "GHSA-898c-q2cr-xwhg|bundlesize>github-build>axios",
-    "GHSA-8hc4-vh64-cxmj|bundlesize>github-build>axios",
-    "GHSA-fvcv-3m26-pcqx|bundlesize>github-build>axios",
-    "GHSA-hfxv-24rg-xrqf|bundlesize>github-build>axios",
-    "GHSA-j5f8-grm9-p9fc|bundlesize>github-build>axios",
-    "GHSA-jr5f-v2jv-69x6|bundlesize>github-build>axios",
-    "GHSA-m7pr-hjqh-92cm|bundlesize>github-build>axios",
-    "GHSA-mmx7-hfxf-jppx|bundlesize>github-build>axios",
-    "GHSA-p92q-9vqr-4j8v|bundlesize>github-build>axios",
-    "GHSA-pf86-5x62-jrwf|bundlesize>github-build>axios",
-    "GHSA-pmv8-rq9r-6j72|bundlesize>github-build>axios",
-    "GHSA-pmwg-cvhr-8vh7|bundlesize>github-build>axios",
-    "GHSA-q8qp-cvcw-x6jj|bundlesize>github-build>axios",
-    "GHSA-vf2m-468p-8v99|bundlesize>github-build>axios",
-    "GHSA-w5hq-g745-h8pq|vite-plugin-top-level-await>uuid",
-    "GHSA-w9j2-pvgh-6h63|bundlesize>github-build>axios",
-    "GHSA-xx6v-rp6x-q39c|bundlesize>github-build>axios"
-  ]
+  "allowlist": ["GHSA-w5hq-g745-h8pq|vite-plugin-top-level-await>uuid"]
 }
