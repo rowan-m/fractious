@@ -89,4 +89,46 @@ describe('InteractionManager updateUI', () => {
 
     expect(elements.inputs.c_re.value).toBe('1.5');
   });
+
+  it('should normalize negative rotation angles into [0, 360) degrees', () => {
+    config.rotation = -Math.PI / 4; // -45 degrees -> 315.0
+    interactionManager.updateUI();
+
+    expect(elements.inputs.rotation.value).toBe('315.0');
+  });
+
+  it('should anchor wheel zoom around cursor position and support Shift+wheel rotation', () => {
+    state.width = 400;
+    state.height = 400;
+    state.offsetX = 0;
+    state.offsetY = 0;
+    state.targetZoom = 2.0;
+    config.rotation = 0;
+
+    // Zoom in at top-right quadrant (clientX = 300, clientY = 100)
+    interactionManager.handleWheel({
+      preventDefault: vi.fn(),
+      deltaY: -100,
+      clientX: 300,
+      clientY: 100,
+      shiftKey: false,
+    });
+
+    expect(state.targetZoom).toBeLessThan(2.0);
+    expect(state.offsetX).toBeGreaterThan(0);
+    expect(state.offsetY).toBeGreaterThan(0);
+
+    // Shift + wheel rotates without changing targetZoom
+    const zoomBeforeRotate = state.targetZoom;
+    interactionManager.handleWheel({
+      preventDefault: vi.fn(),
+      deltaY: 100,
+      clientX: 200,
+      clientY: 200,
+      shiftKey: true,
+    });
+
+    expect(state.targetZoom).toBe(zoomBeforeRotate);
+    expect(config.rotation).toBeCloseTo(Math.PI / 36, 6);
+  });
 });
