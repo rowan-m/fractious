@@ -96,7 +96,7 @@ export class Fractious {
     this.state.refY = this.config.centerY;
 
     parseNum('z', (z) => (this.config.zoom = Math.pow(10, -z)));
-    parseNum('r', (r) => (this.config.rotation = r));
+    parseNum('r', (r) => (this.config.rotation = (r * Math.PI) / 180));
     parseNum('h', (h) => (this.config.hue = h));
     parseNum('s', (s) => (this.config.hueStep = s));
 
@@ -114,10 +114,11 @@ export class Fractious {
       this._urlParams = new URLSearchParams(window.location.search);
     }
     const params = this._urlParams;
+    const deg = ((((this.config.rotation * 180) / Math.PI) % 360) + 360) % 360;
     params.set('x', this.config.centerX);
     params.set('y', this.config.centerY);
     params.set('z', (-Math.log10(this.config.zoom)).toFixed(3));
-    params.set('r', this.config.rotation.toFixed(3));
+    params.set('r', deg.toFixed(1));
     params.set('h', this.config.hue.toFixed(3));
     params.set('s', this.config.hueStep.toFixed(3));
     window.history.replaceState({}, '', `?${params.toString()}`);
@@ -137,6 +138,19 @@ export class Fractious {
   }
 
   interact(needsNewReference = true) {
+    const isPureAppearanceChange =
+      !needsNewReference &&
+      this.state.offsetX === 0 &&
+      this.state.offsetY === 0 &&
+      this.state.targetZoom === this.config.zoom &&
+      !this.state.isPendingUpdate;
+
+    if (isPureAppearanceChange) {
+      this.interactionManager.updateUI();
+      this.requestRender();
+      return;
+    }
+
     this.state.isPendingUpdate = true;
     this.interactionManager.updateUI();
     this.requestRender();
