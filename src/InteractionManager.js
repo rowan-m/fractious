@@ -27,7 +27,9 @@ export class InteractionManager {
     this._setVal(inputs.zoom, (-Math.log10(this.config.zoom)).toFixed(2));
     this._setVal(
       inputs.rotation,
-      (((this.config.rotation * 180) / Math.PI) % 360).toFixed(1),
+      (((((this.config.rotation * 180) / Math.PI) % 360) + 360) % 360).toFixed(
+        1,
+      ),
     );
 
     this._setVal(inputs.iterations, this.config.iter);
@@ -44,6 +46,18 @@ export class InteractionManager {
 
     this.state.offsetX -= dCx;
     this.state.offsetY += dCy;
+  }
+
+  _zoomAroundPoint(clientX, clientY, factor) {
+    const oldZoom = this.state.targetZoom;
+    this.state.targetZoom = oldZoom * factor;
+
+    if (this.state.width > 0 && this.state.height > 0) {
+      const relX = clientX - this.state.width / 2;
+      const relY = clientY - this.state.height / 2;
+      const scaleDiff = ((1.0 - factor) * 2.0 * oldZoom) / this.state.height;
+      this.applyRotation(-relX, -relY, scaleDiff);
+    }
   }
 
   handlePointerDown(e) {
@@ -77,10 +91,14 @@ export class InteractionManager {
     const dy = p1.y - p2.y;
     const curDiff = Math.hypot(dx, dy);
     const curAngle = Math.atan2(dy, dx);
+    const curCenter = {
+      x: (p1.x + p2.x) / 2,
+      y: (p1.y + p2.y) / 2,
+    };
 
     if (this.state.prevDiff > 0) {
       const factor = curDiff / this.state.prevDiff;
-      this.state.targetZoom /= factor;
+      this._zoomAroundPoint(curCenter.x, curCenter.y, 1.0 / factor);
 
       if (this.state.prevAngle !== null) {
         let delta = curAngle - this.state.prevAngle;
@@ -92,11 +110,6 @@ export class InteractionManager {
     this.state.prevDiff = curDiff;
     this.state.prevAngle = curAngle;
 
-    const curCenter = {
-      x: (p1.x + p2.x) / 2,
-      y: (p1.y + p2.y) / 2,
-    };
-
     if (this.state.prevCenter) {
       const moveX = curCenter.x - this.state.prevCenter.x;
       const moveY = curCenter.y - this.state.prevCenter.y;
@@ -107,6 +120,23 @@ export class InteractionManager {
   }
 
   _handlePan(e, scaleY) {
+    if (e.shiftKey) {
+      const cx = (this.state.width || 512) / 2;
+      const cy = (this.state.height || 512) / 2;
+      const prevAngle = Math.atan2(
+        this.state.lastY - cy,
+        this.state.lastX - cx,
+      );
+      const curAngle = Math.atan2(e.clientY - cy, e.clientX - cx);
+      let delta = curAngle - prevAngle;
+      if (delta > Math.PI) delta -= 2 * Math.PI;
+      else if (delta < -Math.PI) delta += 2 * Math.PI;
+      this.config.rotation += delta;
+      this.state.lastX = e.clientX;
+      this.state.lastY = e.clientY;
+      return;
+    }
+
     const dx = e.clientX - this.state.lastX;
     const dy = e.clientY - this.state.lastY;
     this.state.lastX = e.clientX;
@@ -157,8 +187,14 @@ export class InteractionManager {
 
   handleWheel(e) {
     e.preventDefault();
+    if (e.shiftKey) {
+      const step = Math.PI / 36;
+      this.config.rotation += e.deltaY > 0 ? step : -step;
+      this.callbacks.onInteract(false);
+      return;
+    }
     const factor = e.deltaY > 0 ? 1.05 : 1.0 / 1.05;
-    this.state.targetZoom *= factor;
+    this._zoomAroundPoint(e.clientX || 0, e.clientY || 0, factor);
     this.callbacks.onInteract(false);
   }
 
