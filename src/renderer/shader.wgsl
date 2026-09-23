@@ -202,6 +202,28 @@ fn qs_mul(a: vec4<f32>, b: vec4<f32>) -> vec4<f32> {
   return renorm5(p0, p1, s0, s1, s2);
 }
 
+fn qs_sqr(a: vec4<f32>) -> vec4<f32> {
+  let r0 = two_prod(a.x, a.x);
+  let p0 = r0.x;
+  let q0 = r0.y;
+
+  let r1 = two_prod(a.x, a.y) * 2.0;
+  let r2 = two_prod(a.x, a.z) * 2.0;
+  let r3 = two_prod(a.y, a.y);
+
+  let acc1 = two_sum(r1.x, q0);
+  let p1 = acc1.x;
+  let q0_rem = acc1.y;
+
+  let acc2 = three_sum(r2.x, r3.x, r1.y);
+  let r_s0 = two_sum(acc2.x, q0_rem);
+  let s0 = r_s0.x;
+
+  let s1 = 2.0 * (a.x * a.w + a.y * a.z) + acc2.y + r_s0.y + acc2.z + r2.y + r3.y;
+
+  return renorm5(p0, p1, s0, s1, 0.0);
+}
+
 fn qc_add(a: qs_complex, b: qs_complex) -> qs_complex {
   return qs_complex(qs_add(a.re, b.re), qs_add(a.im, b.im));
 }
@@ -215,11 +237,10 @@ fn qc_mul(a: qs_complex, b: qs_complex) -> qs_complex {
 }
 
 fn qc_sq(a: qs_complex) -> qs_complex {
-  let re_term1 = qs_mul(a.re, a.re);
-  let re_term2 = qs_mul(a.im, a.im);
+  let re_term1 = qs_sqr(a.re);
+  let re_term2 = qs_sqr(a.im);
   let im_term = qs_mul(a.re, a.im);
-  let two_im = qs_add(im_term, im_term);
-  return qs_complex(qs_sub(re_term1, re_term2), two_im);
+  return qs_complex(qs_sub(re_term1, re_term2), im_term * 2.0);
 }
 
 struct Uniforms {
@@ -288,6 +309,15 @@ fn ds_mul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
   return vec2<f32>(hi, lo);
 }
 
+fn ds_sqr(a: vec2<f32>) -> vec2<f32> {
+  let p = a.x * a.x;
+  let e1 = fma(a.x, a.x, -p);
+  let e2 = 2.0 * (a.x * a.y);
+  let hi = p + e2;
+  let lo = e1 + e2 - (hi - p);
+  return vec2<f32>(hi, lo);
+}
+
 fn dc_add(a: ds_complex, b: ds_complex) -> ds_complex {
   return ds_complex(ds_add(a.re, b.re), ds_add(a.im, b.im));
 }
@@ -301,10 +331,10 @@ fn dc_mul(a: ds_complex, b: ds_complex) -> ds_complex {
 }
 
 fn dc_sq(a: ds_complex) -> ds_complex {
-  let re_term1 = ds_mul(a.re, a.re);
-  let re_term2 = ds_mul(a.im, a.im);
+  let re_term1 = ds_sqr(a.re);
+  let re_term2 = ds_sqr(a.im);
   let im_term = ds_mul(a.re, a.im);
-  return ds_complex(ds_sub(re_term1, re_term2), ds_add(im_term, im_term));
+  return ds_complex(ds_sub(re_term1, re_term2), im_term * 2.0);
 }
 
 @vertex
