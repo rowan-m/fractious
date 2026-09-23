@@ -468,10 +468,7 @@ export class Renderer {
   }
 
   _updateBackgroundCanvas(state) {
-    const isInteractiveLowRes =
-      state.pointers.size > 0 || state.workerBusy || state.isPendingUpdate;
     if (
-      !isInteractiveLowRes &&
       state.currentPass >= state.totalPasses &&
       this.canvas.width > 0 &&
       this.canvas.height > 0 &&
