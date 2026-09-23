@@ -1,3 +1,4 @@
+use dashu::base::Abs;
 use dashu::float::{DBig, FBig};
 use dashu::Rational;
 use std::convert::TryFrom;
@@ -287,8 +288,17 @@ fn eval_arbitrary_orbit(
     record_orbit: bool,
 ) -> (u32, Vec<(f64, f64)>) {
     let f4: FBig = FBig::from(4).with_precision(prec).value();
+    let cycle_tol: FBig =
+        FBig::ONE.with_precision(prec).value() >> (prec.saturating_sub(8) as isize);
     let mut zx = FBig::ZERO.with_precision(prec).value();
     let mut zy = FBig::ZERO.with_precision(prec).value();
+    let mut tortoise_x = zx.clone();
+    let mut tortoise_y = zy.clone();
+    let mut tortoise_x_f64 = 0.0_f64;
+    let mut tortoise_y_f64 = 0.0_f64;
+    let mut power = 1_u32;
+    let mut lam = 0_u32;
+
     let mut orbit = if record_orbit {
         Vec::with_capacity((max_iter as usize) + 1)
     } else {
@@ -301,9 +311,34 @@ fn eval_arbitrary_orbit(
             break;
         }
 
+        let zx_f64 = zx.to_f64().value();
+        let zy_f64 = zy.to_f64().value();
+
         if record_orbit {
-            orbit.push((zx.to_f64().value(), zy.to_f64().value()));
+            orbit.push((zx_f64, zy_f64));
         }
+
+        if i > 0
+            && (zx_f64 - tortoise_x_f64).abs() < 1e-14
+            && (zy_f64 - tortoise_y_f64).abs() < 1e-14
+        {
+            let diff_x = (&zx - &tortoise_x).with_precision(prec).value().abs();
+            let diff_y = (&zy - &tortoise_y).with_precision(prec).value().abs();
+            if diff_x <= cycle_tol && diff_y <= cycle_tol {
+                i = max_iter;
+                break;
+            }
+        }
+
+        if lam == power {
+            tortoise_x = zx.clone();
+            tortoise_y = zy.clone();
+            tortoise_x_f64 = zx_f64;
+            tortoise_y_f64 = zy_f64;
+            power <<= 1;
+            lam = 0;
+        }
+        lam += 1;
 
         let zx2 = (&zx * &zx).with_precision(prec).value();
         let zy2 = (&zy * &zy).with_precision(prec).value();
