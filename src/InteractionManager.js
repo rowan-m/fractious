@@ -17,6 +17,7 @@ export class InteractionManager {
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handlePointerUp = this.handlePointerUp.bind(this);
     this.handleWheel = this.handleWheel.bind(this);
+    this.handleDoubleClick = this.handleDoubleClick.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
 
     this._keyActions = this._createKeyActionMap();
@@ -221,6 +222,13 @@ export class InteractionManager {
     this._notifyInteract(false);
   }
 
+  handleDoubleClick(e) {
+    e.preventDefault();
+    const factor = e.shiftKey ? Math.pow(10, 0.5) : Math.pow(10, -0.5);
+    this._zoomAroundPoint(e.clientX || 0, e.clientY || 0, factor);
+    this._notifyInteract(false);
+  }
+
   bindEvents() {
     const { canvas } = this.el;
 
@@ -236,6 +244,7 @@ export class InteractionManager {
       canvas.addEventListener(e, this.handlePointerUp),
     );
     canvas.addEventListener('wheel', this.handleWheel, { passive: false });
+    canvas.addEventListener('dblclick', this.handleDoubleClick);
     window.addEventListener('keydown', this.handleKeyDown);
 
     if (typeof document.querySelectorAll === 'function') {

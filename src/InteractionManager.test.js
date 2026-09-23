@@ -134,6 +134,35 @@ describe('InteractionManager updateUI', () => {
     expect(config.rotation).toBeCloseTo(Math.PI / 36, 6);
   });
 
+  it('should zoom around cursor on double-click and zoom out on Shift+double-click', () => {
+    state.width = 400;
+    state.height = 400;
+    state.offsetX = 0;
+    state.offsetY = 0;
+    state.targetZoom = 1.0;
+    config.rotation = 0;
+
+    interactionManager.handleDoubleClick({
+      preventDefault: vi.fn(),
+      clientX: 300,
+      clientY: 100,
+      shiftKey: false,
+    });
+
+    expect(-Math.log10(state.targetZoom)).toBeCloseTo(0.5, 6);
+    expect(state.offsetX).toBeGreaterThan(0);
+    expect(state.offsetY).toBeGreaterThan(0);
+
+    interactionManager.handleDoubleClick({
+      preventDefault: vi.fn(),
+      clientX: 300,
+      clientY: 100,
+      shiftKey: true,
+    });
+
+    expect(state.targetZoom).toBeCloseTo(1.0, 6);
+  });
+
   it('should handle keyboard shortcuts with consistent increments', () => {
     state.targetZoom = 1.0;
     config.zoom = 1.0;
