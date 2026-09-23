@@ -12,6 +12,7 @@ const elements = {
   canvas: document.getElementById('fractal'),
   bgCanvas: document.getElementById('fractal-bg'),
   crosshair: document.getElementById('crosshair'),
+  iterIcon: document.getElementById('iter-icon'),
   inputs: {
     c_re: document.getElementById('c_re'),
     c_im: document.getElementById('c_im'),

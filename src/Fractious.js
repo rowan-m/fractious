@@ -59,12 +59,12 @@ export class Fractious {
       this.renderer.updateOrbitBuffer(payload.orbit);
 
       this.config.iter = payload.iter;
-      this.interactionManager.updateUI();
 
       const isPointerActive =
         this.state.pointers && this.state.pointers.size > 0;
       this.state.isPendingUpdate = Boolean(isPointerActive);
       this.state.workerBusy = false;
+      this.interactionManager.updateUI();
       this.requestRender();
     };
 
@@ -72,6 +72,7 @@ export class Fractious {
       console.error('Worker error:', error);
       this.state.isPendingUpdate = false;
       this.state.workerBusy = false;
+      this.interactionManager.updateUI();
     };
   }
 
@@ -142,12 +143,12 @@ export class Fractious {
     }
     this.config.centerX = add_coord(this.state.refX, this.state.offsetX);
     this.config.centerY = add_coord(this.state.refY, this.state.offsetY);
+    this.state.workerBusy = true;
     this.interactionManager.updateUI();
 
     const width = this.state.width || this.interactionManager.el.canvas.width;
     const height =
       this.state.height || this.interactionManager.el.canvas.height;
-    this.state.workerBusy = true;
     this.workerManager.updateReference(this.config, width, height);
   }
 
