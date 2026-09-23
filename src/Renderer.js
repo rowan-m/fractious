@@ -34,17 +34,23 @@ export class Renderer {
     this.uniformDataView = new DataView(this.uniformData);
   }
 
+  _showFatalError(message) {
+    document.body.style.color = '#f1f5f9';
+    document.body.style.padding = '2rem';
+    document.body.textContent = message;
+  }
+
   async init() {
     if (!navigator.gpu) {
       console.error('WebGPU not supported');
-      document.body.textContent = 'WebGPU not supported in this browser.';
+      this._showFatalError('WebGPU not supported in this browser.');
       return false;
     }
 
     const adapter = await navigator.gpu.requestAdapter();
     if (!adapter) {
       console.error('No WebGPU adapter found');
-      document.body.textContent = 'No WebGPU adapter found in this browser.';
+      this._showFatalError('No WebGPU adapter found in this browser.');
       return false;
     }
 
@@ -183,6 +189,9 @@ export class Renderer {
 
     let bufferRecreated = false;
     if (requiredSize > this.referenceOrbitSize) {
+      if (this.referenceOrbitBuffer) {
+        this.referenceOrbitBuffer.destroy();
+      }
       this.referenceOrbitSize = requiredSize;
       this.referenceOrbitBuffer = this.device.createBuffer({
         size: this.referenceOrbitSize,
@@ -302,22 +311,23 @@ export class Renderer {
     const aspect = this.canvas.width / this.canvas.height;
     const dv = this.uniformDataView;
 
-    const splitF64To4F32 = (val) => {
+    const writeSplitF64 = (val, off0, off1, off2, off3) => {
       const fround = Math.fround;
       const part0 = fround(val);
       const r1 = val - part0;
       const part1 = fround(r1);
       const r2 = r1 - part1;
       const part2 = fround(r2);
-      const r3 = r2 - part2;
-      const part3 = fround(r3);
-      return [part0, part1, part2, part3];
+      dv.setFloat32(off0, part0, true);
+      dv.setFloat32(off1, part1, true);
+      dv.setFloat32(off2, part2, true);
+      dv.setFloat32(off3, 0.0, true);
     };
 
     const zoom = config.zoom || 1.0;
-    const splitX = splitF64To4F32(state.offsetX);
-    const splitY = splitF64To4F32(state.offsetY);
-    const splitZoom = splitF64To4F32(zoom);
+    writeSplitF64(state.offsetX, 0, 8, 16, 24);
+    writeSplitF64(state.offsetY, 4, 12, 20, 28);
+    writeSplitF64(zoom, 32, 36, 40, 44);
 
     // Calculate geometry-slice scale and offset for uniforms (pad0 and pad1 fields)
     let sliceScale = 1.0;
@@ -337,18 +347,6 @@ export class Renderer {
         -1.0 + (2.0 * yOffsetBottom + currentSliceHeight) / this.canvas.height;
     }
 
-    dv.setFloat32(0, splitX[0], true);
-    dv.setFloat32(4, splitY[0], true);
-    dv.setFloat32(8, splitX[1], true);
-    dv.setFloat32(12, splitY[1], true);
-    dv.setFloat32(16, splitX[2], true);
-    dv.setFloat32(20, splitY[2], true);
-    dv.setFloat32(24, splitX[3], true);
-    dv.setFloat32(28, splitY[3], true);
-    dv.setFloat32(32, splitZoom[0], true);
-    dv.setFloat32(36, splitZoom[1], true);
-    dv.setFloat32(40, splitZoom[2], true);
-    dv.setFloat32(44, splitZoom[3], true);
     const maxBufferIter = Math.max(
       0,
       Math.floor(this.referenceOrbitSize / 32) - 1,
