@@ -11,7 +11,7 @@ This document equips AI coding agents and engineers with the architectural conte
 1. **Performance & Ease of Use Are Paramount**
    - Every interaction (panning, pinching, wheel-zooming, rotating, colour tuning) must feel instantaneous (`60fps+`).
    - **Prefer automatic mathematical/algorithmic solutions over manual UI knobs.** If the fractal loses detail or glitches at deep zooms, solve it in the perturbation math, shader rebasing, or anchor search rather than exposing technical workarounds to the user.
-   - Keep the production bundle tiny. Strict size budgets are enforced in `package.json` (`bundlesize`):
+   - Keep the production bundle tiny. Strict size budgets are enforced in `package.json` via `scripts/check-size.js` (`npm run check:size`):
      - Main JS (`dist/assets/index-*.js`): **$\le$ 15 kB**
      - WASM binary (`dist/assets/fractious_lib_bg-*.wasm`): **$\le$ 110 kB**
      - Worker JS (`dist/assets/worker-*.js`): **$\le$ 5 kB**
@@ -26,15 +26,15 @@ This document equips AI coding agents and engineers with the architectural conte
    - Any user-visible state that defines the fractal view MUST be mirrored to URL query parameters via `history.replaceState` (`src/Fractious.js`) and parsed on startup so every view is 100% shareable and bookmarkable:
      - `x`: Real coordinate string (arbitrary-precision decimal)
      - `y`: Imaginary coordinate string (arbitrary-precision decimal)
-     - `z`: Zoom scale (`f64`, vertical span in the complex plane; default `2.5`)
+     - `z`: Zoom scale (`f64`, vertical span in the complex plane; default `2.0`)
      - `r`: Rotation angle in degrees (`0..360`)
      - `h`: Base palette hue (`0..360`)
      - `s`: Palette hue step / cycling rate (`0..10`)
 
 4. **Responsive Across Mobile, Desktop & Any Form Factor**
    - Always design and verify interactions for **both touch/mobile and mouse/desktop**:
-     - **Desktop**: Left-drag pan, `Shift`+drag rotate, mouse wheel zoom (anchored at cursor position), `Shift`+wheel rotate.
-     - **Mobile / Touch**: 1-finger drag pan, 2-finger simultaneous pinch-to-zoom + twist-to-rotate + midpoint translation, `touch-action: none` on the viewport, and responsive control panels that never obscure the fractal or overflow small viewports.
+     - **Desktop**: Left-drag pan, `Shift`+drag rotate around viewport center, mouse wheel zoom (anchored at cursor position), `Shift`+wheel rotate, and keyboard shortcuts (`WASD`/Arrow keys to pan, `Q`/`E` or `-`/`+` to zoom, `Z`/`X` to rotate, `R`/`T` to shift hue, `F`/`G` to adjust hue step).
+     - **Mobile / Touch**: 1-finger drag pan, 2-finger simultaneous pinch-to-zoom (anchored at pinch midpoint) + twist-to-rotate + midpoint translation, `touch-action: none` on the viewport, and responsive control panels that never obscure the fractal or overflow small viewports.
 
 ---
 
@@ -115,13 +115,13 @@ In `shader.wgsl`, the pixel's total iteration count `i` (`0..uniforms.iter`) is 
   - Each orbit step `m` occupies `2 × vec4<f32>` (`32 bytes`): `[zx0, zx1, zx2, zx3]` at byte offset `m * 32` (`m * 2u`) and `[zy0, zy1, zy2, zy3]` at byte offset `m * 32 + 16` (`m * 2u + 1u`).
   - Note: `worker.js` posts `orbit` as a `Float32Array` view (transferring `orbit.buffer`). Always unwrap `orbit.buffer || orbit` and `orbit.byteOffset || 0` when constructing a `DataView`.
 
-### 3.4 Dual-Canvas Zero-Latency Interaction (`#fractal-bg` + `#canvas-main`)
+### 3.4 Dual-Canvas Zero-Latency Interaction (`#fractal-bg` + `#fractal`)
 
 While dragging/zooming or waiting for the WASM worker to compute a new reference orbit:
 
-1. `#fractal-bg` (a 2D canvas behind `#canvas-main`) holds a snapshot of the last completed high-res frame (`snapshotToBackground()`).
-2. `Renderer.render()` applies an affine transform (`translate`, `rotate`, `scale`) to `#fractal-bg` matching the delta between the snapshot coordinates (`bgBaseX`, `bgBaseY`, `bgZoom`, `bgRotation`) and the live viewport.
-3. Simultaneously, `#canvas-main` renders progressively in horizontal scissor slices (`state.currentPass` / `state.totalPasses`) so individual GPU submissions never block the browser compositor.
+1. `#fractal-bg` (a 2D canvas behind `#fractal`) is updated via `_updateBackgroundCanvas()` (`bgCtx.drawImage(this.canvas, 0, 0)`) whenever a render pass completes (`state.currentPass >= state.totalPasses`), including 1-pass low-resolution interactive previews.
+2. When the viewport transitions from a completed low-res preview to a multi-slice progressive high-res render (`this.canvas.width` / `height` resize), `#fractal-bg` retains the low-res preview underneath `#fractal` so there is never a black flash or stale-frame jump while progressive slices fill in.
+3. Progressive high-res slices in `Fractious.frame()` are gated on `device.queue.onSubmittedWorkDone()` and a monotonically increasing `_renderGeneration` token so GPU submissions never saturate the browser compositor queue and user input can preempt in-flight progressive passes within a single frame.
 
 ---
 

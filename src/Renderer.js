@@ -243,7 +243,60 @@ export class Renderer {
     });
   }
 
-  _calculatePassesAndResize(config, state) {
+  _getPrecisionTier(zoom) {
+    const logZoom = -Math.log10(zoom);
+    if (logZoom < 7.0) {
+      return {
+        logZoom,
+        opsMultiplier: 12.0, // Tier 1: F32 (~300M ops/slice -> ~15-20ms worst-case interior slice)
+        pipeline: this.pipelineF32,
+        bindGroup: this.bindGroupF32,
+        name: 'F32 (Tier 1 - Native Hardware)',
+      };
+    }
+    if (logZoom < 14.0) {
+      return {
+        logZoom,
+        opsMultiplier: 3.0, // Tier 2: Double-Single (~75M ops/slice)
+        pipeline: this.pipelineDS,
+        bindGroup: this.bindGroupDS,
+        name: 'Double-Single (Tier 2 - Emulated 64-bit)',
+      };
+    }
+    return {
+      logZoom,
+      opsMultiplier: 1.0, // Tier 3: Quad-Single (~25M ops/slice)
+      pipeline: this.pipelineQS,
+      bindGroup: this.bindGroupQS,
+      name: 'Quad-Single (Tier 3 - Emulated 128-bit)',
+    };
+  }
+
+  _getSliceGeometry(state) {
+    if (state.totalPasses <= 1 || this.canvas.height <= 0) {
+      return {
+        yOffset: 0,
+        currentSliceHeight: this.canvas.height,
+        sliceScale: 1.0,
+        sliceOffset: 0.0,
+      };
+    }
+    const sliceHeight = Math.ceil(this.canvas.height / state.totalPasses);
+    const yOffset = state.currentPass * sliceHeight;
+    const currentSliceHeight = Math.min(
+      sliceHeight,
+      this.canvas.height - yOffset,
+    );
+    const sliceScale = currentSliceHeight / this.canvas.height;
+    // Invert Y coordinate mapping because WebGPU Scissor Rect Y starts at TOP (0),
+    // but WebGPU NDC Y starts at BOTTOM (-1.0).
+    const yOffsetBottom = this.canvas.height - yOffset - currentSliceHeight;
+    const sliceOffset =
+      -1.0 + (2.0 * yOffsetBottom + currentSliceHeight) / this.canvas.height;
+    return { yOffset, currentSliceHeight, sliceScale, sliceOffset };
+  }
+
+  _calculatePassesAndResize(config, state, tier) {
     const { dpr, width, height, currentPixels, workerBusy, isPendingUpdate } =
       state;
     let targetScale = 1.0;
@@ -256,22 +309,10 @@ export class Renderer {
       targetScale = Math.min(INTERACTION_SCALE_LIMIT, targetScale);
       state.totalPasses = 1;
     } else {
-      // Determine active precision tier to dynamically scale operations capability.
-      // Since hardware F32 is extremely cheap, we can compute 20x more ops in a single frame.
-      const logZoom = -Math.log10(state.targetZoom);
-      let opsMultiplier;
-      if (logZoom < 7.0) {
-        opsMultiplier = 12.0; // Tier 1: F32 (~300M ops/slice -> ~15-20ms worst-case interior slice)
-      } else if (logZoom < 14.0) {
-        opsMultiplier = 3.0; // Tier 2: Double-Single (~75M ops/slice)
-      } else {
-        opsMultiplier = 1.0; // Tier 3: Quad-Single (~25M ops/slice)
-      }
-
       const totalOps = currentPixels * config.iter;
       state.totalPasses = Math.max(
         1,
-        Math.ceil(totalOps / (PROGRESSIVE_MAX_OPS * opsMultiplier)),
+        Math.ceil(totalOps / (PROGRESSIVE_MAX_OPS * tier.opsMultiplier)),
       );
     }
 
@@ -307,7 +348,7 @@ export class Renderer {
     }
   }
 
-  _updateUniforms(config, state) {
+  _updateUniforms(config, state, slice) {
     const aspect = this.canvas.width / this.canvas.height;
     const dv = this.uniformDataView;
 
@@ -329,24 +370,6 @@ export class Renderer {
     writeSplitF64(state.offsetY, 4, 12, 20, 28);
     writeSplitF64(zoom, 32, 36, 40, 44);
 
-    // Calculate geometry-slice scale and offset for uniforms (pad0 and pad1 fields)
-    let sliceScale = 1.0;
-    let sliceOffset = 0.0;
-    if (state.totalPasses > 1 && this.canvas.height > 0) {
-      const sliceHeight = Math.ceil(this.canvas.height / state.totalPasses);
-      const yOffset = state.currentPass * sliceHeight;
-      const currentSliceHeight = Math.min(
-        sliceHeight,
-        this.canvas.height - yOffset,
-      );
-      sliceScale = currentSliceHeight / this.canvas.height;
-      // Invert Y coordinate mapping because WebGPU Scissor Rect Y starts at TOP (0),
-      // but WebGPU NDC Y starts at BOTTOM (-1.0).
-      const yOffsetBottom = this.canvas.height - yOffset - currentSliceHeight;
-      sliceOffset =
-        -1.0 + (2.0 * yOffsetBottom + currentSliceHeight) / this.canvas.height;
-    }
-
     const maxBufferIter = Math.max(
       0,
       Math.floor(this.referenceOrbitSize / 32) - 1,
@@ -361,24 +384,17 @@ export class Renderer {
     dv.setFloat32(56, config.hue, true);
     dv.setFloat32(60, config.hueStep, true);
     dv.setFloat32(64, config.rotation, true);
-    dv.setFloat32(68, sliceScale, true);
-    dv.setFloat32(72, sliceOffset, true);
+    dv.setFloat32(68, slice.sliceScale, true);
+    dv.setFloat32(72, slice.sliceOffset, true);
     dv.setUint32(76, refIter, true);
 
     this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);
   }
 
-  _dispatchDrawCalls(state) {
+  _dispatchDrawCalls(state, tier, slice) {
     const commandEncoder = this.device.createCommandEncoder();
 
     if (state.currentPass < state.totalPasses) {
-      const sliceHeight = Math.ceil(this.canvas.height / state.totalPasses);
-      const yOffset = state.currentPass * sliceHeight;
-      const currentSliceHeight = Math.min(
-        sliceHeight,
-        this.canvas.height - yOffset,
-      );
-
       const passEncoder = commandEncoder.beginRenderPass({
         colorAttachments: [
           {
@@ -390,33 +406,14 @@ export class Renderer {
         ],
       });
 
-      // Select the pipeline corresponding to the current zoom level to optimize rendering performance
-      const logZoom = -Math.log10(state.targetZoom);
-      let activePipeline;
-      let activeBindGroup;
-      let pipelineName;
-      if (logZoom < 7.0) {
-        activePipeline = this.pipelineF32;
-        activeBindGroup = this.bindGroupF32;
-        pipelineName = 'F32 (Tier 1 - Native Hardware)';
-      } else if (logZoom < 14.0) {
-        activePipeline = this.pipelineDS;
-        activeBindGroup = this.bindGroupDS;
-        pipelineName = 'Double-Single (Tier 2 - Emulated 64-bit)';
-      } else {
-        activePipeline = this.pipelineQS;
-        activeBindGroup = this.bindGroupQS;
-        pipelineName = 'Quad-Single (Tier 3 - Emulated 128-bit)';
-      }
-
-      if (pipelineName !== this.lastPipelineName) {
+      if (tier.name !== this.lastPipelineName) {
         console.info(
-          `[WebGPU] Active Precision: ${pipelineName} (Log10 Zoom: -${logZoom.toFixed(2)})`,
+          `[WebGPU] Active Precision: ${tier.name} (Log10 Zoom: -${tier.logZoom.toFixed(2)})`,
         );
-        this.lastPipelineName = pipelineName;
+        this.lastPipelineName = tier.name;
       }
 
-      passEncoder.setPipeline(activePipeline);
+      passEncoder.setPipeline(tier.pipeline);
       passEncoder.setViewport(
         0,
         0,
@@ -425,17 +422,17 @@ export class Renderer {
         0,
         1,
       );
-      if (currentSliceHeight > 0) {
+      if (slice.currentSliceHeight > 0) {
         passEncoder.setScissorRect(
           0,
-          yOffset,
+          slice.yOffset,
           this.canvas.width,
-          currentSliceHeight,
+          slice.currentSliceHeight,
         );
       }
 
-      if (activeBindGroup) {
-        passEncoder.setBindGroup(0, activeBindGroup);
+      if (tier.bindGroup) {
+        passEncoder.setBindGroup(0, tier.bindGroup);
         passEncoder.draw(6);
       }
       passEncoder.end();
@@ -489,6 +486,15 @@ export class Renderer {
     }
   }
 
+  _downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = url;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   _handleScreenshot(state) {
     if (state.screenshotRequested && state.currentPass >= state.totalPasses) {
       state.screenshotRequested = false;
@@ -503,12 +509,7 @@ export class Renderer {
         d.getSeconds().toString().padStart(2, '0');
 
       this.canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `fractious-${timestamp}.png`;
-        link.href = url;
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        if (blob) this._downloadBlob(blob, `fractious-${timestamp}.png`);
       }, 'image/png');
     }
   }
@@ -538,23 +539,14 @@ export class Renderer {
             console.error('Error sharing:', err);
           });
         } else {
-          // Fallback if navigator.share is not supported (e.g. some desktop browsers)
-          // We can copy the link to clipboard and download the screenshot, or alert the user
           alert(
             'Web Share is not supported in this browser. Downloading screenshot and copying link to clipboard!',
           );
 
-          // Copy link to clipboard
           navigator.clipboard
             .writeText(window.location.href)
             .then(() => {
-              // Download screenshot
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.download = 'mandelbrot-fractious.png';
-              link.href = url;
-              link.click();
-              setTimeout(() => URL.revokeObjectURL(url), 1000);
+              this._downloadBlob(blob, 'mandelbrot-fractious.png');
             })
             .catch((err) => {
               console.error('Error copying link:', err);
@@ -565,7 +557,8 @@ export class Renderer {
   }
 
   render(config, state) {
-    this._calculatePassesAndResize(config, state);
+    const tier = this._getPrecisionTier(state.targetZoom);
+    this._calculatePassesAndResize(config, state, tier);
 
     if (
       state.currentPass >= state.totalPasses &&
@@ -579,9 +572,10 @@ export class Renderer {
 
     config.zoom = state.targetZoom;
 
-    this._updateUniforms(config, state);
+    const slice = this._getSliceGeometry(state);
+    this._updateUniforms(config, state, slice);
 
-    const drawSuccess = this._dispatchDrawCalls(state);
+    const drawSuccess = this._dispatchDrawCalls(state, tier, slice);
     if (!drawSuccess) return false;
 
     this._updateBackgroundCanvas(state);

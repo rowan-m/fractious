@@ -10,12 +10,6 @@ pub fn init_hooks() {
 }
 
 #[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-}
-
-#[wasm_bindgen]
 pub struct Anchor {
     #[wasm_bindgen(getter_with_clone)]
     pub x: String,
@@ -26,6 +20,12 @@ pub struct Anchor {
 
 fn bits_to_decimal_digits(bits: usize) -> usize {
     ((bits as f64 * std::f64::consts::LOG10_2).ceil() as usize).max(20)
+}
+
+fn f64_to_dbig(val: f64, dec_prec: usize) -> DBig {
+    Rational::try_from(val)
+        .map(|r| DBig::from(r).with_precision(dec_prec).value())
+        .unwrap_or(DBig::ZERO)
 }
 
 fn to_fbig(d: DBig, prec: usize) -> FBig {
@@ -142,9 +142,7 @@ pub fn add_coord(val: String, delta: f64) -> String {
         return r_d.to_string();
     }
 
-    let d_d = Rational::try_from(delta)
-        .map(|r| DBig::from(r).with_precision(15).value())
-        .unwrap_or(DBig::ZERO);
+    let d_d = f64_to_dbig(delta, 15);
     let delta_decimals = (-d_d.repr().exponent()).max(16) as usize;
     let target_prec = r_d.precision().max(delta_decimals);
 
@@ -280,7 +278,61 @@ fn find_best_perturbation_offset(
     (best_ox, best_oy)
 }
 
-// Return tuple [x_str, y_str]
+fn eval_arbitrary_orbit(
+    cx: &FBig,
+    cy: &FBig,
+    max_iter: u32,
+    prec: usize,
+    abort_flag: &Option<js_sys::Int32Array>,
+    record_orbit: bool,
+) -> (u32, Vec<(f64, f64)>) {
+    let f4: FBig = FBig::from(4).with_precision(prec).value();
+    let mut zx = FBig::ZERO.with_precision(prec).value();
+    let mut zy = FBig::ZERO.with_precision(prec).value();
+    let mut orbit = if record_orbit {
+        Vec::with_capacity((max_iter as usize) + 1)
+    } else {
+        Vec::new()
+    };
+
+    let mut i = 0;
+    while i < max_iter {
+        if i % 1000 == 0 && is_aborted(abort_flag) {
+            break;
+        }
+
+        if record_orbit {
+            orbit.push((zx.to_f64().value(), zy.to_f64().value()));
+        }
+
+        let zx2 = (&zx * &zx).with_precision(prec).value();
+        let zy2 = (&zy * &zy).with_precision(prec).value();
+
+        let sum2 = (&zx2 + &zy2).with_precision(prec).value();
+        if sum2 > f4 {
+            break;
+        }
+
+        let mut new_zy = zx;
+        new_zy *= &zy;
+        new_zy <<= 1;
+        new_zy += cy;
+        zy = new_zy.with_precision(prec).value();
+
+        let mut new_zx = zx2;
+        new_zx -= &zy2;
+        new_zx += cx;
+        zx = new_zx.with_precision(prec).value();
+        i += 1;
+    }
+
+    if record_orbit && i == max_iter {
+        orbit.push((zx.to_f64().value(), zy.to_f64().value()));
+    }
+
+    (i, orbit)
+}
+
 #[wasm_bindgen]
 pub fn find_best_anchor(
     cx_str: String,
@@ -306,14 +358,8 @@ pub fn find_best_anchor(
     // Multiply x-step by aspect to cover wide screen
     let step_y_f64 = scale * 0.22;
     let step_x_f64 = scale * 0.22 * aspect;
-    let step_y = Rational::try_from(step_y_f64)
-        .map(|r| DBig::from(r).with_precision(dec_prec).value())
-        .unwrap_or(DBig::ZERO);
-    let step_x = Rational::try_from(step_x_f64)
-        .map(|r| DBig::from(r).with_precision(dec_prec).value())
-        .unwrap_or(DBig::ZERO);
-
-    let f4: FBig = FBig::from(4).with_precision(prec).value();
+    let step_y = f64_to_dbig(step_y_f64, dec_prec);
+    let step_x = f64_to_dbig(step_x_f64, dec_prec);
 
     let mut best_iter = 0;
     let mut best_cx = center_x.clone();
@@ -340,51 +386,13 @@ pub fn find_best_anchor(
             break;
         }
 
-        let dx_val = DBig::from(ox_i);
-        let dy_val = DBig::from(oy_i);
-
-        let cx_probe = &center_x + (&step_x * dx_val);
-        let cy_probe = &center_y + (&step_y * dy_val);
+        let cx_probe = &center_x + (&step_x * DBig::from(ox_i));
+        let cy_probe = &center_y + (&step_y * DBig::from(oy_i));
 
         let cx = to_fbig(cx_probe.clone(), prec);
         let cy = to_fbig(cy_probe.clone(), prec);
 
-        let mut zx = FBig::ZERO.with_precision(prec).value();
-        let mut zy = FBig::ZERO.with_precision(prec).value();
-        let mut current_orbit: Vec<(f64, f64)> = Vec::with_capacity((max_iter as usize) + 1);
-
-        let mut i = 0;
-        while i < max_iter {
-            if i % 1000 == 0 && is_aborted(&abort_flag) {
-                break;
-            }
-
-            current_orbit.push((zx.to_f64().value(), zy.to_f64().value()));
-
-            let zx2 = (&zx * &zx).with_precision(prec).value();
-            let zy2 = (&zy * &zy).with_precision(prec).value();
-
-            let sum2 = (&zx2 + &zy2).with_precision(prec).value();
-            if sum2 > f4 {
-                break;
-            }
-
-            let mut new_zy = zx;
-            new_zy *= &zy;
-            new_zy <<= 1;
-            new_zy += &cy;
-            zy = new_zy.with_precision(prec).value();
-
-            let mut new_zx = zx2;
-            new_zx -= &zy2;
-            new_zx += &cx;
-            zx = new_zx.with_precision(prec).value();
-            i += 1;
-        }
-
-        if i == max_iter {
-            current_orbit.push((zx.to_f64().value(), zy.to_f64().value()));
-        }
+        let (i, current_orbit) = eval_arbitrary_orbit(&cx, &cy, max_iter, prec, &abort_flag, true);
 
         if i > best_iter {
             best_iter = i;
@@ -413,48 +421,13 @@ pub fn find_best_anchor(
             max_iter,
         );
 
-        let dx_dbig = Rational::try_from(win_ox)
-            .map(|r| DBig::from(r).with_precision(dec_prec).value())
-            .unwrap_or(DBig::ZERO);
-        let dy_dbig = Rational::try_from(win_oy)
-            .map(|r| DBig::from(r).with_precision(dec_prec).value())
-            .unwrap_or(DBig::ZERO);
-
-        let cx_probe = &center_x + dx_dbig;
-        let cy_probe = &center_y + dy_dbig;
+        let cx_probe = &center_x + f64_to_dbig(win_ox, dec_prec);
+        let cy_probe = &center_y + f64_to_dbig(win_oy, dec_prec);
 
         let cx = to_fbig(cx_probe.clone(), prec);
         let cy = to_fbig(cy_probe.clone(), prec);
 
-        let mut zx = FBig::ZERO.with_precision(prec).value();
-        let mut zy = FBig::ZERO.with_precision(prec).value();
-
-        let mut i = 0;
-        while i < max_iter {
-            if i % 1000 == 0 && is_aborted(&abort_flag) {
-                break;
-            }
-
-            let zx2 = (&zx * &zx).with_precision(prec).value();
-            let zy2 = (&zy * &zy).with_precision(prec).value();
-
-            let sum2 = (&zx2 + &zy2).with_precision(prec).value();
-            if sum2 > f4 {
-                break;
-            }
-
-            let mut new_zy = zx;
-            new_zy *= &zy;
-            new_zy <<= 1;
-            new_zy += &cy;
-            zy = new_zy.with_precision(prec).value();
-
-            let mut new_zx = zx2;
-            new_zx -= &zy2;
-            new_zx += &cx;
-            zx = new_zx.with_precision(prec).value();
-            i += 1;
-        }
+        let (i, _) = eval_arbitrary_orbit(&cx, &cy, max_iter, prec, &abort_flag, false);
 
         if i > best_iter {
             best_iter = i;

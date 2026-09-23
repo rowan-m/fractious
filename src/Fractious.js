@@ -3,6 +3,7 @@ import init, {
   sub_coord,
   add_coord,
 } from '../wasm/pkg/fractious_lib.js';
+import { calculateBaseIter, radToNormDeg } from './State.js';
 
 export class Fractious {
   constructor(config, state, renderer, workerManager, interactionManager) {
@@ -112,8 +113,7 @@ export class Fractious {
     this.state.targetZoom = this.config.zoom;
 
     if (this.config.zoom) {
-      const logZoom = Math.log10(this.config.zoom);
-      this.config.iter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
+      this.config.iter = calculateBaseIter(this.config.zoom);
     }
   }
 
@@ -123,11 +123,10 @@ export class Fractious {
       this._urlParams = new URLSearchParams(window.location.search);
     }
     const params = this._urlParams;
-    const deg = ((((this.config.rotation * 180) / Math.PI) % 360) + 360) % 360;
     params.set('x', this.config.centerX);
     params.set('y', this.config.centerY);
     params.set('z', (-Math.log10(this.config.zoom)).toFixed(3));
-    params.set('r', deg.toFixed(1));
+    params.set('r', radToNormDeg(this.config.rotation).toFixed(1));
     params.set('h', this.config.hue.toFixed(3));
     params.set('s', this.config.hueStep.toFixed(3));
     window.history.replaceState({}, '', `?${params.toString()}`);
@@ -149,6 +148,15 @@ export class Fractious {
     );
   }
 
+  _isSameReferenceView() {
+    return (
+      this.state.offsetX !== undefined &&
+      this.state.offsetX === this._lastRefOffsetX &&
+      this.state.offsetY === this._lastRefOffsetY &&
+      this.state.targetZoom === this._lastRefZoom
+    );
+  }
+
   interact(needsNewReference = true) {
     if (this.state.targetZoom !== undefined) {
       this.config.zoom = this.state.targetZoom;
@@ -160,13 +168,8 @@ export class Fractious {
     }
 
     const isPointerActive = this.state.pointers && this.state.pointers.size > 0;
-    const coordsUnchanged =
-      this.state.offsetX !== undefined &&
-      this.state.offsetX === this._lastRefOffsetX &&
-      this.state.offsetY === this._lastRefOffsetY &&
-      this.state.targetZoom === this._lastRefZoom;
 
-    if (needsNewReference && coordsUnchanged && !isPointerActive) {
+    if (needsNewReference && this._isSameReferenceView() && !isPointerActive) {
       this.state.isPendingUpdate = false;
       this.interactionManager.updateUI();
       this.requestRender();
@@ -187,12 +190,7 @@ export class Fractious {
       this.updateReference();
     } else {
       this._interactionTimeout = setTimeout(() => {
-        if (
-          this.state.offsetX !== undefined &&
-          this.state.offsetX === this._lastRefOffsetX &&
-          this.state.offsetY === this._lastRefOffsetY &&
-          this.state.targetZoom === this._lastRefZoom
-        ) {
+        if (this._isSameReferenceView()) {
           this.state.isPendingUpdate = false;
           this.requestRender();
         } else {
@@ -202,32 +200,30 @@ export class Fractious {
     }
   }
 
+  _scheduleFrame() {
+    if (!this.state.isFrameScheduled) {
+      this.state.isFrameScheduled = true;
+      requestAnimationFrame(this.frame);
+    }
+  }
+
   requestRender() {
     this._renderGeneration = (this._renderGeneration || 0) + 1;
     if (!this.state.isPendingUpdate && !this.state.workerBusy) {
       this.updateURL();
     }
     this.state.currentPass = 0;
-    if (!this.state.isFrameScheduled) {
-      this.state.isFrameScheduled = true;
-      requestAnimationFrame(this.frame);
-    }
+    this._scheduleFrame();
   }
 
   requestScreenshot() {
     this.state.screenshotRequested = true;
-    if (!this.state.isFrameScheduled) {
-      this.state.isFrameScheduled = true;
-      requestAnimationFrame(this.frame);
-    }
+    this._scheduleFrame();
   }
 
   requestShare() {
     this.state.shareRequested = true;
-    if (!this.state.isFrameScheduled) {
-      this.state.isFrameScheduled = true;
-      requestAnimationFrame(this.frame);
-    }
+    this._scheduleFrame();
   }
 
   frame() {
@@ -241,12 +237,8 @@ export class Fractious {
         ? this.renderer.onSubmittedWorkDone()
         : Promise.resolve();
       onDone.then(() => {
-        if (
-          this._renderGeneration === passGen &&
-          !this.state.isFrameScheduled
-        ) {
-          this.state.isFrameScheduled = true;
-          requestAnimationFrame(this.frame);
+        if (this._renderGeneration === passGen) {
+          this._scheduleFrame();
         }
       });
     }
