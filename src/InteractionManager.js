@@ -239,6 +239,12 @@ export class InteractionManager {
     canvas.addEventListener('wheel', this.handleWheel, { passive: false });
     window.addEventListener('keydown', this.handleKeyDown);
 
+    if (typeof document.querySelectorAll === 'function') {
+      document.querySelectorAll('form').forEach((form) => {
+        form.addEventListener('submit', (e) => e.preventDefault());
+      });
+    }
+
     this.bindInputEvents();
     this.bindButtonEvents();
   }
@@ -402,6 +408,10 @@ export class InteractionManager {
         tag === 'SELECT' ||
         target.isContentEditable
       ) {
+        if (e.key === 'Enter' && typeof target.blur === 'function') {
+          e.preventDefault();
+          target.blur();
+        }
         return;
       }
     }

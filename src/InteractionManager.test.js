@@ -237,5 +237,14 @@ describe('InteractionManager updateUI', () => {
     });
     expect(config.hue).toBe(0.5);
     expect(preventDefault).not.toHaveBeenCalled();
+
+    const blur = vi.fn();
+    interactionManager.handleKeyDown({
+      key: 'Enter',
+      target: { tagName: 'INPUT', blur },
+      preventDefault,
+    });
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(blur).toHaveBeenCalledTimes(1);
   });
 });
