@@ -167,7 +167,12 @@ export class Fractious {
       this._interactionTimeout = null;
     }
 
-    const isPointerActive = this.state.pointers && this.state.pointers.size > 0;
+    const isPointerActive = Boolean(
+      this.state.pointers && this.state.pointers.size > 0,
+    );
+    this.interactionManager.setPinVisible?.(
+      isPointerActive || !needsNewReference,
+    );
 
     if (needsNewReference && this._isSameReferenceView() && !isPointerActive) {
       this.state.isPendingUpdate = false;
@@ -190,6 +195,8 @@ export class Fractious {
       this.updateReference();
     } else {
       this._interactionTimeout = setTimeout(() => {
+        this._interactionTimeout = null;
+        this.interactionManager.setPinVisible?.(false);
         if (this._isSameReferenceView()) {
           this.state.isPendingUpdate = false;
           this.requestRender();

@@ -26,6 +26,13 @@ describe('InteractionManager updateUI', () => {
     state = {};
 
     elements = {
+      crosshair: {
+        classList: {
+          toggle: vi.fn(),
+          add: vi.fn(),
+          remove: vi.fn(),
+        },
+      },
       inputs: {
         c_re: { value: '' },
         c_im: { value: '' },
@@ -190,14 +197,19 @@ describe('InteractionManager updateUI', () => {
     });
     expect(config.hueStep).toBeCloseTo(1.0, 6);
 
-    // W / A / S / D -> pan view
+    // W / A / S / D -> pan view and show center .pin
     state.offsetX = 0;
     state.offsetY = 0;
+    elements.crosshair.classList.toggle.mockClear();
     interactionManager.handleKeyDown({
       key: 'w',
       preventDefault: vi.fn(),
     });
     expect(state.offsetY).toBeCloseTo(0.1, 6);
+    expect(elements.crosshair.classList.toggle).toHaveBeenCalledWith(
+      'moving',
+      true,
+    );
 
     interactionManager.handleKeyDown({
       key: 'd',
