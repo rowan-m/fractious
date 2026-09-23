@@ -1,4 +1,3 @@
-import { add_coord } from '../wasm/pkg/fractious_lib.js';
 import { radToNormDeg } from './State.js';
 
 const ZOOM_STEP_FACTOR = Math.pow(10, 0.1);
@@ -18,6 +17,7 @@ export class InteractionManager {
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handlePointerUp = this.handlePointerUp.bind(this);
     this.handleWheel = this.handleWheel.bind(this);
+    this.handleDoubleClick = this.handleDoubleClick.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
 
     this._keyActions = this._createKeyActionMap();
@@ -43,6 +43,12 @@ export class InteractionManager {
     this._setVal(inputs.iterations, this.config.iter);
     this._setVal(inputs.hue, this.config.hue.toFixed(3));
     this._setVal(inputs.hueStep, this.config.hueStep.toFixed(3));
+    if (this.el.iterIcon) {
+      this.el.iterIcon.classList.toggle(
+        'busy',
+        Boolean(this.state.workerBusy || this.state.isRendering),
+      );
+    }
   }
 
   applyRotation(dx, dy, scale) {
@@ -222,6 +228,13 @@ export class InteractionManager {
     this._notifyInteract(false);
   }
 
+  handleDoubleClick(e) {
+    e.preventDefault();
+    const factor = e.shiftKey ? Math.pow(10, 0.5) : Math.pow(10, -0.5);
+    this._zoomAroundPoint(e.clientX || 0, e.clientY || 0, factor);
+    this._notifyInteract(false);
+  }
+
   bindEvents() {
     const { canvas } = this.el;
 
@@ -237,7 +250,14 @@ export class InteractionManager {
       canvas.addEventListener(e, this.handlePointerUp),
     );
     canvas.addEventListener('wheel', this.handleWheel, { passive: false });
+    canvas.addEventListener('dblclick', this.handleDoubleClick);
     window.addEventListener('keydown', this.handleKeyDown);
+
+    if (typeof document.querySelectorAll === 'function') {
+      document.querySelectorAll('form').forEach((form) => {
+        form.addEventListener('submit', (e) => e.preventDefault());
+      });
+    }
 
     this.bindInputEvents();
     this.bindButtonEvents();
@@ -300,8 +320,10 @@ export class InteractionManager {
   }
 
   _aspect() {
-    if (this.el.canvas && this.el.canvas.height > 0) {
-      return this.el.canvas.width / this.el.canvas.height;
+    const w = this.state.width || (this.el.canvas && this.el.canvas.width);
+    const h = this.state.height || (this.el.canvas && this.el.canvas.height);
+    if (w > 0 && h > 0) {
+      return w / h;
     }
     return 1.0;
   }
@@ -314,14 +336,6 @@ export class InteractionManager {
 
     this.state.offsetX = (this.state.offsetX || 0) + dx;
     this.state.offsetY = (this.state.offsetY || 0) + dy;
-    this.config.centerX = add_coord(
-      this.state.refX || this.config.centerX,
-      this.state.offsetX,
-    );
-    this.config.centerY = add_coord(
-      this.state.refY || this.config.centerY,
-      this.state.offsetY,
-    );
     this._notifyInteract(false);
   }
 
@@ -400,6 +414,10 @@ export class InteractionManager {
         tag === 'SELECT' ||
         target.isContentEditable
       ) {
+        if (e.key === 'Enter' && typeof target.blur === 'function') {
+          e.preventDefault();
+          target.blur();
+        }
         return;
       }
     }

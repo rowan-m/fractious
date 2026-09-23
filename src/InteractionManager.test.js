@@ -1,11 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { InteractionManager } from './InteractionManager.js';
 
-vi.mock('../wasm/pkg/fractious_lib.js', () => ({
-  add_coord: vi.fn(),
-  sub_coord: vi.fn(),
-}));
-
 describe('InteractionManager updateUI', () => {
   let interactionManager;
   let config;
@@ -139,6 +134,35 @@ describe('InteractionManager updateUI', () => {
     expect(config.rotation).toBeCloseTo(Math.PI / 36, 6);
   });
 
+  it('should zoom around cursor on double-click and zoom out on Shift+double-click', () => {
+    state.width = 400;
+    state.height = 400;
+    state.offsetX = 0;
+    state.offsetY = 0;
+    state.targetZoom = 1.0;
+    config.rotation = 0;
+
+    interactionManager.handleDoubleClick({
+      preventDefault: vi.fn(),
+      clientX: 300,
+      clientY: 100,
+      shiftKey: false,
+    });
+
+    expect(-Math.log10(state.targetZoom)).toBeCloseTo(0.5, 6);
+    expect(state.offsetX).toBeGreaterThan(0);
+    expect(state.offsetY).toBeGreaterThan(0);
+
+    interactionManager.handleDoubleClick({
+      preventDefault: vi.fn(),
+      clientX: 300,
+      clientY: 100,
+      shiftKey: true,
+    });
+
+    expect(state.targetZoom).toBeCloseTo(1.0, 6);
+  });
+
   it('should handle keyboard shortcuts with consistent increments', () => {
     state.targetZoom = 1.0;
     config.zoom = 1.0;
@@ -237,5 +261,14 @@ describe('InteractionManager updateUI', () => {
     });
     expect(config.hue).toBe(0.5);
     expect(preventDefault).not.toHaveBeenCalled();
+
+    const blur = vi.fn();
+    interactionManager.handleKeyDown({
+      key: 'Enter',
+      target: { tagName: 'INPUT', blur },
+      preventDefault,
+    });
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(blur).toHaveBeenCalledTimes(1);
   });
 });

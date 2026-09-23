@@ -539,18 +539,24 @@ export class Renderer {
             console.error('Error sharing:', err);
           });
         } else {
-          alert(
-            'Web Share is not supported in this browser. Downloading screenshot and copying link to clipboard!',
-          );
-
-          navigator.clipboard
-            .writeText(window.location.href)
-            .then(() => {
-              this._downloadBlob(blob, 'mandelbrot-fractious.png');
-            })
-            .catch((err) => {
-              console.error('Error copying link:', err);
-            });
+          this._downloadBlob(blob, 'mandelbrot-fractious.png');
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard
+              .writeText(window.location.href)
+              .catch((err) => console.error('Error copying link:', err));
+          }
+          const btnShare = document.getElementById('btn-share');
+          if (btnShare) {
+            const target = btnShare.querySelector('span') || btnShare;
+            const prevText = target.textContent;
+            const prevTitle = btnShare.title;
+            target.textContent = '✅';
+            btnShare.title = 'Link copied & screenshot downloaded!';
+            setTimeout(() => {
+              target.textContent = prevText;
+              btnShare.title = prevTitle;
+            }, 1500);
+          }
         }
       }, 'image/png');
     }

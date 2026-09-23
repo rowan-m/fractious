@@ -118,6 +118,8 @@ describe('Fractious interaction debouncing', () => {
       iter: 1000,
     };
     state = {
+      refX: '0.0',
+      refY: '0.0',
       isPendingUpdate: false,
       workerBusy: false,
     };
@@ -232,5 +234,46 @@ describe('Fractious interaction debouncing', () => {
 
     expect(state.isPendingUpdate).toBe(false);
     expect(workerManager.updateReference).not.toHaveBeenCalled();
+  });
+
+  it('should trigger worker recalculation when refX/refY are edited directly even if offsetX and offsetY are 0', () => {
+    state.pointers = new Map();
+    state.offsetX = 0;
+    state.offsetY = 0;
+    state.targetZoom = 1.0;
+    fractious._lastRefOffsetX = 0;
+    fractious._lastRefOffsetY = 0;
+    fractious._lastRefZoom = 1.0;
+
+    // Simulate user editing #c_re input directly
+    state.refX = '-0.75';
+    config.centerX = '-0.75';
+
+    fractious.interact(true);
+
+    expect(workerManager.updateReference).toHaveBeenCalledTimes(1);
+  });
+
+  it('should keep state.isRendering true during full-resolution progressive passes and clear when complete', async () => {
+    state.isPendingUpdate = false;
+    state.workerBusy = false;
+
+    renderer.render
+      .mockReturnValueOnce(true) // pass 1 needs more passes
+      .mockReturnValueOnce(false); // pass 2 completes
+
+    fractious.requestRender();
+    expect(state.isRendering).toBe(true);
+
+    // Execute pass 1
+    fractious.frame();
+    await Promise.resolve();
+    expect(state.isRendering).toBe(true);
+
+    // Execute pass 2 (final slice)
+    fractious.frame();
+    await Promise.resolve();
+    expect(state.isRendering).toBe(false);
+    expect(interactionManager.updateUI).toHaveBeenCalled();
   });
 });
