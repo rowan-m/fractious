@@ -1,4 +1,10 @@
-import { add_coord, sub_coord } from '../wasm/pkg/fractious_lib.js';
+import { add_coord } from '../wasm/pkg/fractious_lib.js';
+
+const ZOOM_STEP_FACTOR = Math.pow(10, 0.1);
+const ROTATE_BTN_STEP = Math.PI / 12; // 15 degrees
+const HUE_STEP_INCREMENT = 0.005;
+const HUE_INCREMENT = 0.01;
+const MOVE_STEP = 0.1;
 
 export class InteractionManager {
   constructor(elements, config, state, callbacks) {
@@ -11,6 +17,9 @@ export class InteractionManager {
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handlePointerUp = this.handlePointerUp.bind(this);
     this.handleWheel = this.handleWheel.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+
+    this._keyActions = this._createKeyActionMap();
   }
 
   _setVal(input, val) {
@@ -215,6 +224,7 @@ export class InteractionManager {
       canvas.addEventListener(e, this.handlePointerUp),
     );
     canvas.addEventListener('wheel', this.handleWheel, { passive: false });
+    window.addEventListener('keydown', this.handleKeyDown);
 
     this.bindInputEvents();
     this.bindButtonEvents();
@@ -276,73 +286,137 @@ export class InteractionManager {
     if (btn) btn.onclick = action;
   }
 
+  _aspect() {
+    if (this.el.canvas && this.el.canvas.height > 0) {
+      return this.el.canvas.width / this.el.canvas.height;
+    }
+    return 1.0;
+  }
+
   _moveView(shiftX, shiftY) {
     const c = Math.cos(this.config.rotation);
     const s = Math.sin(this.config.rotation);
     const dx = shiftX * c - shiftY * s;
     const dy = shiftX * s + shiftY * c;
 
-    this.config.centerX = add_coord(this.config.centerX, dx);
-    this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
-    this.config.centerY = add_coord(this.config.centerY, dy);
-    this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
-    this.callbacks.onInteract(true);
+    this.state.offsetX = (this.state.offsetX || 0) + dx;
+    this.state.offsetY = (this.state.offsetY || 0) + dy;
+    this.config.centerX = add_coord(
+      this.state.refX || this.config.centerX,
+      this.state.offsetX,
+    );
+    this.config.centerY = add_coord(
+      this.state.refY || this.config.centerY,
+      this.state.offsetY,
+    );
+    this.callbacks.onInteract(false);
+  }
+
+  _createKeyActionMap() {
+    const moveUp = () => this._moveView(0, MOVE_STEP * this.config.zoom);
+    const moveDown = () => this._moveView(0, -MOVE_STEP * this.config.zoom);
+    const moveLeft = () =>
+      this._moveView(-MOVE_STEP * this.config.zoom * this._aspect(), 0);
+    const moveRight = () =>
+      this._moveView(MOVE_STEP * this.config.zoom * this._aspect(), 0);
+    const zoomIn = () => {
+      this.state.targetZoom /= ZOOM_STEP_FACTOR;
+      this.callbacks.onInteract(false);
+    };
+    const zoomOut = () => {
+      this.state.targetZoom *= ZOOM_STEP_FACTOR;
+      this.callbacks.onInteract(false);
+    };
+    const rotateCCW = () => {
+      this.config.rotation -= ROTATE_BTN_STEP;
+      this.callbacks.onInteract(false);
+    };
+    const rotateCW = () => {
+      this.config.rotation += ROTATE_BTN_STEP;
+      this.callbacks.onInteract(false);
+    };
+    const hueDec = () => {
+      this.config.hue -= HUE_INCREMENT;
+      this.callbacks.onInteract(false);
+    };
+    const hueInc = () => {
+      this.config.hue += HUE_INCREMENT;
+      this.callbacks.onInteract(false);
+    };
+    const hueStepDec = () => {
+      this.config.hueStep -= HUE_STEP_INCREMENT;
+      this.callbacks.onInteract(false);
+    };
+    const hueStepInc = () => {
+      this.config.hueStep += HUE_STEP_INCREMENT;
+      this.callbacks.onInteract(false);
+    };
+
+    return new Map([
+      ['w', moveUp],
+      ['arrowup', moveUp],
+      ['s', moveDown],
+      ['arrowdown', moveDown],
+      ['a', moveLeft],
+      ['arrowleft', moveLeft],
+      ['d', moveRight],
+      ['arrowright', moveRight],
+      ['q', zoomOut],
+      ['-', zoomOut],
+      ['_', zoomOut],
+      ['e', zoomIn],
+      ['+', zoomIn],
+      ['=', zoomIn],
+      ['z', rotateCCW],
+      ['x', rotateCW],
+      ['r', hueDec],
+      ['t', hueInc],
+      ['f', hueStepDec],
+      ['g', hueStepInc],
+    ]);
+  }
+
+  handleKeyDown(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const target = e.target;
+    if (target) {
+      const tag = target.tagName;
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+    }
+
+    const action = this._keyActions.get(e.key.toLowerCase());
+    if (action) {
+      e.preventDefault();
+      action();
+    }
   }
 
   _bindNavigationButtons() {
-    const moveStep = 0.1;
-    const aspect = () => this.el.canvas.width / this.el.canvas.height;
-
-    this._bindBtn('btn-up', () =>
-      this._moveView(0, moveStep * this.config.zoom),
-    );
-    this._bindBtn('btn-down', () =>
-      this._moveView(0, -moveStep * this.config.zoom),
-    );
-    this._bindBtn('btn-left', () =>
-      this._moveView(-moveStep * this.config.zoom * aspect(), 0),
-    );
-    this._bindBtn('btn-right', () =>
-      this._moveView(moveStep * this.config.zoom * aspect(), 0),
-    );
+    this._bindBtn('btn-up', this._keyActions.get('w'));
+    this._bindBtn('btn-down', this._keyActions.get('s'));
+    this._bindBtn('btn-left', this._keyActions.get('a'));
+    this._bindBtn('btn-right', this._keyActions.get('d'));
   }
 
   _bindTransformButtons() {
-    this._bindBtn('btn-zoom-in', () => {
-      this.state.targetZoom /= 1.5;
-      this.callbacks.onInteract(true);
-    });
-    this._bindBtn('btn-zoom-out', () => {
-      this.state.targetZoom *= 1.5;
-      this.callbacks.onInteract(true);
-    });
-    this._bindBtn('btn-rotate-cw', () => {
-      this.config.rotation += Math.PI / 12;
-      this.callbacks.onInteract(false);
-    });
-    this._bindBtn('btn-rotate-ccw', () => {
-      this.config.rotation -= Math.PI / 12;
-      this.callbacks.onInteract(false);
-    });
+    this._bindBtn('btn-zoom-in', this._keyActions.get('e'));
+    this._bindBtn('btn-zoom-out', this._keyActions.get('q'));
+    this._bindBtn('btn-rotate-cw', this._keyActions.get('x'));
+    this._bindBtn('btn-rotate-ccw', this._keyActions.get('z'));
   }
 
   _bindColorButtons() {
-    this._bindBtn('btn-cycle-in', () => {
-      this.config.hueStep += 0.05;
-      this.callbacks.onInteract(false);
-    });
-    this._bindBtn('btn-cycle-out', () => {
-      this.config.hueStep -= 0.05;
-      this.callbacks.onInteract(false);
-    });
-    this._bindBtn('btn-hue-left', () => {
-      this.config.hue -= 0.05;
-      this.callbacks.onInteract(false);
-    });
-    this._bindBtn('btn-hue-right', () => {
-      this.config.hue += 0.05;
-      this.callbacks.onInteract(false);
-    });
+    this._bindBtn('btn-cycle-in', this._keyActions.get('g'));
+    this._bindBtn('btn-cycle-out', this._keyActions.get('f'));
+    this._bindBtn('btn-hue-left', this._keyActions.get('r'));
+    this._bindBtn('btn-hue-right', this._keyActions.get('t'));
   }
 
   _bindUtilityButtons() {

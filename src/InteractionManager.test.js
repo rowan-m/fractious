@@ -131,4 +131,99 @@ describe('InteractionManager updateUI', () => {
     expect(state.targetZoom).toBe(zoomBeforeRotate);
     expect(config.rotation).toBeCloseTo(Math.PI / 36, 6);
   });
+
+  it('should handle keyboard shortcuts with consistent increments', () => {
+    state.targetZoom = 1.0;
+    config.zoom = 1.0;
+    config.rotation = 0;
+    config.hue = 0.5;
+    config.hueStep = 1.0;
+
+    // E -> zoom in by 0.1 log10 units
+    interactionManager.handleKeyDown({
+      key: 'e',
+      preventDefault: vi.fn(),
+    });
+    expect(-Math.log10(state.targetZoom)).toBeCloseTo(0.1, 6);
+
+    // Q -> zoom out by 0.1 log10 units
+    interactionManager.handleKeyDown({
+      key: 'q',
+      preventDefault: vi.fn(),
+    });
+    expect(state.targetZoom).toBeCloseTo(1.0, 6);
+
+    // X / Z -> rotate CW / CCW by 15 degrees (Math.PI / 12)
+    interactionManager.handleKeyDown({
+      key: 'x',
+      preventDefault: vi.fn(),
+    });
+    expect(config.rotation).toBeCloseTo(Math.PI / 12, 6);
+
+    interactionManager.handleKeyDown({
+      key: 'z',
+      preventDefault: vi.fn(),
+    });
+    expect(config.rotation).toBeCloseTo(0, 6);
+
+    // R / T -> hue -0.01 / +0.01
+    interactionManager.handleKeyDown({
+      key: 't',
+      preventDefault: vi.fn(),
+    });
+    expect(config.hue).toBeCloseTo(0.51, 6);
+    interactionManager.handleKeyDown({
+      key: 'r',
+      preventDefault: vi.fn(),
+    });
+    expect(config.hue).toBeCloseTo(0.5, 6);
+
+    // F / G -> hueStep -0.005 / +0.005
+    interactionManager.handleKeyDown({
+      key: 'g',
+      preventDefault: vi.fn(),
+    });
+    expect(config.hueStep).toBeCloseTo(1.005, 6);
+    interactionManager.handleKeyDown({
+      key: 'f',
+      preventDefault: vi.fn(),
+    });
+    expect(config.hueStep).toBeCloseTo(1.0, 6);
+
+    // W / A / S / D -> pan view
+    state.offsetX = 0;
+    state.offsetY = 0;
+    interactionManager.handleKeyDown({
+      key: 'w',
+      preventDefault: vi.fn(),
+    });
+    expect(state.offsetY).toBeCloseTo(0.1, 6);
+
+    interactionManager.handleKeyDown({
+      key: 'd',
+      preventDefault: vi.fn(),
+    });
+    expect(state.offsetX).toBeCloseTo(0.1, 6);
+  });
+
+  it('should ignore keyboard shortcuts when typing in an input or holding modifier keys', () => {
+    config.hue = 0.5;
+    const preventDefault = vi.fn();
+
+    interactionManager.handleKeyDown({
+      key: 't',
+      target: { tagName: 'INPUT' },
+      preventDefault,
+    });
+    expect(config.hue).toBe(0.5);
+    expect(preventDefault).not.toHaveBeenCalled();
+
+    interactionManager.handleKeyDown({
+      key: 'r',
+      ctrlKey: true,
+      preventDefault,
+    });
+    expect(config.hue).toBe(0.5);
+    expect(preventDefault).not.toHaveBeenCalled();
+  });
 });
