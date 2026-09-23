@@ -1,4 +1,3 @@
-import { add_coord } from '../wasm/pkg/fractious_lib.js';
 import { radToNormDeg } from './State.js';
 
 const ZOOM_STEP_FACTOR = Math.pow(10, 0.1);
@@ -322,14 +321,6 @@ export class InteractionManager {
 
     this.state.offsetX = (this.state.offsetX || 0) + dx;
     this.state.offsetY = (this.state.offsetY || 0) + dy;
-    this.config.centerX = add_coord(
-      this.state.refX || this.config.centerX,
-      this.state.offsetX,
-    );
-    this.config.centerY = add_coord(
-      this.state.refY || this.config.centerY,
-      this.state.offsetY,
-    );
     this._notifyInteract(false);
   }
 

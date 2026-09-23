@@ -1,11 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { InteractionManager } from './InteractionManager.js';
 
-vi.mock('../wasm/pkg/fractious_lib.js', () => ({
-  add_coord: vi.fn(),
-  sub_coord: vi.fn(),
-}));
-
 describe('InteractionManager updateUI', () => {
   let interactionManager;
   let config;
