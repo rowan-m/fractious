@@ -12,6 +12,10 @@ export class Fractious {
     this.workerManager = workerManager;
     this.interactionManager = interactionManager;
 
+    this._lastRefOffsetX = state.offsetX;
+    this._lastRefOffsetY = state.offsetY;
+    this._lastRefZoom = config.zoom;
+
     this.frame = this.frame.bind(this);
   }
 
@@ -43,6 +47,9 @@ export class Fractious {
 
       this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
       this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
+      this._lastRefOffsetX = this.state.offsetX;
+      this._lastRefOffsetY = this.state.offsetY;
+      this._lastRefZoom = this.config.zoom;
 
       this.renderer.updateOrbitBuffer(payload.orbit);
 
@@ -138,19 +145,6 @@ export class Fractious {
   }
 
   interact(needsNewReference = true) {
-    const isPureAppearanceChange =
-      !needsNewReference &&
-      this.state.offsetX === 0 &&
-      this.state.offsetY === 0 &&
-      this.state.targetZoom === this.config.zoom &&
-      !this.state.isPendingUpdate;
-
-    if (isPureAppearanceChange) {
-      this.interactionManager.updateUI();
-      this.requestRender();
-      return;
-    }
-
     this.state.isPendingUpdate = true;
     this.interactionManager.updateUI();
     this.requestRender();
@@ -164,8 +158,19 @@ export class Fractious {
       this.updateReference();
     } else {
       this._interactionTimeout = setTimeout(() => {
-        this.updateReference();
-      }, 200); // Debounce Web Worker reference update to 200ms of inactivity
+        const coordsUnchanged =
+          this.state.offsetX !== undefined &&
+          this.state.offsetX === this._lastRefOffsetX &&
+          this.state.offsetY === this._lastRefOffsetY &&
+          this.state.targetZoom === this._lastRefZoom;
+
+        if (coordsUnchanged) {
+          this.state.isPendingUpdate = false;
+          this.requestRender();
+        } else {
+          this.updateReference();
+        }
+      }, 200); // Debounce 200ms of inactivity before full-res pass / worker update
     }
   }
 

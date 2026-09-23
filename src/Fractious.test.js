@@ -180,16 +180,24 @@ describe('Fractious interaction debouncing', () => {
     expect(workerManager.updateReference).toHaveBeenCalledTimes(1);
   });
 
-  it('should skip worker reference recalculation and low-res flag for pure colour/rotation tweaks', () => {
-    state.offsetX = 0;
-    state.offsetY = 0;
+  it('should render a 200ms low-res preview and then upgrade to full-res without worker recalc when coordinates/zoom are unchanged', () => {
+    state.offsetX = -0.25;
+    state.offsetY = 0.1;
     state.targetZoom = 1.0;
+    fractious._lastRefOffsetX = -0.25;
+    fractious._lastRefOffsetY = 0.1;
+    fractious._lastRefZoom = 1.0;
 
     fractious.interact(false);
 
+    // Immediate low-res preview during rapid cycling
+    expect(state.isPendingUpdate).toBe(true);
+    expect(workerManager.updateReference).not.toHaveBeenCalled();
+
+    // After 200ms pause, upgrades directly to full-res render & URL sync without worker recalc
+    vi.advanceTimersByTime(200);
     expect(state.isPendingUpdate).toBe(false);
     expect(workerManager.updateReference).not.toHaveBeenCalled();
-    vi.advanceTimersByTime(300);
-    expect(workerManager.updateReference).not.toHaveBeenCalled();
+    expect(window.history.replaceState).toHaveBeenCalled();
   });
 });
