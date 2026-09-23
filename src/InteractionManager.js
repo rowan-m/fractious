@@ -300,8 +300,10 @@ export class InteractionManager {
   }
 
   _aspect() {
-    if (this.el.canvas && this.el.canvas.height > 0) {
-      return this.el.canvas.width / this.el.canvas.height;
+    const w = this.state.width || (this.el.canvas && this.el.canvas.width);
+    const h = this.state.height || (this.el.canvas && this.el.canvas.height);
+    if (w > 0 && h > 0) {
+      return w / h;
     }
     return 1.0;
   }

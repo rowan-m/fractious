@@ -13,6 +13,8 @@ export class Fractious {
     this.workerManager = workerManager;
     this.interactionManager = interactionManager;
 
+    this._lastRefX = state.refX;
+    this._lastRefY = state.refY;
     this._lastRefOffsetX = state.offsetX;
     this._lastRefOffsetY = state.offsetY;
     this._lastRefZoom = config.zoom;
@@ -48,6 +50,8 @@ export class Fractious {
 
       this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
       this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
+      this._lastRefX = this.state.refX;
+      this._lastRefY = this.state.refY;
       this._lastRefOffsetX = this.state.offsetX;
       this._lastRefOffsetY = this.state.offsetY;
       this._lastRefZoom = this.config.zoom;
@@ -140,16 +144,17 @@ export class Fractious {
     this.config.centerY = add_coord(this.state.refY, this.state.offsetY);
     this.interactionManager.updateUI();
 
+    const width = this.state.width || this.interactionManager.el.canvas.width;
+    const height =
+      this.state.height || this.interactionManager.el.canvas.height;
     this.state.workerBusy = true;
-    this.workerManager.updateReference(
-      this.config,
-      this.interactionManager.el.canvas.width,
-      this.interactionManager.el.canvas.height,
-    );
+    this.workerManager.updateReference(this.config, width, height);
   }
 
   _isSameReferenceView() {
     return (
+      this.state.refX === this._lastRefX &&
+      this.state.refY === this._lastRefY &&
       this.state.offsetX !== undefined &&
       this.state.offsetX === this._lastRefOffsetX &&
       this.state.offsetY === this._lastRefOffsetY &&
