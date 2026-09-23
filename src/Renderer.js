@@ -1,8 +1,8 @@
 import shaderCode from './renderer/shader.wgsl?raw';
 import postShaderCode from './renderer/post.wgsl?raw';
 
-const INTERACTION_MAX_OPS = 40000000;
-const PROGRESSIVE_MAX_OPS = 200000000;
+const INTERACTION_MAX_OPS = 20000000;
+const PROGRESSIVE_MAX_OPS = 25000000;
 const INTERACTION_SCALE_LIMIT = 0.5;
 
 export class Renderer {
@@ -261,11 +261,11 @@ export class Renderer {
       const logZoom = -Math.log10(state.targetZoom);
       let opsMultiplier;
       if (logZoom < 7.0) {
-        opsMultiplier = 20.0; // Tier 1: F32 is native and extremely fast (4 Billion ops/frame)
+        opsMultiplier = 12.0; // Tier 1: F32 (~300M ops/slice -> ~15-20ms worst-case interior slice)
       } else if (logZoom < 14.0) {
-        opsMultiplier = 4.0; // Tier 2: Double-Single is moderately fast (800 Million ops/frame)
+        opsMultiplier = 3.0; // Tier 2: Double-Single (~75M ops/slice)
       } else {
-        opsMultiplier = 1.0; // Tier 3: Quad-Single (default 200 Million ops/frame)
+        opsMultiplier = 1.0; // Tier 3: Quad-Single (~25M ops/slice)
       }
 
       const totalOps = currentPixels * config.iter;

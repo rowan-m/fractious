@@ -200,4 +200,33 @@ describe('Fractious interaction debouncing', () => {
     expect(workerManager.updateReference).not.toHaveBeenCalled();
     expect(window.history.replaceState).toHaveBeenCalled();
   });
+
+  it('should not fire the 200ms worker debounce timer while pointers are actively held down', () => {
+    state.pointers = new Map([[1, { x: 100, y: 100 }]]);
+    state.offsetX = 0.5;
+    state.offsetY = 0.5;
+    state.targetZoom = 0.5;
+
+    fractious.interact(false);
+
+    expect(config.zoom).toBe(0.5);
+    expect(state.isPendingUpdate).toBe(true);
+    vi.advanceTimersByTime(500);
+    expect(workerManager.updateReference).not.toHaveBeenCalled();
+  });
+
+  it('should skip worker recalculation on interact(true) when coordinates and zoom are unchanged (e.g. Shift+drag release)', () => {
+    state.pointers = new Map();
+    state.offsetX = -0.25;
+    state.offsetY = 0.1;
+    state.targetZoom = 1.0;
+    fractious._lastRefOffsetX = -0.25;
+    fractious._lastRefOffsetY = 0.1;
+    fractious._lastRefZoom = 1.0;
+
+    fractious.interact(true);
+
+    expect(state.isPendingUpdate).toBe(false);
+    expect(workerManager.updateReference).not.toHaveBeenCalled();
+  });
 });

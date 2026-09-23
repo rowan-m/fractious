@@ -81,6 +81,8 @@ export class InteractionManager {
         y: (p1.y + p2.y) / 2,
       };
     }
+
+    this.callbacks.onInteract(false);
   }
 
   _handlePinchZoom(scaleY) {

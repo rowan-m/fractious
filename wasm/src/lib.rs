@@ -142,9 +142,10 @@ pub fn add_coord(val: String, delta: f64) -> String {
         return r_d.to_string();
     }
 
-    let delta_str = format!("{:.14e}", delta);
-    let d_d = DBig::from_str(&delta_str).unwrap_or(DBig::ZERO);
-    let delta_decimals = (-delta.abs().log10().floor() as isize + 15).max(16) as usize;
+    let d_d = Rational::try_from(delta)
+        .map(|r| DBig::from(r).with_precision(15).value())
+        .unwrap_or(DBig::ZERO);
+    let delta_decimals = (-d_d.repr().exponent()).max(16) as usize;
     let target_prec = r_d.precision().max(delta_decimals);
 
     let res = (r_d.with_precision(target_prec).value() + d_d.with_precision(target_prec).value())
