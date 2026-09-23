@@ -56,7 +56,9 @@ export class Fractious {
       this.config.iter = payload.iter;
       this.interactionManager.updateUI();
 
-      this.state.isPendingUpdate = false;
+      const isPointerActive =
+        this.state.pointers && this.state.pointers.size > 0;
+      this.state.isPendingUpdate = Boolean(isPointerActive);
       this.state.workerBusy = false;
       this.requestRender();
     };
@@ -132,6 +134,9 @@ export class Fractious {
   }
 
   updateReference() {
+    if (this.state.targetZoom !== undefined) {
+      this.config.zoom = this.state.targetZoom;
+    }
     this.config.centerX = add_coord(this.state.refX, this.state.offsetX);
     this.config.centerY = add_coord(this.state.refY, this.state.offsetY);
     this.interactionManager.updateUI();
@@ -145,26 +150,49 @@ export class Fractious {
   }
 
   interact(needsNewReference = true) {
-    this.state.isPendingUpdate = true;
-    this.interactionManager.updateUI();
-    this.requestRender();
+    if (this.state.targetZoom !== undefined) {
+      this.config.zoom = this.state.targetZoom;
+    }
 
     if (this._interactionTimeout) {
       clearTimeout(this._interactionTimeout);
       this._interactionTimeout = null;
     }
 
+    const isPointerActive = this.state.pointers && this.state.pointers.size > 0;
+    const coordsUnchanged =
+      this.state.offsetX !== undefined &&
+      this.state.offsetX === this._lastRefOffsetX &&
+      this.state.offsetY === this._lastRefOffsetY &&
+      this.state.targetZoom === this._lastRefZoom;
+
+    if (needsNewReference && coordsUnchanged && !isPointerActive) {
+      this.state.isPendingUpdate = false;
+      this.interactionManager.updateUI();
+      this.requestRender();
+      return;
+    }
+
+    this.state.isPendingUpdate = true;
+    this.interactionManager.updateUI();
+    this.requestRender();
+
+    // Never fire background reference updates or switch out of interactive low-res mode
+    // while a pointer/touch is still actively held down on the canvas.
+    if (isPointerActive) {
+      return;
+    }
+
     if (needsNewReference) {
       this.updateReference();
     } else {
       this._interactionTimeout = setTimeout(() => {
-        const coordsUnchanged =
+        if (
           this.state.offsetX !== undefined &&
           this.state.offsetX === this._lastRefOffsetX &&
           this.state.offsetY === this._lastRefOffsetY &&
-          this.state.targetZoom === this._lastRefZoom;
-
-        if (coordsUnchanged) {
+          this.state.targetZoom === this._lastRefZoom
+        ) {
           this.state.isPendingUpdate = false;
           this.requestRender();
         } else {
@@ -175,6 +203,7 @@ export class Fractious {
   }
 
   requestRender() {
+    this._renderGeneration = (this._renderGeneration || 0) + 1;
     if (!this.state.isPendingUpdate && !this.state.workerBusy) {
       this.updateURL();
     }
@@ -207,12 +236,19 @@ export class Fractious {
     const needsMorePasses = this.renderer.render(this.config, this.state);
 
     if (needsMorePasses && !this.state.isFrameScheduled) {
-      this.state.isFrameScheduled = true;
-      // ⚡ Bolt: Removed this.renderer.onSubmittedWorkDone().then() wrapper
-      // to avoid forcing a CPU-GPU synchronization stall, allowing native
-      // browser pipelining for significantly higher frame throughput during
-      // progressive rendering.
-      requestAnimationFrame(this.frame);
+      const passGen = this._renderGeneration;
+      const onDone = this.renderer.onSubmittedWorkDone
+        ? this.renderer.onSubmittedWorkDone()
+        : Promise.resolve();
+      onDone.then(() => {
+        if (
+          this._renderGeneration === passGen &&
+          !this.state.isFrameScheduled
+        ) {
+          this.state.isFrameScheduled = true;
+          requestAnimationFrame(this.frame);
+        }
+      });
     }
   }
 }
