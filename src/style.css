@@ -185,7 +185,7 @@ canvas:active {
 
 #iter-icon.busy {
   display: inline-block;
-  animation: spin 1s linear infinite;
+  animation: spin 2.5s linear infinite;
 }
 
 .stats input:focus {

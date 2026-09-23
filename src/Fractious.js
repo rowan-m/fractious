@@ -64,7 +64,6 @@ export class Fractious {
         this.state.pointers && this.state.pointers.size > 0;
       this.state.isPendingUpdate = Boolean(isPointerActive);
       this.state.workerBusy = false;
-      this.interactionManager.updateUI();
       this.requestRender();
     };
 
@@ -72,6 +71,7 @@ export class Fractious {
       console.error('Worker error:', error);
       this.state.isPendingUpdate = false;
       this.state.workerBusy = false;
+      this.state.isRendering = false;
       this.interactionManager.updateUI();
     };
   }
@@ -182,13 +182,11 @@ export class Fractious {
 
     if (needsNewReference && this._isSameReferenceView() && !isPointerActive) {
       this.state.isPendingUpdate = false;
-      this.interactionManager.updateUI();
       this.requestRender();
       return;
     }
 
     this.state.isPendingUpdate = true;
-    this.interactionManager.updateUI();
     this.requestRender();
 
     // Never fire background reference updates or switch out of interactive low-res mode
@@ -222,9 +220,13 @@ export class Fractious {
 
   requestRender() {
     this._renderGeneration = (this._renderGeneration || 0) + 1;
-    if (!this.state.isPendingUpdate && !this.state.workerBusy) {
+    const isFullResRender =
+      !this.state.isPendingUpdate && !this.state.workerBusy;
+    if (isFullResRender) {
       this.updateURL();
     }
+    this.state.isRendering = isFullResRender;
+    this.interactionManager.updateUI();
     this.state.currentPass = 0;
     this._scheduleFrame();
   }
@@ -244,14 +246,21 @@ export class Fractious {
 
     const needsMorePasses = this.renderer.render(this.config, this.state);
 
-    if (needsMorePasses && !this.state.isFrameScheduled) {
+    if (
+      (needsMorePasses && !this.state.isFrameScheduled) ||
+      (!needsMorePasses && this.state.isRendering)
+    ) {
       const passGen = this._renderGeneration;
       const onDone = this.renderer.onSubmittedWorkDone
         ? this.renderer.onSubmittedWorkDone()
         : Promise.resolve();
       onDone.then(() => {
-        if (this._renderGeneration === passGen) {
+        if (this._renderGeneration !== passGen) return;
+        if (needsMorePasses) {
           this._scheduleFrame();
+        } else {
+          this.state.isRendering = false;
+          this.interactionManager.updateUI();
         }
       });
     }

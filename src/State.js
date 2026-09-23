@@ -28,6 +28,7 @@ export function createDefaultState() {
     targetZoom: 2.0,
 
     workerBusy: false,
+    isRendering: false,
     isPendingUpdate: true,
 
     isFrameScheduled: false,

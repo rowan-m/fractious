@@ -44,7 +44,10 @@ export class InteractionManager {
     this._setVal(inputs.hue, this.config.hue.toFixed(3));
     this._setVal(inputs.hueStep, this.config.hueStep.toFixed(3));
     if (this.el.iterIcon) {
-      this.el.iterIcon.classList.toggle('busy', Boolean(this.state.workerBusy));
+      this.el.iterIcon.classList.toggle(
+        'busy',
+        Boolean(this.state.workerBusy || this.state.isRendering),
+      );
     }
   }
 

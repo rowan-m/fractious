@@ -253,4 +253,27 @@ describe('Fractious interaction debouncing', () => {
 
     expect(workerManager.updateReference).toHaveBeenCalledTimes(1);
   });
+
+  it('should keep state.isRendering true during full-resolution progressive passes and clear when complete', async () => {
+    state.isPendingUpdate = false;
+    state.workerBusy = false;
+
+    renderer.render
+      .mockReturnValueOnce(true) // pass 1 needs more passes
+      .mockReturnValueOnce(false); // pass 2 completes
+
+    fractious.requestRender();
+    expect(state.isRendering).toBe(true);
+
+    // Execute pass 1
+    fractious.frame();
+    await Promise.resolve();
+    expect(state.isRendering).toBe(true);
+
+    // Execute pass 2 (final slice)
+    fractious.frame();
+    await Promise.resolve();
+    expect(state.isRendering).toBe(false);
+    expect(interactionManager.updateUI).toHaveBeenCalled();
+  });
 });
