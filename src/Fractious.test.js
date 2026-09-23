@@ -77,8 +77,15 @@ describe('Fractious URL parsing', () => {
     expect(window.history.replaceState).toHaveBeenCalledWith(
       {},
       '',
-      '?x=2.0&y=1.0&z=2.000&r=3.142&h=0.500&s=0.100',
+      '?x=2.0&y=1.0&z=2.000&r=180.0&h=0.500&s=0.100',
     );
+  });
+
+  it('should parse URL rotation parameter in degrees and convert to radians', () => {
+    window.location.search = '?r=90';
+    fractious.parseURL();
+
+    expect(config.rotation).toBeCloseTo(Math.PI / 2, 6);
   });
 });
 
@@ -96,11 +103,18 @@ describe('Fractious interaction debouncing', () => {
       'requestAnimationFrame',
       vi.fn((cb) => setTimeout(cb, 16)),
     );
+    vi.stubGlobal('window', {
+      location: { search: '' },
+      history: { replaceState: vi.fn() },
+    });
 
     config = {
       centerX: '0.0',
       centerY: '0.0',
       zoom: 1.0,
+      rotation: 0.0,
+      hue: 0.6,
+      hueStep: 1.0,
       iter: 1000,
     };
     state = {
@@ -136,6 +150,7 @@ describe('Fractious interaction debouncing', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it('should call updateReference immediately when needsNewReference is true', () => {
@@ -145,7 +160,7 @@ describe('Fractious interaction debouncing', () => {
     expect(state.isPendingUpdate).toBe(true);
   });
 
-  it('should debounce updateReference when needsNewReference is false', () => {
+  it('should debounce updateReference when needsNewReference is false and view moved', () => {
     fractious.interact(false);
 
     // Should not call updateReference immediately
@@ -163,5 +178,26 @@ describe('Fractious interaction debouncing', () => {
     vi.advanceTimersByTime(50);
     // Now it should be called exactly once
     expect(workerManager.updateReference).toHaveBeenCalledTimes(1);
+  });
+
+  it('should render a 200ms low-res preview and then upgrade to full-res without worker recalc when coordinates/zoom are unchanged', () => {
+    state.offsetX = -0.25;
+    state.offsetY = 0.1;
+    state.targetZoom = 1.0;
+    fractious._lastRefOffsetX = -0.25;
+    fractious._lastRefOffsetY = 0.1;
+    fractious._lastRefZoom = 1.0;
+
+    fractious.interact(false);
+
+    // Immediate low-res preview during rapid cycling
+    expect(state.isPendingUpdate).toBe(true);
+    expect(workerManager.updateReference).not.toHaveBeenCalled();
+
+    // After 200ms pause, upgrades directly to full-res render & URL sync without worker recalc
+    vi.advanceTimersByTime(200);
+    expect(state.isPendingUpdate).toBe(false);
+    expect(workerManager.updateReference).not.toHaveBeenCalled();
+    expect(window.history.replaceState).toHaveBeenCalled();
   });
 });

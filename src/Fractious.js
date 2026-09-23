@@ -12,6 +12,10 @@ export class Fractious {
     this.workerManager = workerManager;
     this.interactionManager = interactionManager;
 
+    this._lastRefOffsetX = state.offsetX;
+    this._lastRefOffsetY = state.offsetY;
+    this._lastRefZoom = config.zoom;
+
     this.frame = this.frame.bind(this);
   }
 
@@ -43,6 +47,9 @@ export class Fractious {
 
       this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
       this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
+      this._lastRefOffsetX = this.state.offsetX;
+      this._lastRefOffsetY = this.state.offsetY;
+      this._lastRefZoom = this.config.zoom;
 
       this.renderer.updateOrbitBuffer(payload.orbit);
 
@@ -96,7 +103,7 @@ export class Fractious {
     this.state.refY = this.config.centerY;
 
     parseNum('z', (z) => (this.config.zoom = Math.pow(10, -z)));
-    parseNum('r', (r) => (this.config.rotation = r));
+    parseNum('r', (r) => (this.config.rotation = (r * Math.PI) / 180));
     parseNum('h', (h) => (this.config.hue = h));
     parseNum('s', (s) => (this.config.hueStep = s));
 
@@ -114,10 +121,11 @@ export class Fractious {
       this._urlParams = new URLSearchParams(window.location.search);
     }
     const params = this._urlParams;
+    const deg = ((((this.config.rotation * 180) / Math.PI) % 360) + 360) % 360;
     params.set('x', this.config.centerX);
     params.set('y', this.config.centerY);
     params.set('z', (-Math.log10(this.config.zoom)).toFixed(3));
-    params.set('r', this.config.rotation.toFixed(3));
+    params.set('r', deg.toFixed(1));
     params.set('h', this.config.hue.toFixed(3));
     params.set('s', this.config.hueStep.toFixed(3));
     window.history.replaceState({}, '', `?${params.toString()}`);
@@ -150,8 +158,19 @@ export class Fractious {
       this.updateReference();
     } else {
       this._interactionTimeout = setTimeout(() => {
-        this.updateReference();
-      }, 200); // Debounce Web Worker reference update to 200ms of inactivity
+        const coordsUnchanged =
+          this.state.offsetX !== undefined &&
+          this.state.offsetX === this._lastRefOffsetX &&
+          this.state.offsetY === this._lastRefOffsetY &&
+          this.state.targetZoom === this._lastRefZoom;
+
+        if (coordsUnchanged) {
+          this.state.isPendingUpdate = false;
+          this.requestRender();
+        } else {
+          this.updateReference();
+        }
+      }, 200); // Debounce 200ms of inactivity before full-res pass / worker update
     }
   }
 
