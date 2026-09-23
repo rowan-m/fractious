@@ -1,3 +1,5 @@
+import { calculateBaseIter } from './State.js';
+
 export class WorkerManager {
   constructor() {
     this.worker = null;
@@ -32,8 +34,7 @@ export class WorkerManager {
     }
 
     const aspect = canvasWidth / canvasHeight;
-    const logZoom = Math.log10(config.zoom);
-    const requestedIter = Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
+    const requestedIter = calculateBaseIter(config.zoom);
 
     let abortBuffer = null;
     if (typeof SharedArrayBuffer !== 'undefined') {

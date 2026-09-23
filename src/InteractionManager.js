@@ -1,4 +1,5 @@
 import { add_coord } from '../wasm/pkg/fractious_lib.js';
+import { radToNormDeg } from './State.js';
 
 const ZOOM_STEP_FACTOR = Math.pow(10, 0.1);
 const ROTATE_BTN_STEP = Math.PI / 12; // 15 degrees
@@ -36,9 +37,7 @@ export class InteractionManager {
     this._setVal(inputs.zoom, (-Math.log10(this.config.zoom)).toFixed(2));
     this._setVal(
       inputs.rotation,
-      (((((this.config.rotation * 180) / Math.PI) % 360) + 360) % 360).toFixed(
-        1,
-      ),
+      radToNormDeg(this.config.rotation).toFixed(1),
     );
 
     this._setVal(inputs.iterations, this.config.iter);
@@ -55,6 +54,12 @@ export class InteractionManager {
 
     this.state.offsetX -= dCx;
     this.state.offsetY += dCy;
+  }
+
+  _wrapAngleDelta(delta) {
+    if (delta > Math.PI) return delta - 2 * Math.PI;
+    if (delta < -Math.PI) return delta + 2 * Math.PI;
+    return delta;
   }
 
   _zoomAroundPoint(clientX, clientY, factor) {
@@ -112,10 +117,9 @@ export class InteractionManager {
       this._zoomAroundPoint(curCenter.x, curCenter.y, 1.0 / factor);
 
       if (this.state.prevAngle !== null) {
-        let delta = curAngle - this.state.prevAngle;
-        if (delta > Math.PI) delta -= 2 * Math.PI;
-        else if (delta < -Math.PI) delta += 2 * Math.PI;
-        this.config.rotation += delta;
+        this.config.rotation += this._wrapAngleDelta(
+          curAngle - this.state.prevAngle,
+        );
       }
     }
     this.state.prevDiff = curDiff;
@@ -139,10 +143,7 @@ export class InteractionManager {
         this.state.lastX - cx,
       );
       const curAngle = Math.atan2(e.clientY - cy, e.clientX - cx);
-      let delta = curAngle - prevAngle;
-      if (delta > Math.PI) delta -= 2 * Math.PI;
-      else if (delta < -Math.PI) delta += 2 * Math.PI;
-      this.config.rotation += delta;
+      this.config.rotation += this._wrapAngleDelta(curAngle - prevAngle);
       this.state.lastX = e.clientX;
       this.state.lastY = e.clientY;
       return;
@@ -437,12 +438,8 @@ export class InteractionManager {
       };
 
       document.addEventListener('fullscreenchange', () => {
-        const span = btnFullscreen.querySelector('span');
-        if (span) {
-          span.textContent = document.fullscreenElement ? '⏬' : '⏫';
-        } else {
-          btnFullscreen.textContent = document.fullscreenElement ? '⏬' : '⏫';
-        }
+        const target = btnFullscreen.querySelector('span') || btnFullscreen;
+        target.textContent = document.fullscreenElement ? '⏬' : '⏫';
       });
     }
   }

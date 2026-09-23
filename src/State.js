@@ -1,10 +1,19 @@
+export function calculateBaseIter(zoom) {
+  const logZoom = Math.log10(zoom || 2.0);
+  return Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
+}
+
+export function radToNormDeg(rad) {
+  return ((((rad * 180) / Math.PI) % 360) + 360) % 360;
+}
+
 export function createDefaultConfig() {
   return {
     centerX: '-1.7',
     centerY: '0.0',
     zoom: 2.0,
     rotation: 0.0,
-    iter: 200,
+    iter: calculateBaseIter(2.0),
     hue: 0.6,
     hueStep: 1.0,
   };
