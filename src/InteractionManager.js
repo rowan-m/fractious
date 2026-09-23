@@ -74,6 +74,20 @@ export class InteractionManager {
     }
   }
 
+  setPinVisible(visible) {
+    if (this.el.crosshair) {
+      this.el.crosshair.classList.toggle('moving', Boolean(visible));
+    }
+  }
+
+  _notifyInteract(needsNewReference = false) {
+    this.setPinVisible(
+      !needsNewReference ||
+        Boolean(this.state.pointers && this.state.pointers.size > 0),
+    );
+    this.callbacks.onInteract(needsNewReference);
+  }
+
   handlePointerDown(e) {
     this.state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     this.el.canvas.setPointerCapture(e.pointerId);
@@ -81,7 +95,6 @@ export class InteractionManager {
     if (this.state.pointers.size === 1) {
       this.state.lastX = e.clientX;
       this.state.lastY = e.clientY;
-      this.el.crosshair.classList.add('moving');
     } else if (this.state.pointers.size === 2) {
       const iter = this.state.pointers.values();
       const p1 = iter.next().value;
@@ -96,7 +109,7 @@ export class InteractionManager {
       };
     }
 
-    this.callbacks.onInteract(false);
+    this._notifyInteract(false);
   }
 
   _handlePinchZoom(scaleY) {
@@ -173,7 +186,7 @@ export class InteractionManager {
       this._handlePan(e, scaleY);
     }
 
-    this.callbacks.onInteract(false);
+    this._notifyInteract(false);
   }
 
   handlePointerUp(e) {
@@ -192,8 +205,7 @@ export class InteractionManager {
       this.state.lastY = point.y;
       this.callbacks.onRequestRender();
     } else if (this.state.pointers.size === 0) {
-      this.el.crosshair.classList.remove('moving');
-      this.callbacks.onInteract(true);
+      this._notifyInteract(true);
     }
   }
 
@@ -202,12 +214,12 @@ export class InteractionManager {
     if (e.shiftKey) {
       const step = Math.PI / 36;
       this.config.rotation += e.deltaY > 0 ? step : -step;
-      this.callbacks.onInteract(false);
+      this._notifyInteract(false);
       return;
     }
     const factor = e.deltaY > 0 ? 1.05 : 1.0 / 1.05;
     this._zoomAroundPoint(e.clientX || 0, e.clientY || 0, factor);
-    this.callbacks.onInteract(false);
+    this._notifyInteract(false);
   }
 
   bindEvents() {
@@ -238,14 +250,14 @@ export class InteractionManager {
       this.config.centerX = inputs.c_re.value;
       this.state.refX = this.config.centerX;
       this.state.offsetX = 0;
-      this.callbacks.onInteract(true);
+      this._notifyInteract(true);
     });
 
     inputs.c_im.addEventListener('change', () => {
       this.config.centerY = inputs.c_im.value;
       this.state.refY = this.config.centerY;
       this.state.offsetY = 0;
-      this.callbacks.onInteract(true);
+      this._notifyInteract(true);
     });
 
     inputs.zoom.addEventListener('change', () => {
@@ -253,7 +265,7 @@ export class InteractionManager {
       if (!isNaN(level)) {
         this.config.zoom = Math.pow(10, -level);
         this.state.targetZoom = this.config.zoom;
-        this.callbacks.onInteract(true);
+        this._notifyInteract(false);
       } else this.updateUI();
     });
 
@@ -261,7 +273,7 @@ export class InteractionManager {
       const deg = parseFloat(inputs.rotation.value);
       if (!isNaN(deg)) {
         this.config.rotation = (deg * Math.PI) / 180;
-        this.callbacks.onInteract(false);
+        this._notifyInteract(false);
       } else this.updateUI();
     });
 
@@ -269,7 +281,7 @@ export class InteractionManager {
       const v = parseFloat(inputs.hue.value);
       if (!isNaN(v)) {
         this.config.hue = v;
-        this.callbacks.onInteract(false);
+        this._notifyInteract(false);
       } else this.updateUI();
     });
 
@@ -277,7 +289,7 @@ export class InteractionManager {
       const v = parseFloat(inputs.hueStep.value);
       if (!isNaN(v)) {
         this.config.hueStep = v;
-        this.callbacks.onInteract(false);
+        this._notifyInteract(false);
       } else this.updateUI();
     });
   }
@@ -310,7 +322,7 @@ export class InteractionManager {
       this.state.refY || this.config.centerY,
       this.state.offsetY,
     );
-    this.callbacks.onInteract(false);
+    this._notifyInteract(false);
   }
 
   _createKeyActionMap() {
@@ -322,35 +334,35 @@ export class InteractionManager {
       this._moveView(MOVE_STEP * this.config.zoom * this._aspect(), 0);
     const zoomIn = () => {
       this.state.targetZoom /= ZOOM_STEP_FACTOR;
-      this.callbacks.onInteract(false);
+      this._notifyInteract(false);
     };
     const zoomOut = () => {
       this.state.targetZoom *= ZOOM_STEP_FACTOR;
-      this.callbacks.onInteract(false);
+      this._notifyInteract(false);
     };
     const rotateCCW = () => {
       this.config.rotation -= ROTATE_BTN_STEP;
-      this.callbacks.onInteract(false);
+      this._notifyInteract(false);
     };
     const rotateCW = () => {
       this.config.rotation += ROTATE_BTN_STEP;
-      this.callbacks.onInteract(false);
+      this._notifyInteract(false);
     };
     const hueDec = () => {
       this.config.hue -= HUE_INCREMENT;
-      this.callbacks.onInteract(false);
+      this._notifyInteract(false);
     };
     const hueInc = () => {
       this.config.hue += HUE_INCREMENT;
-      this.callbacks.onInteract(false);
+      this._notifyInteract(false);
     };
     const hueStepDec = () => {
       this.config.hueStep -= HUE_STEP_INCREMENT;
-      this.callbacks.onInteract(false);
+      this._notifyInteract(false);
     };
     const hueStepInc = () => {
       this.config.hueStep += HUE_STEP_INCREMENT;
-      this.callbacks.onInteract(false);
+      this._notifyInteract(false);
     };
 
     return new Map([

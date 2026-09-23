@@ -131,6 +131,7 @@ describe('Fractious interaction debouncing', () => {
     };
     interactionManager = {
       updateUI: vi.fn(),
+      setPinVisible: vi.fn(),
       el: {
         canvas: {
           width: 800,
@@ -160,23 +161,26 @@ describe('Fractious interaction debouncing', () => {
     expect(state.isPendingUpdate).toBe(true);
   });
 
-  it('should debounce updateReference when needsNewReference is false and view moved', () => {
+  it('should debounce updateReference and show/hide center pin when needsNewReference is false and view moved', () => {
     fractious.interact(false);
 
-    // Should not call updateReference immediately
+    // Should show pin immediately and not call updateReference yet
+    expect(interactionManager.setPinVisible).toHaveBeenLastCalledWith(true);
     expect(workerManager.updateReference).not.toHaveBeenCalled();
     expect(state.isPendingUpdate).toBe(true);
 
-    // Call again to verify reset of timeout (coalescing)
+    // Call again to verify reset of timeout (coalescing) and pin stays visible
     vi.advanceTimersByTime(100);
     fractious.interact(false);
+    expect(interactionManager.setPinVisible).toHaveBeenLastCalledWith(true);
 
     vi.advanceTimersByTime(150);
     // Still shouldn't be called because the timer was reset
     expect(workerManager.updateReference).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(50);
-    // Now it should be called exactly once
+    // Now it should hide the pin and call updateReference exactly once
+    expect(interactionManager.setPinVisible).toHaveBeenLastCalledWith(false);
     expect(workerManager.updateReference).toHaveBeenCalledTimes(1);
   });
 
