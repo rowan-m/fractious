@@ -12,10 +12,9 @@ vi.stubGlobal('self', mockSelf);
 vi.mock('../wasm/pkg/fractious_lib.js', () => {
   return {
     default: vi.fn().mockResolvedValue(), // init
-    find_best_anchor: vi.fn().mockImplementation(() => {
+    compute_reference: vi.fn().mockImplementation(() => {
       throw new Error('Test worker error');
     }),
-    calculate_reference: vi.fn(),
   };
 });
 
