@@ -50,9 +50,29 @@ const app = new Fractious(
   interactionManager,
 );
 
+// Let the render area extend under camera cutouts / system bars (controls stay
+// inside the safe area via body padding). Only opt in when installed or in
+// fullscreen: a static viewport-fit=cover breaks Chrome's in-tab install sheet.
+function bindViewportFit() {
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (!meta) return;
+  const base = 'width=device-width, initial-scale=1';
+  const edgeToEdge = window.matchMedia?.(
+    '(display-mode: standalone), (display-mode: fullscreen)',
+  );
+  const update = () => {
+    const cover = Boolean(edgeToEdge?.matches || document.fullscreenElement);
+    meta.setAttribute('content', cover ? `${base}, viewport-fit=cover` : base);
+  };
+  edgeToEdge?.addEventListener?.('change', update);
+  document.addEventListener('fullscreenchange', update);
+  update();
+}
+
 // Allow test environments to import this without running it immediately if needed
 // eslint-disable-next-line no-undef
 if (typeof process === 'undefined' || process.env.NODE_ENV !== 'test') {
+  bindViewportFit();
   app.init();
 }
 
