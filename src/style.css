@@ -301,3 +301,50 @@ footer {
     display: none; /* Hide verbose link text but keep the visual icons visible */
   }
 }
+
+#shortcuts {
+  color: #cbd5e1;
+  background-color: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  padding: 0.75rem 1rem;
+  font-size: calc(var(--font-size) * 1.3);
+}
+
+#shortcuts::backdrop {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+#shortcuts h2 {
+  font-size: inherit;
+  margin: 0 0 0.5rem;
+  color: #fff;
+}
+
+#shortcuts dl {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.35rem 1rem;
+  margin: 0;
+}
+
+#shortcuts dd {
+  margin: 0;
+}
+
+kbd {
+  font-family: monospace;
+  padding: 0 0.3em;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* No keyboard shortcuts to show on touch-only devices */
+@media (hover: none) and (pointer: coarse) {
+  .controls .help {
+    display: none;
+  }
+}

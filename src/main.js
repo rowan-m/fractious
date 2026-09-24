@@ -13,6 +13,7 @@ const elements = {
   bgCanvas: document.getElementById('fractal-bg'),
   crosshair: document.getElementById('crosshair'),
   iterIcon: document.getElementById('iter-icon'),
+  shortcuts: document.getElementById('shortcuts'),
   inputs: {
     c_re: document.getElementById('c_re'),
     c_im: document.getElementById('c_im'),

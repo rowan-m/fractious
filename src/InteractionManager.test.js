@@ -92,6 +92,17 @@ describe('InteractionManager updateUI', () => {
     expect(elements.inputs.c_re.value).toBe('1.5');
   });
 
+  it('should toggle the shortcuts popover on ? without interacting with the fractal', () => {
+    elements.shortcuts = { togglePopover: vi.fn() };
+    const preventDefault = vi.fn();
+
+    interactionManager.handleKeyDown({ key: '?', preventDefault });
+
+    expect(elements.shortcuts.togglePopover).toHaveBeenCalledTimes(1);
+    expect(preventDefault).toHaveBeenCalled();
+    expect(callbacks.onInteract).not.toHaveBeenCalled();
+  });
+
   it('should normalize negative rotation angles into [0, 360) degrees', () => {
     config.rotation = -Math.PI / 4; // -45 degrees -> 315.0
     interactionManager.updateUI();
