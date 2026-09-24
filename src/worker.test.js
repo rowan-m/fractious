@@ -31,6 +31,7 @@ describe('worker.js', () => {
     const messageEvent = {
       data: {
         type: 'calculate_reference',
+        id: 7,
         payload: {
           centerX: 0,
           centerY: 0,
@@ -51,6 +52,7 @@ describe('worker.js', () => {
 
     expect(mockPostMessage).toHaveBeenCalledWith({
       type: 'error',
+      id: 7,
       error: 'Error: Test worker error',
     });
 

@@ -277,3 +277,106 @@ describe('Fractious interaction debouncing', () => {
     expect(interactionManager.updateUI).toHaveBeenCalled();
   });
 });
+
+describe('Fractious reference results', () => {
+  let fractious;
+  let config;
+  let state;
+  let workerManager;
+  let sub;
+  let add;
+
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((cb) => setTimeout(cb, 16)),
+    );
+    vi.stubGlobal('window', {
+      location: { search: '' },
+      history: { replaceState: vi.fn() },
+    });
+    ({ sub_coord: sub, add_coord: add } =
+      await import('../wasm/pkg/fractious_lib.js'));
+    // Plain-number stand-ins for the arbitrary-precision helpers.
+    sub.mockImplementation((a, b) => Number(a) - Number(b));
+    add.mockImplementation((a, d) => String(Number(a) + d));
+
+    config = {
+      centerX: '0',
+      centerY: '0',
+      zoom: 1.0,
+      rotation: 0,
+      hue: 0.6,
+      hueStep: 1.0,
+      iter: 1000,
+    };
+    state = {
+      refX: '0',
+      refY: '0',
+      offsetX: 0.25,
+      offsetY: -0.5,
+      targetZoom: 1.0,
+      pointers: new Map(),
+      isPendingUpdate: false,
+      workerBusy: false,
+    };
+    workerManager = { init: vi.fn(), updateReference: vi.fn() };
+    fractious = new Fractious(
+      config,
+      state,
+      { render: vi.fn(), updateOrbitBuffer: vi.fn() },
+      workerManager,
+      {
+        updateUI: vi.fn(),
+        setPinVisible: vi.fn(),
+        el: { canvas: { width: 800, height: 600 } },
+      },
+    );
+    fractious.setupWorker();
+  });
+
+  afterEach(() => {
+    sub.mockReset();
+    add.mockImplementation((val) => val);
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('rebases onto the new anchor without moving the view when nothing changed', () => {
+    fractious.updateReference(); // requested centre = (0.25, -0.5)
+    workerManager.onResult({ refX: '0.2', refY: '-0.4', orbit: [], iter: 10 });
+
+    expect(state.offsetX).toBeCloseTo(0.05, 12);
+    expect(state.offsetY).toBeCloseTo(-0.1, 12);
+    expect(state.isPendingUpdate).toBe(false);
+  });
+
+  it('keeps movement made while the reference was computing', () => {
+    fractious.updateReference();
+    // User pans by (+0.1, +0.2) before the result arrives
+    state.offsetX += 0.1;
+    state.offsetY += 0.2;
+
+    workerManager.onResult({ refX: '0.2', refY: '-0.4', orbit: [], iter: 10 });
+
+    // Current view centre is preserved: newRef + offset === old centre + move
+    expect(0.2 + state.offsetX).toBeCloseTo(0.35, 12);
+    expect(-0.4 + state.offsetY).toBeCloseTo(-0.3, 12);
+    // View moved, so stay in preview and let the pending debounce re-request
+    expect(state.isPendingUpdate).toBe(true);
+    expect(fractious._isSameReferenceView()).toBe(false);
+  });
+
+  it('records the requested zoom so zooming during computation triggers a new reference', () => {
+    fractious.updateReference(); // requested at zoom 1.0
+    state.targetZoom = 0.5;
+    config.zoom = 0.5;
+
+    workerManager.onResult({ refX: '0.25', refY: '-0.5', orbit: [], iter: 10 });
+
+    expect(fractious._lastRefZoom).toBe(1.0);
+    expect(fractious._isSameReferenceView()).toBe(false);
+    expect(state.isPendingUpdate).toBe(true);
+  });
+});
