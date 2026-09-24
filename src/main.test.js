@@ -92,4 +92,27 @@ describe('main.js initialization', () => {
     expect(document.getElementById('c_re').value).toBe('-1.5');
     expect(document.getElementById('c_im').value).toBe('0.0');
   });
+
+  it.each([
+    [false, 'width=device-width, initial-scale=1'],
+    [true, 'width=device-width, initial-scale=1, viewport-fit=cover'],
+  ])(
+    'should set viewport-fit=cover only when installed (standalone=%s)',
+    async (matches, expected) => {
+      vi.stubGlobal('process', { env: { NODE_ENV: 'production' } });
+      const meta = document.createElement('meta');
+      meta.setAttribute('name', 'viewport');
+      meta.setAttribute('content', 'width=device-width, initial-scale=1');
+      document.head.appendChild(meta);
+      window.matchMedia = vi.fn(() => ({
+        matches,
+        addEventListener: vi.fn(),
+      }));
+
+      await import('./main.js');
+
+      expect(meta.getAttribute('content')).toBe(expected);
+      meta.remove();
+    },
+  );
 });
