@@ -3,6 +3,7 @@ import { Renderer } from './Renderer.js';
 import { WorkerManager } from './WorkerManager.js';
 import { InteractionManager } from './InteractionManager.js';
 import { Fractious } from './Fractious.js';
+import { bindAutoReload } from './autoReload.js';
 import './style.css';
 
 const config = createDefaultConfig();
@@ -74,6 +75,9 @@ function bindViewportFit() {
 // eslint-disable-next-line no-undef
 if (typeof process === 'undefined' || process.env.NODE_ENV !== 'test') {
   bindViewportFit();
+  bindAutoReload(
+    () => state.pointers.size > 0 || state.isPendingUpdate || state.workerBusy,
+  );
   app.init();
 }
 
