@@ -10,7 +10,7 @@
     <link rel="icon" href="img/icon-144x144.png" />
     <link rel="manifest" href="manifest.json" />
     <link rel="stylesheet" href="src/style.css" />
-    <meta name="theme-color" content="#3d5b88" />
+    <meta name="theme-color" content="#000000" />
     <meta
       name="description"
       content="Explore infinite fractals in the Mandelbrot set. Discover beautiful downloadable images and share locations with friends—all with simple, fun controls."
@@ -34,7 +34,7 @@
     <header>
       <div class="header-brand-row">
         <h1>Fractious</h1>
-        <span class="version">v20260924a</span>
+        <span class="version">v20260924b</span>
         <div class="header-links">
           <a href="https://rowan.fyi" aria-label="Website rowan.fyi"
             ><span aria-hidden="true">🌐</span> rowan.fyi</a
@@ -317,10 +317,47 @@
                 ><span aria-hidden="true">🔁</span></a
               >
             </fieldset>
+            <fieldset class="help">
+              <button
+                type="button"
+                popovertarget="shortcuts"
+                title="Keyboard shortcuts (?)"
+                aria-label="Keyboard shortcuts"
+                id="btn-help"
+              >
+                <span aria-hidden="true">⌨️</span>
+              </button>
+            </fieldset>
           </div>
         </form>
       </nav>
     </footer>
+    <div id="shortcuts" popover aria-labelledby="shortcuts-title">
+      <h2 id="shortcuts-title">Keyboard shortcuts</h2>
+      <dl>
+        <dt>
+          <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> / <kbd>←</kbd>
+          <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd>
+        </dt>
+        <dd>Move</dd>
+        <dt><kbd>Q</kbd> <kbd>E</kbd> / <kbd>-</kbd> <kbd>+</kbd></dt>
+        <dd>Zoom out / in</dd>
+        <dt><kbd>Z</kbd> <kbd>X</kbd></dt>
+        <dd>Rotate anticlockwise / clockwise</dd>
+        <dt><kbd>R</kbd> <kbd>T</kbd></dt>
+        <dd>Shift colours left / right</dd>
+        <dt><kbd>F</kbd> <kbd>G</kbd></dt>
+        <dd>Decrease / increase colour cycling</dd>
+        <dt>Scroll</dt>
+        <dd>Zoom at cursor</dd>
+        <dt>Double-click</dt>
+        <dd>Zoom in at cursor (<kbd>Shift</kbd> to zoom out)</dd>
+        <dt><kbd>Shift</kbd> + drag / scroll</dt>
+        <dd>Rotate</dd>
+        <dt><kbd>?</kbd></dt>
+        <dd>Show / hide this help</dd>
+      </dl>
+    </div>
     <script type="module" src="src/main.js"></script>
   </body>
 </html>

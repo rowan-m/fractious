@@ -400,6 +400,7 @@ export class InteractionManager {
       ['t', hueInc],
       ['f', hueStepDec],
       ['g', hueStepInc],
+      ['?', () => this.el.shortcuts?.togglePopover?.()],
     ]);
   }
 

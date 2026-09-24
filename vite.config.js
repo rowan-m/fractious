@@ -14,6 +14,9 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,wasm,wgsl}'],
+        // Screenshots, social preview and install icons are only fetched by the
+        // browser/OS on demand; don't make every visitor download them upfront.
+        globIgnores: ['**/img/**'],
       },
     }),
   ],
