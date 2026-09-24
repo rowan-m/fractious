@@ -4,7 +4,6 @@
 
 body {
   margin: 0;
-  padding: 0;
   font-family: sans-serif;
   font-size: var(--font-size);
   overflow: hidden;
@@ -12,6 +11,10 @@ body {
   display: flex;
   flex-direction: column;
   height: 100dvh;
+  /* Keep header/footer clear of system bars when drawn edge-to-edge
+     (installed PWAs on Android). The canvas still fills the full screen. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
   box-sizing: border-box;
   overscroll-behavior: none;
 }
