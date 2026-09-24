@@ -120,12 +120,14 @@ describe('Fractious interaction debouncing', () => {
     state = {
       refX: '0.0',
       refY: '0.0',
+      pointers: new Map(),
       isPendingUpdate: false,
       workerBusy: false,
     };
     renderer = {
       init: vi.fn(),
       render: vi.fn(),
+      onSubmittedWorkDone: vi.fn(() => Promise.resolve()),
     };
     workerManager = {
       init: vi.fn(),
@@ -325,7 +327,11 @@ describe('Fractious reference results', () => {
     fractious = new Fractious(
       config,
       state,
-      { render: vi.fn(), updateOrbitBuffer: vi.fn() },
+      {
+        render: vi.fn(),
+        updateOrbitBuffer: vi.fn(),
+        onSubmittedWorkDone: vi.fn(() => Promise.resolve()),
+      },
       workerManager,
       {
         updateUI: vi.fn(),

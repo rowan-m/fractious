@@ -87,10 +87,6 @@ export class InteractionManager {
   }
 
   _notifyInteract(needsNewReference = false) {
-    this.setPinVisible(
-      !needsNewReference ||
-        Boolean(this.state.pointers && this.state.pointers.size > 0),
-    );
     this.callbacks.onInteract(needsNewReference);
   }
 

@@ -171,7 +171,6 @@ export class Fractious {
     return (
       this.state.refX === this._lastRefX &&
       this.state.refY === this._lastRefY &&
-      this.state.offsetX !== undefined &&
       this.state.offsetX === this._lastRefOffsetX &&
       this.state.offsetY === this._lastRefOffsetY &&
       this.state.targetZoom === this._lastRefZoom
@@ -188,10 +187,8 @@ export class Fractious {
       this._interactionTimeout = null;
     }
 
-    const isPointerActive = Boolean(
-      this.state.pointers && this.state.pointers.size > 0,
-    );
-    this.interactionManager.setPinVisible?.(
+    const isPointerActive = this.state.pointers.size > 0;
+    this.interactionManager.setPinVisible(
       isPointerActive || !needsNewReference,
     );
 
@@ -215,7 +212,7 @@ export class Fractious {
     } else {
       this._interactionTimeout = setTimeout(() => {
         this._interactionTimeout = null;
-        this.interactionManager.setPinVisible?.(false);
+        this.interactionManager.setPinVisible(false);
         if (this._isSameReferenceView()) {
           this.state.isPendingUpdate = false;
           this.requestRender();
@@ -266,10 +263,7 @@ export class Fractious {
       (!needsMorePasses && this.state.isRendering)
     ) {
       const passGen = this._renderGeneration;
-      const onDone = this.renderer.onSubmittedWorkDone
-        ? this.renderer.onSubmittedWorkDone()
-        : Promise.resolve();
-      onDone.then(() => {
+      this.renderer.onSubmittedWorkDone().then(() => {
         if (this._renderGeneration !== passGen) return;
         if (needsMorePasses) {
           this._scheduleFrame();
