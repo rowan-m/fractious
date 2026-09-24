@@ -94,6 +94,7 @@ pub fn calculate_reference(
 
     for iter_idx in 0..=max_iter {
         if iter_idx % 1000 == 0 && is_aborted(&abort_flag) {
+            orbit.truncate((iter_idx as usize) * 8);
             break;
         }
 
@@ -116,6 +117,9 @@ pub fn calculate_reference(
         // Sum calculation to avoid Approximation allocation (compare to f4 directly)
         let sum2 = (&zx2 + &zy2).with_precision(prec).value();
         if sum2 > f4 {
+            // Escaped: the last stored point is the escape point, so its index
+            // is the valid reference length used by the shader.
+            orbit.truncate(idx + 8);
             break;
         }
 
@@ -130,8 +134,6 @@ pub fn calculate_reference(
         new_zx += &cx;
         zx = new_zx.with_precision(prec).value();
     }
-
-    // No need to pad since we initialized with vec![0.0; required_len]
 
     orbit
 }
@@ -539,11 +541,10 @@ mod tests {
     #[wasm_bindgen_test]
     fn test_calculate_reference_diverge() {
         let result = calculate_reference("3.0".to_string(), "0.0".to_string(), 2, 53, None);
-        // Iter 0: z=0,0 -> pushed 0,0. New z = 3,0
-        // Iter 1: z=3,0 -> pushed 3,0. (3^2 + 0^2 > 4) -> breaks
-        // Required len is 24, so pads with 0,0 until len 24
-        // zx0=3, zy=0
-        let mut expected = vec![0.0; 24];
+        // Iter 0: z=0,0 -> stored. New z = 3,0
+        // Iter 1: z=3,0 -> stored. (3^2 + 0^2 > 4) -> escapes
+        // The orbit is truncated after the escape point (2 points = 16 floats)
+        let mut expected = vec![0.0; 16];
         expected[8] = 3.0; // zx0 at iter 1
         assert_eq!(result, expected);
     }

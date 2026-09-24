@@ -167,25 +167,9 @@ export class Renderer {
 
   updateOrbitBuffer(orbitArrayBuffer) {
     const requiredSize = orbitArrayBuffer.byteLength;
-    const rawBuffer = orbitArrayBuffer.buffer || orbitArrayBuffer;
-    const rawOffset = orbitArrayBuffer.byteOffset || 0;
-    const orbitView = new DataView(rawBuffer, rawOffset, requiredSize);
-    const totalPoints = Math.floor(requiredSize / 32);
-    let validMaxIter = Math.max(0, totalPoints - 1);
-    for (let m = 1; m < totalPoints; m++) {
-      const byteOffset = m * 32;
-      const zx =
-        orbitView.getFloat32(byteOffset, true) +
-        orbitView.getFloat32(byteOffset + 4, true);
-      const zy =
-        orbitView.getFloat32(byteOffset + 16, true) +
-        orbitView.getFloat32(byteOffset + 20, true);
-      if (zx * zx + zy * zy > 4.0) {
-        validMaxIter = m;
-        break;
-      }
-    }
-    this.referenceOrbitMaxIter = validMaxIter;
+    // The worker truncates the orbit at its escape point, so the last stored
+    // point index is the valid reference length.
+    this.referenceOrbitMaxIter = Math.max(0, Math.floor(requiredSize / 32) - 1);
 
     let bufferRecreated = false;
     if (requiredSize > this.referenceOrbitSize) {
