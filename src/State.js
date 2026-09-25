@@ -35,8 +35,7 @@ export function createDefaultState() {
     screenshotRequested: false,
     shareRequested: false,
 
-    currentPass: 0,
-    totalPasses: 1,
+    nextRow: 0,
 
     dpr: 1,
     width: 0,

@@ -239,7 +239,7 @@ export class Fractious {
     }
     this.state.isRendering = isFullResRender;
     this.interactionManager.updateUI();
-    this.state.currentPass = 0;
+    this.state.nextRow = 0;
     this._scheduleFrame();
   }
 
