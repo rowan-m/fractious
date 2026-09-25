@@ -38,9 +38,11 @@ export class Renderer {
     this.offscreenTexture = null;
     this.offscreenTextureView = null;
     this.lastPipelineName = null;
-    this.uniformBufferSize = 80;
+    this.uniformBufferSize = 224;
     this.uniformData = new ArrayBuffer(this.uniformBufferSize);
     this.uniformDataView = new DataView(this.uniformData);
+    this.saUniformView = new Float32Array(this.uniformData, 80, 36);
+    this.skipIter = 0;
     this.throughput = new Map(); // tier name -> worst-case ops per ms
     this.pendingSlice = null;
     this.progressiveStart = 0;
@@ -177,11 +179,18 @@ export class Renderer {
     });
   }
 
-  updateOrbitBuffer(orbitArrayBuffer) {
+  updateOrbitBuffer(orbitArrayBuffer, sa) {
     const requiredSize = orbitArrayBuffer.byteLength;
     // The worker truncates the orbit at its escape point, so the last stored
     // point index is the valid reference length.
     this.referenceOrbitMaxIter = Math.max(0, Math.floor(requiredSize / 32) - 1);
+    if (sa && sa.length === 36) {
+      this.saUniformView.set(sa);
+      this.skipIter = Math.floor(this.uniformDataView.getFloat32(80, true));
+    } else {
+      this.saUniformView.fill(0);
+      this.skipIter = 0;
+    }
 
     let bufferRecreated = false;
     if (requiredSize > this.referenceOrbitSize) {
@@ -250,10 +259,10 @@ export class Renderer {
         name: 'F32 (Tier 1 - Native Hardware)',
       };
     }
-    if (logZoom < 14.0) {
+    if (logZoom < 21.0) {
       return {
         logZoom,
-        opsMultiplier: 3.0, // Tier 2: Double-Single (~75M ops/slice)
+        opsMultiplier: 12.0, // Tier 2: Double-Single (48-bit mantissa resolves rebase z^2 + dc up to z=21)
         pipeline: this.pipelineDS,
         bindGroup: this.bindGroupDS,
         name: 'Double-Single (Tier 2 - Emulated 64-bit)',
@@ -261,7 +270,7 @@ export class Renderer {
     }
     return {
       logZoom,
-      opsMultiplier: 1.0, // Tier 3: Quad-Single (~25M ops/slice)
+      opsMultiplier: 8.0, // Tier 3: Quad-Single
       pipeline: this.pipelineQS,
       bindGroup: this.bindGroupQS,
       name: 'Quad-Single (Tier 3 - Emulated 128-bit)',
@@ -276,10 +285,14 @@ export class Renderer {
     return state.nextRow >= this.canvas.height;
   }
 
+  _effectiveIter(config) {
+    return Math.max(1, (config.iter || 1) - this.skipIter);
+  }
+
   _sliceRows(config, state, tier) {
     const remaining = this.canvas.height - state.nextRow;
     if (this._isInteractive(state)) return remaining;
-    const rowOps = this.canvas.width * (config.iter || 1);
+    const rowOps = this.canvas.width * this._effectiveIter(config);
     const budget = PROGRESSIVE_MAX_OPS * tier.opsMultiplier;
     const opsPerMs = this.throughput.get(tier.name) || budget / TARGET_SLICE_MS;
     const ops = Math.min(
@@ -298,7 +311,7 @@ export class Renderer {
     // but WebGPU NDC Y starts at BOTTOM (-1.0).
     const yOffsetBottom = height - yOffset - rows;
     const sliceOffset = -1.0 + (2.0 * yOffsetBottom + rows) / height;
-    const ops = rows * this.canvas.width * (config.iter || 1);
+    const ops = rows * this.canvas.width * this._effectiveIter(config);
     return { yOffset, rows, sliceScale, sliceOffset, ops };
   }
 
@@ -307,7 +320,7 @@ export class Renderer {
     let targetScale = 1.0;
 
     if (this._isInteractive(state)) {
-      const idealPixels = INTERACTION_MAX_OPS / (config.iter || 1);
+      const idealPixels = INTERACTION_MAX_OPS / this._effectiveIter(config);
       targetScale = Math.sqrt(idealPixels / currentPixels);
       targetScale = Math.min(INTERACTION_SCALE_LIMIT, targetScale);
     }

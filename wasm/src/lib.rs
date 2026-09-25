@@ -38,20 +38,19 @@ fn is_aborted(abort_flag: &Option<js_sys::Int32Array>) -> bool {
     false
 }
 
-fn split_fbig_to_4_f32(val: &FBig, prec: usize) -> (f32, f32, f32, f32) {
-    let part0 = val.to_f32().value();
-    let r1 = (val - FBig::try_from(part0).unwrap())
-        .with_precision(prec)
-        .value();
-    let part1 = r1.to_f32().value();
-    let r2 = (&r1 - &FBig::try_from(part1).unwrap())
-        .with_precision(prec)
-        .value();
-    let part2 = r2.to_f32().value();
-    let r3 = (&r2 - &FBig::try_from(part2).unwrap())
-        .with_precision(prec)
-        .value();
-    let part3 = r3.to_f32().value();
+fn split_f64_to_2_f32(val: f64) -> (f32, f32) {
+    let hi = val as f32;
+    let lo = (val - f64::from(hi)) as f32;
+    (hi, lo)
+}
+
+fn split_f64_to_4_f32(val: f64) -> (f32, f32, f32, f32) {
+    let part0 = val as f32;
+    let r1 = val - f64::from(part0);
+    let part1 = r1 as f32;
+    let r2 = r1 - f64::from(part1);
+    let part2 = r2 as f32;
+    let part3 = (r2 - f64::from(part2)) as f32;
     (part0, part1, part2, part3)
 }
 
@@ -60,7 +59,6 @@ struct IterCtx<'a> {
     cx: FBig,
     cy: FBig,
     prec: usize,
-    f4: FBig,
     abort: &'a Option<js_sys::Int32Array>,
 }
 
@@ -70,7 +68,6 @@ impl<'a> IterCtx<'a> {
             cx: to_fbig(cx.clone(), prec),
             cy: to_fbig(cy.clone(), prec),
             prec,
-            f4: FBig::from(4).with_precision(prec).value(),
             abort,
         }
     }
@@ -160,7 +157,6 @@ impl Orbit {
         mut cycles: Option<&mut CycleDetector>,
     ) -> bool {
         let prec = ctx.prec;
-        let need_f64 = cycles.is_some() || self.f64s.is_some();
         if let Some(qs) = self.qs.as_mut() {
             qs.reserve((limit.saturating_sub(self.n) as usize + 1) * 8);
         }
@@ -170,32 +166,28 @@ impl Orbit {
                 return false;
             }
 
-            let z64 = if need_f64 {
-                (self.zx.to_f64().value(), self.zy.to_f64().value())
-            } else {
-                (0.0, 0.0)
-            };
+            let z64 = (self.zx.to_f64().value(), self.zy.to_f64().value());
             if let Some(detector) = cycles.as_deref_mut() {
                 if detector.repeats(&self.zx, &self.zy, z64, self.n, prec) {
                     return true;
                 }
             }
             if let Some(qs) = self.qs.as_mut() {
-                let (x0, x1, x2, x3) = split_fbig_to_4_f32(&self.zx, prec);
-                let (y0, y1, y2, y3) = split_fbig_to_4_f32(&self.zy, prec);
+                let (x0, x1, x2, x3) = split_f64_to_4_f32(z64.0);
+                let (y0, y1, y2, y3) = split_f64_to_4_f32(z64.1);
                 qs.extend_from_slice(&[x0, x1, x2, x3, y0, y1, y2, y3]);
             }
             if let Some(f64s) = self.f64s.as_mut() {
                 f64s.push(z64);
             }
 
-            let zx2 = (&self.zx * &self.zx).with_precision(prec).value();
-            let zy2 = (&self.zy * &self.zy).with_precision(prec).value();
-            let sum2 = (&zx2 + &zy2).with_precision(prec).value();
-            if sum2 > ctx.f4 {
+            if z64.0 * z64.0 + z64.1 * z64.1 > 4.0 {
                 self.escaped = true;
                 break;
             }
+
+            let zx2 = (&self.zx * &self.zx).with_precision(prec).value();
+            let zy2 = (&self.zy * &self.zy).with_precision(prec).value();
 
             let mut new_zy = std::mem::replace(&mut self.zx, FBig::ZERO);
             new_zy *= &self.zy;
@@ -370,6 +362,8 @@ fn find_best_perturbation_offset(
 struct AnchorSearch {
     x: DBig,
     y: DBig,
+    ox: f64,
+    oy: f64,
     score: u32,
     /// The anchor's orbit with quad-f32 points already recorded, when the winning
     /// candidate was one that recorded them (the view centre or the refined hotspot).
@@ -405,14 +399,16 @@ fn search_anchor(
     let mut best = AnchorSearch {
         x: center_x.clone(),
         y: center_y.clone(),
+        ox: 0.0,
+        oy: 0.0,
         score: 0,
         orbit: None,
     };
-    let mut best_ref_ox = 0.0_f64;
-    let mut best_ref_oy = 0.0_f64;
     let mut best_ref_orbit: Vec<(f64, f64)> = Vec::new();
 
-    // Phase 1: Inner 3x3 center-out spiral in arbitrary precision
+    // Phase 1: Find an initial reference orbit in arbitrary precision. Once a candidate
+    // survives past the immediate exterior (> 16 iterations), Phase 2 can survey the
+    // rest of the viewport in hardware f64 perturbation instead of slow FBig probes.
     let inner_offsets: [(i32, i32); 9] = [
         (0, 0),
         (-1, 0),
@@ -440,16 +436,16 @@ fn search_anchor(
 
         let score = orbit.score(limit);
         if score > best.score {
-            best_ref_ox = (ox_i as f64) * step_x_f64;
-            best_ref_oy = (oy_i as f64) * step_y_f64;
             best_ref_orbit = orbit.f64s.take().unwrap_or_default();
             best = AnchorSearch {
                 x: cx_probe,
                 y: cy_probe,
+                ox: (ox_i as f64) * step_x_f64,
+                oy: (oy_i as f64) * step_y_f64,
                 score,
                 orbit: orbit.qs.is_some().then_some(orbit),
             };
-            if score >= limit {
+            if score > 16 || score >= limit {
                 break;
             }
         }
@@ -459,35 +455,151 @@ fn search_anchor(
     // coarse-to-fine search (11x11 survey + 2-stage local hill-climbing) using the best
     // reference orbit found so far, then verify the winning hotspot in arbitrary precision.
     if best.score < limit && !is_aborted(abort_flag) && best_ref_orbit.len() > 1 {
-        let (win_ox, win_oy) = find_best_perturbation_offset(
-            &best_ref_orbit,
-            best_ref_ox,
-            best_ref_oy,
-            scale,
-            aspect,
-            limit,
-        );
+        let (win_ox, win_oy) =
+            find_best_perturbation_offset(&best_ref_orbit, best.ox, best.oy, scale, aspect, limit);
 
-        let cx_probe = &center_x + f64_to_dbig(win_ox, dec_prec);
-        let cy_probe = &center_y + f64_to_dbig(win_oy, dec_prec);
-        let ctx = IterCtx::new(&cx_probe, &cy_probe, prec, abort_flag);
+        if (win_ox - best.ox).abs() > 0.0 || (win_oy - best.oy).abs() > 0.0 {
+            let cx_probe = &center_x + f64_to_dbig(win_ox, dec_prec);
+            let cy_probe = &center_y + f64_to_dbig(win_oy, dec_prec);
+            let ctx = IterCtx::new(&cx_probe, &cy_probe, prec, abort_flag);
 
-        let mut orbit = Orbit::new(prec, true, false);
-        let mut cycles = CycleDetector::new(prec);
-        if orbit.advance(&ctx, limit, Some(&mut cycles)) {
-            let score = orbit.score(limit);
-            if score > best.score {
-                best = AnchorSearch {
-                    x: cx_probe,
-                    y: cy_probe,
-                    score,
-                    orbit: Some(orbit),
-                };
+            let mut orbit = Orbit::new(prec, true, false);
+            let mut cycles = CycleDetector::new(prec);
+            if orbit.advance(&ctx, limit, Some(&mut cycles)) {
+                let score = orbit.score(limit);
+                if score > best.score {
+                    best = AnchorSearch {
+                        x: cx_probe,
+                        y: cy_probe,
+                        ox: win_ox,
+                        oy: win_oy,
+                        score,
+                        orbit: Some(orbit),
+                    };
+                }
             }
         }
     }
 
     best
+}
+
+const SA_ORDER: usize = 8;
+const SA_FLOATS: usize = 4 + SA_ORDER * 4;
+
+/// Computes an Order-8 Series Approximation polynomial over the disk `|dc| <= max_dc`
+/// around the reference anchor, validated by 8 boundary probes on the circle `|u| = 1`.
+fn compute_sa(qs: &[f32], max_dc: f64) -> Vec<f32> {
+    let mut out = vec![0.0_f32; SA_FLOATS];
+    let num_points = qs.len() / 8;
+    if num_points <= 2 || !(1e-37..1e-3).contains(&max_dc) {
+        return out;
+    }
+    let ref_iter = num_points - 1;
+
+    let mut probes = [(0.0_f64, 0.0_f64, 0.0_f64, 0.0_f64); 8];
+    for (p, probe) in probes.iter_mut().enumerate() {
+        let angle = (p as f64) * std::f64::consts::FRAC_PI_4;
+        let (uy, ux) = angle.sin_cos();
+        *probe = (ux, uy, 0.0, 0.0);
+    }
+
+    let mut ar = [0.0_f64; SA_ORDER];
+    let mut ai = [0.0_f64; SA_ORDER];
+    let mut best_ar = [0.0_f64; SA_ORDER];
+    let mut best_ai = [0.0_f64; SA_ORDER];
+    let mut skip_iter = 0_u32;
+
+    for m in 0..ref_iter {
+        let base = m * 8;
+        let xr = f64::from(qs[base]) + f64::from(qs[base + 1]) + f64::from(qs[base + 2]);
+        let xi = f64::from(qs[base + 4]) + f64::from(qs[base + 5]) + f64::from(qs[base + 6]);
+        let tx = 2.0 * xr;
+        let ty = 2.0 * xi;
+
+        for k in (0..SA_ORDER).rev() {
+            let mut sr = 0.0;
+            let mut si = 0.0;
+            for j in 0..k {
+                let rj = ar[j];
+                let ij = ai[j];
+                let rk = ar[k - 1 - j];
+                let ik = ai[k - 1 - j];
+                sr += rj * rk - ij * ik;
+                si += rj * ik + ij * rk;
+            }
+            let ak_r = ar[k];
+            let ak_i = ai[k];
+            ar[k] = (tx * ak_r - ty * ak_i) + sr + if k == 0 { max_dc } else { 0.0 };
+            ai[k] = (tx * ak_i + ty * ak_r) + si;
+        }
+
+        let next_base = (m + 1) * 8;
+        let xnr =
+            f64::from(qs[next_base]) + f64::from(qs[next_base + 1]) + f64::from(qs[next_base + 2]);
+        let xni = f64::from(qs[next_base + 4])
+            + f64::from(qs[next_base + 5])
+            + f64::from(qs[next_base + 6]);
+        let mut valid = true;
+        for (ux, uy, dr, di) in &mut probes {
+            let dcx = *ux * max_dc;
+            let dcy = *uy * max_dc;
+            let wx = tx + *dr;
+            let wy = ty + *di;
+            let ndr = wx * *dr - wy * *di + dcx;
+            let ndi = wx * *di + wy * *dr + dcy;
+            *dr = ndr;
+            *di = ndi;
+
+            let zr = xnr + ndr;
+            let zi = xni + ndi;
+            let zsq = zr * zr + zi * zi;
+            let dsq = ndr * ndr + ndi * ndi;
+            if zsq > 4.0 || zsq < dsq || !dsq.is_finite() {
+                valid = false;
+                break;
+            }
+
+            let mut sr = ar[SA_ORDER - 1];
+            let mut si = ai[SA_ORDER - 1];
+            for k in (0..SA_ORDER - 1).rev() {
+                let tr = sr * *ux - si * *uy + ar[k];
+                let ti = sr * *uy + si * *ux + ai[k];
+                sr = tr;
+                si = ti;
+            }
+            let sa_dr = sr * *ux - si * *uy;
+            let sa_di = sr * *uy + si * *ux;
+            let err_sq = (sa_dr - ndr).powi(2) + (sa_di - ndi).powi(2);
+            if err_sq > dsq * 1e-10 {
+                valid = false;
+                break;
+            }
+        }
+        if !valid {
+            break;
+        }
+        skip_iter = (m + 1) as u32;
+        best_ar = ar;
+        best_ai = ai;
+    }
+
+    if skip_iter > 0 {
+        let (inv_hi, inv_lo) = split_f64_to_2_f32(1.0 / max_dc);
+        out[0] = skip_iter as f32;
+        out[1] = inv_hi;
+        out[2] = inv_lo;
+        for k in 0..SA_ORDER {
+            let (r_hi, r_lo) = split_f64_to_2_f32(best_ar[k]);
+            let (i_hi, i_lo) = split_f64_to_2_f32(best_ai[k]);
+            let off = 4 + k * 4;
+            out[off] = r_hi;
+            out[off + 1] = r_lo;
+            out[off + 2] = i_hi;
+            out[off + 3] = i_lo;
+        }
+    }
+    out
 }
 
 /// Reference iteration count: at least the requested base, extended past the anchor's
@@ -514,6 +626,7 @@ pub struct Reference {
     pub y: String,
     pub iter: u32,
     orbit: Vec<f32>,
+    sa: Vec<f32>,
 }
 
 #[wasm_bindgen]
@@ -522,6 +635,11 @@ impl Reference {
     /// the anchor escapes) without copying it through a getter.
     pub fn take_orbit(&mut self) -> Vec<f32> {
         std::mem::take(&mut self.orbit)
+    }
+
+    /// Moves the Series Approximation uniform block (36 floats) out without copying.
+    pub fn take_sa(&mut self) -> Vec<f32> {
+        std::mem::take(&mut self.sa)
     }
 }
 
@@ -557,11 +675,20 @@ pub fn compute_reference(
         .unwrap_or_else(|| Orbit::new(prec, true, false));
     orbit.advance(&ctx, calc_iter, None);
 
+    let orbit_qs = orbit.qs.unwrap_or_default();
+    let max_dc = (anchor.ox.hypot(anchor.oy) + scale * aspect.hypot(1.0)) * 1.25;
+    let sa = if is_aborted(&abort_flag) {
+        vec![0.0; SA_FLOATS]
+    } else {
+        compute_sa(&orbit_qs, max_dc)
+    };
+
     Reference {
         x: anchor.x.to_string(),
         y: anchor.y.to_string(),
         iter: calc_iter,
-        orbit: orbit.qs.unwrap_or_default(),
+        orbit: orbit_qs,
+        sa,
     }
 }
 
@@ -584,7 +711,7 @@ mod tests {
     fn test_split_fbig() {
         let d = DBig::from_str("-0.743643887037158704752191506114774").unwrap();
         let f = d.to_binary().value().with_precision(256).value();
-        let (p0, p1, p2, p3) = split_fbig_to_4_f32(&f, 256);
+        let (p0, p1, p2, p3) = split_f64_to_4_f32(f.to_f64().value());
         let reconstructed = (p0 as f64) + (p1 as f64) + (p2 as f64) + (p3 as f64);
         let diff = (reconstructed - -0.7436438870371587_f64).abs();
         assert!(diff < 1e-15);
@@ -716,5 +843,14 @@ mod tests {
         let mut r = compute_reference("2.2".into(), "0".into(), 10.0, 1.0, 100, 53, None);
         assert_eq!(r.x, "0");
         assert_eq!(r.take_orbit(), reference_orbit("0", "0", r.iter, 53));
+    }
+
+    #[wasm_bindgen_test]
+    fn test_compute_sa() {
+        let mut r = compute_reference("-0.75".into(), "0.01".into(), 1e-10, 1.0, 500, 128, None);
+        let sa = r.take_sa();
+        assert_eq!(sa.len(), SA_FLOATS);
+        assert!(sa[0] > 50.0, "expected SA to skip initial iterations");
+        assert!(sa[1] > 0.0, "expected positive inv_max_dc");
     }
 }

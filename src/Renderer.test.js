@@ -57,9 +57,10 @@ describe('Renderer adaptive progressive slices', () => {
     expect(renderer._sliceRows(config, progressiveState(990), tier)).toBe(10);
   });
 
-  it('computes slice geometry from the next row', () => {
+  it('computes slice geometry from the next row and discounts skipped SA iterations', () => {
     const renderer = createRenderer(1000, 100);
     renderer.throughput.set('QS', 1e12);
+    renderer.skipIter = 600;
     const slice = renderer._getSliceGeometry(
       { iter: 1000 },
       progressiveState(0),
@@ -67,6 +68,6 @@ describe('Renderer adaptive progressive slices', () => {
     );
     expect(slice).toMatchObject({ yOffset: 0, rows: 100, sliceScale: 1 });
     expect(slice.sliceOffset).toBeCloseTo(0, 10);
-    expect(slice.ops).toBe(100 * 1000 * 1000);
+    expect(slice.ops).toBe(100 * 1000 * 400);
   });
 });
