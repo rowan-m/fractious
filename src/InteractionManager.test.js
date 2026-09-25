@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { InteractionManager } from './InteractionManager.js';
 
+// Tap a key: press and release it straight away.
+function press(interactionManager, key) {
+  const code = `Key${key.toUpperCase()}`;
+  interactionManager.handleKeyDown({ key, code, preventDefault: () => {} });
+  interactionManager.handleKeyUp({ key, code });
+}
+
 describe('InteractionManager updateUI', () => {
   let interactionManager;
   let config;
@@ -18,7 +25,7 @@ describe('InteractionManager updateUI', () => {
       hue: 0.5,
       hueStep: 0.1,
     };
-    state = {};
+    state = { pointers: new Map(), held: new Set() };
 
     elements = {
       crosshair: {
@@ -182,71 +189,41 @@ describe('InteractionManager updateUI', () => {
     config.hueStep = 1.0;
 
     // E -> zoom in by 0.1 log10 units
-    interactionManager.handleKeyDown({
-      key: 'e',
-      preventDefault: vi.fn(),
-    });
+    press(interactionManager, 'e');
     expect(-Math.log10(state.targetZoom)).toBeCloseTo(0.1, 6);
 
     // Q -> zoom out by 0.1 log10 units
-    interactionManager.handleKeyDown({
-      key: 'q',
-      preventDefault: vi.fn(),
-    });
+    press(interactionManager, 'q');
     expect(state.targetZoom).toBeCloseTo(1.0, 6);
 
     // X / Z -> rotate CW / CCW by 15 degrees (Math.PI / 12)
-    interactionManager.handleKeyDown({
-      key: 'x',
-      preventDefault: vi.fn(),
-    });
+    press(interactionManager, 'x');
     expect(config.rotation).toBeCloseTo(Math.PI / 12, 6);
 
-    interactionManager.handleKeyDown({
-      key: 'z',
-      preventDefault: vi.fn(),
-    });
+    press(interactionManager, 'z');
     expect(config.rotation).toBeCloseTo(0, 6);
 
     // R / T -> hue -0.01 / +0.01
-    interactionManager.handleKeyDown({
-      key: 't',
-      preventDefault: vi.fn(),
-    });
+    press(interactionManager, 't');
     expect(config.hue).toBeCloseTo(0.51, 6);
-    interactionManager.handleKeyDown({
-      key: 'r',
-      preventDefault: vi.fn(),
-    });
+    press(interactionManager, 'r');
     expect(config.hue).toBeCloseTo(0.5, 6);
 
     // F / G -> hueStep -0.005 / +0.005
-    interactionManager.handleKeyDown({
-      key: 'g',
-      preventDefault: vi.fn(),
-    });
+    press(interactionManager, 'g');
     expect(config.hueStep).toBeCloseTo(1.005, 6);
-    interactionManager.handleKeyDown({
-      key: 'f',
-      preventDefault: vi.fn(),
-    });
+    press(interactionManager, 'f');
     expect(config.hueStep).toBeCloseTo(1.0, 6);
 
     // W / A / S / D -> pan view as a preview interaction (Fractious shows the pin)
     state.offsetX = 0;
     state.offsetY = 0;
     callbacks.onInteract.mockClear();
-    interactionManager.handleKeyDown({
-      key: 'w',
-      preventDefault: vi.fn(),
-    });
+    press(interactionManager, 'w');
     expect(state.offsetY).toBeCloseTo(0.1, 6);
     expect(callbacks.onInteract).toHaveBeenCalledWith(false);
 
-    interactionManager.handleKeyDown({
-      key: 'd',
-      preventDefault: vi.fn(),
-    });
+    press(interactionManager, 'd');
     expect(state.offsetX).toBeCloseTo(0.1, 6);
   });
 
@@ -278,5 +255,68 @@ describe('InteractionManager updateUI', () => {
     });
     expect(preventDefault).toHaveBeenCalledTimes(1);
     expect(blur).toHaveBeenCalledTimes(1);
+  });
+
+  describe('holding keys', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const down = (key, extra = {}) =>
+      interactionManager.handleKeyDown({
+        key,
+        code: `Key${key.toUpperCase()}`,
+        preventDefault: vi.fn(),
+        ...extra,
+      });
+    const up = (key) =>
+      interactionManager.handleKeyUp({ key, code: `Key${key.toUpperCase()}` });
+
+    it('repeats the action while held and finishes the interaction on release', () => {
+      state.targetZoom = 1.0;
+      down('e');
+      expect(-Math.log10(state.targetZoom)).toBeCloseTo(0.1, 6);
+      expect(callbacks.onInteract).toHaveBeenLastCalledWith(false);
+
+      vi.advanceTimersByTime(399);
+      expect(-Math.log10(state.targetZoom)).toBeCloseTo(0.1, 6);
+      vi.advanceTimersByTime(1 + 50 * 3); // repeat delay, then 3 repeats
+      expect(-Math.log10(state.targetZoom)).toBeCloseTo(0.4, 6);
+
+      // OS auto-repeat events are ignored; our own timer drives the repeat
+      down('e', { repeat: true });
+      expect(-Math.log10(state.targetZoom)).toBeCloseTo(0.4, 6);
+
+      up('e');
+      expect(callbacks.onInteract).toHaveBeenLastCalledWith(true);
+      vi.advanceTimersByTime(1000);
+      expect(-Math.log10(state.targetZoom)).toBeCloseTo(0.4, 6);
+    });
+
+    it('keeps interacting until every key, button and pointer is released', () => {
+      state.targetZoom = 1.0;
+      config.rotation = 0;
+      down('e');
+      down('x');
+      state.pointers.set(1, { x: 0, y: 0 });
+
+      up('e');
+      interactionManager.handlePointerUp({ pointerId: 1 });
+      expect(callbacks.onInteract).not.toHaveBeenCalledWith(true);
+
+      up('x');
+      expect(callbacks.onInteract).toHaveBeenLastCalledWith(true);
+      expect(state.held.size).toBe(0);
+    });
+
+    it('releases everything when the window loses focus', () => {
+      down('w');
+      down('d');
+      interactionManager.releaseAll();
+      expect(state.held.size).toBe(0);
+      expect(callbacks.onInteract).toHaveBeenLastCalledWith(true);
+      const calls = callbacks.onInteract.mock.calls.length;
+      vi.advanceTimersByTime(1000);
+      expect(callbacks.onInteract.mock.calls).toHaveLength(calls);
+    });
   });
 });

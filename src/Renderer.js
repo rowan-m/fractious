@@ -1,3 +1,4 @@
+import { isInteracting } from './State.js';
 import shaderCode from './renderer/shader.wgsl?raw';
 import postShaderCode from './renderer/post.wgsl?raw';
 
@@ -267,7 +268,7 @@ export class Renderer {
   }
 
   _isInteractive(state) {
-    return state.pointers.size > 0 || state.workerBusy || state.isPendingUpdate;
+    return isInteracting(state) || state.workerBusy || state.isPendingUpdate;
   }
 
   _isComplete(state) {

@@ -1,4 +1,8 @@
-import { createDefaultConfig, createDefaultState } from './State.js';
+import {
+  createDefaultConfig,
+  createDefaultState,
+  isInteracting,
+} from './State.js';
 import { Renderer } from './Renderer.js';
 import { WorkerManager } from './WorkerManager.js';
 import { InteractionManager } from './InteractionManager.js';
@@ -76,7 +80,7 @@ function bindViewportFit() {
 if (typeof process === 'undefined' || process.env.NODE_ENV !== 'test') {
   bindViewportFit();
   bindAutoReload(
-    () => state.pointers.size > 0 || state.isPendingUpdate || state.workerBusy,
+    () => isInteracting(state) || state.isPendingUpdate || state.workerBusy,
   );
   app.init();
 }

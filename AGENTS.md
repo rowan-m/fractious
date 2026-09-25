@@ -33,7 +33,7 @@ This document equips AI coding agents and engineers with the architectural conte
 
 4. **Responsive Across Mobile, Desktop & Any Form Factor**
    - Always design and verify interactions for **both touch/mobile and mouse/desktop**:
-     - **Desktop**: Left-drag pan, `Shift`+drag rotate around viewport center, mouse wheel zoom (on the pinned viewport centre, like the zoom buttons and keys), double-click zoom at the cursor, `Shift`+wheel rotate, and keyboard shortcuts (`WASD`/Arrow keys to pan, `Q`/`E` or `-`/`+` to zoom, `Z`/`X` to rotate, `R`/`T` to shift hue, `F`/`G` to adjust hue step).
+     - **Desktop**: Left-drag pan, `Shift`+drag rotate around viewport center, mouse wheel zoom (on the pinned viewport centre, like the zoom buttons and keys), double-click zoom at the cursor, `Shift`+wheel rotate, and keyboard shortcuts (`WASD`/Arrow keys to pan, `Q`/`E` or `-`/`+` to zoom, `Z`/`X` to rotate, `R`/`T` to shift hue, `F`/`G` to adjust hue step). Holding a key or on-screen button repeats its action (after `HOLD_DELAY_MS`, every `HOLD_REPEAT_MS`), and like a held pointer it keeps the view in interactive preview (pin shown, tracked in `state.held`) until every pointer, key and button is released (`isInteracting()` in `src/State.js`).
      - **Mobile / Touch**: 1-finger drag pan, 2-finger simultaneous pinch-to-zoom (anchored at pinch midpoint, the only continuous zoom not centred on the pin) + twist-to-rotate + midpoint translation, `touch-action: none` on the viewport, and responsive control panels that never obscure the fractal or overflow small viewports.
 
 ---

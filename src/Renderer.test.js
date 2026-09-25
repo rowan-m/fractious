@@ -12,6 +12,7 @@ function progressiveState(nextRow = 0) {
   return {
     nextRow,
     pointers: new Map(),
+    held: new Set(),
     workerBusy: false,
     isPendingUpdate: false,
   };
