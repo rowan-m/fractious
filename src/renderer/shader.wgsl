@@ -372,6 +372,19 @@ fn compute_rotated_uv(uv: vec2<f32>) -> vec2<f32> {
   );
 }
 
+// Interior shortcuts are only safe where f32 resolves c and z below a pixel.
+const INTERIOR_CHECK_MIN_ZOOM: f32 = 1.0e-4;
+
+// Closed-form membership of the main cardioid and the period-2 bulb, which hold most
+// of the interior (and therefore most of the iterations) in low-zoom views.
+fn in_main_bulbs(c: vec2<f32>) -> bool {
+  let x = c.x - 0.25;
+  let y2 = c.y * c.y;
+  let q = x * x + y2;
+  let xp = c.x + 1.0;
+  return q * (q + x) <= 0.25 * y2 || xp * xp + y2 <= 0.0625;
+}
+
 fn compute_color(i: u32, zn_sq: f32, zn_sp: vec2<f32>, uv: vec2<f32>) -> vec4<f32> {
   if (i >= uniforms.iter) {
     return vec4<f32>(0.0, 0.0, 0.0, 1.0);
@@ -405,6 +418,23 @@ fn fs_main_f32(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
 
   let c_delta_re = center_x + dx;
   let c_delta_im = center_y + dy;
+
+  // X_1 = c_ref, so this is the pixel's absolute c.
+  let check_interior = uniforms.zoom.x > INTERIOR_CHECK_MIN_ZOOM;
+  let c_ref = reference_orbit[1];
+  if (check_interior &&
+      in_main_bulbs(vec2<f32>(c_ref.re.x + c_delta_re, c_ref.im.x + c_delta_im))) {
+    return compute_color(uniforms.iter, 0.0, vec2<f32>(0.0), uv);
+  }
+  // Brent-style periodicity check: an orbit that returns (within a small fraction of
+  // a pixel, floored above f32 rounding noise) to a saved point is periodic, so the
+  // pixel is interior. Cap the checkpoint window so slowly converging boundary orbits
+  // refresh their saved point regularly.
+  let period_tol = clamp(uniforms.zoom.x * 2.0e-4, 2.5e-7, 5.0e-5);
+  let period_tol_sq = period_tol * period_tol;
+  var period_z = vec2<f32>(0.0, 0.0);
+  var period_len: u32 = 8u;
+  var period_step: u32 = 0u;
   
   var delta_re = 0.0;
   var delta_im = 0.0;
@@ -413,12 +443,12 @@ fn fs_main_f32(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   var m: u32 = 0u;
   var zn_sq: f32 = 0.0;
   var zn_sp = vec2<f32>(0.0, 0.0);
+  // X_m, carried over from the previous iteration's X_{m+1} (X_0 = 0).
+  var raw_xm = OrbitPoint(vec4<f32>(0.0), vec4<f32>(0.0));
 
   loop {
     if (i >= uniforms.iter) { break; }
     
-    // Load X_m (Reference in F32)
-    let raw_xm = reference_orbit[m]; 
     let x_re = raw_xm.re.x;
     let x_im = raw_xm.im.x;
     
@@ -446,14 +476,30 @@ fn fs_main_f32(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
         zn_sp = vec2<f32>(zn_re, zn_im);
         break;
     }
+
+    if (check_interior) {
+      let dz = vec2<f32>(zn_re, zn_im) - period_z;
+      if (dot(dz, dz) < period_tol_sq) {
+        i = uniforms.iter;
+        break;
+      }
+      period_step = period_step + 1u;
+      if (period_step == period_len) {
+        period_step = 0u;
+        period_len = min(period_len * 2u, 128u);
+        period_z = vec2<f32>(zn_re, zn_im);
+      }
+    }
     
     let delta_norm_sq = delta_re * delta_re + delta_im * delta_im;
     if (zn_sq < delta_norm_sq || next_m >= uniforms.ref_iter) {
         delta_re = zn_re;
         delta_im = zn_im;
         m = 0u;
+        raw_xm = OrbitPoint(vec4<f32>(0.0), vec4<f32>(0.0));
     } else {
         m = next_m;
+        raw_xm = raw_xm_next;
     }
   }
   
@@ -483,12 +529,12 @@ fn fs_main_ds(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   var m: u32 = 0u;
   var zn_sq: f32 = 0.0;
   var zn_sp = vec2<f32>(0.0, 0.0);
+  // X_m, carried over from the previous iteration's X_{m+1} (X_0 = 0).
+  var raw_xm = OrbitPoint(vec4<f32>(0.0), vec4<f32>(0.0));
 
   loop {
     if (i >= uniforms.iter) { break; }
     
-    // Load X_m (Reference in Double-Single)
-    let raw_xm = reference_orbit[m]; 
     let x_re = vec2<f32>(raw_xm.re.x, raw_xm.re.y);
     let x_im = vec2<f32>(raw_xm.im.x, raw_xm.im.y);
     let xm = ds_complex(x_re, x_im);
@@ -524,8 +570,10 @@ fn fs_main_ds(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
         );
         delta = dc_add(xm_next, delta);
         m = 0u;
+        raw_xm = OrbitPoint(vec4<f32>(0.0), vec4<f32>(0.0));
     } else {
         m = next_m;
+        raw_xm = raw_xm_next;
     }
   }
   
@@ -554,12 +602,12 @@ fn fs_main_qs(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   var m: u32 = 0u;
   var zn_sq: f32 = 0.0;
   var zn_sp = vec2<f32>(0.0, 0.0);
+  // X_m, carried over from the previous iteration's X_{m+1} (X_0 = 0).
+  var raw_xm = OrbitPoint(vec4<f32>(0.0), vec4<f32>(0.0));
 
   loop {
     if (i >= uniforms.iter) { break; }
     
-    // Load X_m (Reference)
-    let raw_xm = reference_orbit[m]; 
     let xm = qs_complex(raw_xm.re, raw_xm.im);
     
     // delta_{n+1} = 2 * X_m * delta_n + delta_n^2 + delta_0
@@ -590,8 +638,10 @@ fn fs_main_qs(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
         let xm_next = qs_complex(raw_xm_next.re, raw_xm_next.im);
         delta = qc_add(xm_next, delta);
         m = 0u;
+        raw_xm = OrbitPoint(vec4<f32>(0.0), vec4<f32>(0.0));
     } else {
         m = next_m;
+        raw_xm = raw_xm_next;
     }
   }
   

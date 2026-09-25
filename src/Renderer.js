@@ -5,9 +5,10 @@ import postShaderCode from './renderer/post.wgsl?raw';
 const INTERACTION_MAX_OPS = 20000000;
 const PROGRESSIVE_MAX_OPS = 25000000;
 const INTERACTION_SCALE_LIMIT = 0.5;
-// Progressive slices are sized from measured GPU throughput to take about this long,
-// so each frame does a useful amount of work while input stays responsive.
-const TARGET_SLICE_MS = 10;
+// Progressive slices are sized from measured GPU throughput to take about this long
+// (above a 16.7ms 60Hz VSync frame, since swapchain presentation + IPC has a ~15ms floor
+// on mobile GPUs), so each frame does useful work while input stays responsive.
+const TARGET_SLICE_MS = 32;
 // Throughput is measured in worst-case ops (every pixel reaching max iterations), so a
 // slice can cost more than predicted if it runs into interior. Cap slices at this many
 // of the old fixed worst-case budgets to bound any single stall.
@@ -285,7 +286,7 @@ export class Renderer {
       opsPerMs * TARGET_SLICE_MS,
       budget * MAX_SLICE_BUDGETS,
     );
-    return Math.min(remaining, Math.max(1, Math.floor(ops / rowOps)));
+    return Math.min(remaining, Math.ceil(ops / rowOps));
   }
 
   _getSliceGeometry(config, state, tier) {
