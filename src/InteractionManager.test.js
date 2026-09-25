@@ -110,7 +110,7 @@ describe('InteractionManager updateUI', () => {
     expect(elements.inputs.rotation.value).toBe('315.0');
   });
 
-  it('should anchor wheel zoom around cursor position and support Shift+wheel rotation', () => {
+  it('should zoom on the centre regardless of cursor position and support Shift+wheel rotation', () => {
     state.width = 400;
     state.height = 400;
     state.offsetX = 0;
@@ -118,7 +118,7 @@ describe('InteractionManager updateUI', () => {
     state.targetZoom = 2.0;
     config.rotation = 0;
 
-    // Zoom in at top-right quadrant (clientX = 300, clientY = 100)
+    // Cursor in the top-right quadrant must not shift the view
     interactionManager.handleWheel({
       preventDefault: vi.fn(),
       deltaY: -100,
@@ -127,9 +127,9 @@ describe('InteractionManager updateUI', () => {
       shiftKey: false,
     });
 
-    expect(state.targetZoom).toBeLessThan(2.0);
-    expect(state.offsetX).toBeGreaterThan(0);
-    expect(state.offsetY).toBeGreaterThan(0);
+    expect(state.targetZoom).toBeCloseTo(2.0 / 1.05, 10);
+    expect(state.offsetX).toBe(0);
+    expect(state.offsetY).toBe(0);
 
     // Shift + wheel rotates without changing targetZoom
     const zoomBeforeRotate = state.targetZoom;

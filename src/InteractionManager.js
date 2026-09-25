@@ -219,8 +219,8 @@ export class InteractionManager {
       this._notifyInteract(false);
       return;
     }
-    const factor = e.deltaY > 0 ? 1.05 : 1.0 / 1.05;
-    this._zoomAroundPoint(e.clientX || 0, e.clientY || 0, factor);
+    // Like the buttons and keys, the wheel zooms on the pinned centre.
+    this.state.targetZoom *= e.deltaY > 0 ? 1.05 : 1.0 / 1.05;
     this._notifyInteract(false);
   }
 
