@@ -84,7 +84,7 @@ $$\Delta_{n+1} = 2 X_m \Delta_n + \Delta_n^2 + \Delta c$$
 
 `Renderer.js` automatically selects the cheapest sufficient WGSL pipeline based on `scale`:
 
-- **Tier 1 (`fs_main_f32`)**: `scale > 1.0e-6` — Native hardware `f32` (~7 decimal digits).
+- **Tier 1 (`fs_main_f32`)**: `scale > 1.0e-6` — Native hardware `f32` (~7 decimal digits). At shallow zooms (`scale > 1.0e-3`, where `f32` resolves $c = X_1 + \Delta c$ well below a pixel), `in_main_bulbs` skips pixels inside the main cardioid and period-2 bulb before the loop, and a Brent periodicity check terminates periodic interior orbits early.
 - **Tier 2 (`fs_main_ds`)**: `1.0e-6 >= scale > 1.0e-13` — Knuth/Dekker Double-Single (`vec2<f32>`, ~14 decimal digits).
 - **Tier 3 (`fs_main_qs`)**: `scale <= 1.0e-13` — Quad-Single (`vec4<f32>`, ~28 decimal digits).
 - All three fragment entry points share a single colouring helper `compute_color(i, zn_sq, zn_sp, uv)` in `src/renderer/shader.wgsl`.
@@ -94,6 +94,7 @@ $$\Delta_{n+1} = 2 X_m \Delta_n + \Delta_n^2 + \Delta c$$
 
 In `shader.wgsl`, the pixel's total iteration count `i` (`0..uniforms.iter`) is decoupled from the reference orbit lookup index `m` (`0..uniforms.ref_iter`):
 
+- Each iteration loads only $X_{m+1}$ (`reference_orbit[m + 1u]`) and carries it forward as the next step's $X_m$ (resetting to $X_0 = 0$ on rebase).
 - At each step, the shader computes the true orbit position $Z = X_{m+1} + \Delta$.
 - Whenever $|Z|^2 < |\Delta|^2$ (the pixel's orbit passes closer to the critical point $X_0 = (0, 0)$ than to the reference orbit $X_{m+1}$) **or** `next_m >= uniforms.ref_iter` (the reference orbit itself escaped at step `ref_iter`), the shader **rebases** the perturbation:
   $$\Delta \leftarrow Z, \quad m \leftarrow 0$$
