@@ -4,6 +4,13 @@ import postShaderCode from './renderer/post.wgsl?raw';
 const INTERACTION_MAX_OPS = 20000000;
 const PROGRESSIVE_MAX_OPS = 25000000;
 const INTERACTION_SCALE_LIMIT = 0.5;
+// Progressive slices are sized from measured GPU throughput to take about this long,
+// so each frame does a useful amount of work while input stays responsive.
+const TARGET_SLICE_MS = 10;
+// Throughput is measured in worst-case ops (every pixel reaching max iterations), so a
+// slice can cost more than predicted if it runs into interior. Cap slices at this many
+// of the old fixed worst-case budgets to bound any single stall.
+const MAX_SLICE_BUDGETS = 16;
 
 export class Renderer {
   constructor(canvas, bgCanvas) {
@@ -32,6 +39,9 @@ export class Renderer {
     this.uniformBufferSize = 80;
     this.uniformData = new ArrayBuffer(this.uniformBufferSize);
     this.uniformDataView = new DataView(this.uniformData);
+    this.throughput = new Map(); // tier name -> worst-case ops per ms
+    this.pendingSlice = null;
+    this.progressiveStart = 0;
   }
 
   _showFatalError(message) {
@@ -256,48 +266,48 @@ export class Renderer {
     };
   }
 
-  _getSliceGeometry(state) {
-    if (state.totalPasses <= 1 || this.canvas.height <= 0) {
-      return {
-        yOffset: 0,
-        currentSliceHeight: this.canvas.height,
-        sliceScale: 1.0,
-        sliceOffset: 0.0,
-      };
-    }
-    const sliceHeight = Math.ceil(this.canvas.height / state.totalPasses);
-    const yOffset = state.currentPass * sliceHeight;
-    const currentSliceHeight = Math.min(
-      sliceHeight,
-      this.canvas.height - yOffset,
-    );
-    const sliceScale = currentSliceHeight / this.canvas.height;
-    // Invert Y coordinate mapping because WebGPU Scissor Rect Y starts at TOP (0),
-    // but WebGPU NDC Y starts at BOTTOM (-1.0).
-    const yOffsetBottom = this.canvas.height - yOffset - currentSliceHeight;
-    const sliceOffset =
-      -1.0 + (2.0 * yOffsetBottom + currentSliceHeight) / this.canvas.height;
-    return { yOffset, currentSliceHeight, sliceScale, sliceOffset };
+  _isInteractive(state) {
+    return state.pointers.size > 0 || state.workerBusy || state.isPendingUpdate;
   }
 
-  _calculatePassesAndResize(config, state, tier) {
-    const { dpr, width, height, currentPixels, workerBusy, isPendingUpdate } =
-      state;
+  _isComplete(state) {
+    return state.nextRow >= this.canvas.height;
+  }
+
+  _sliceRows(config, state, tier) {
+    const remaining = this.canvas.height - state.nextRow;
+    if (this._isInteractive(state)) return remaining;
+    const rowOps = this.canvas.width * (config.iter || 1);
+    const budget = PROGRESSIVE_MAX_OPS * tier.opsMultiplier;
+    const opsPerMs = this.throughput.get(tier.name) || budget / TARGET_SLICE_MS;
+    const ops = Math.min(
+      opsPerMs * TARGET_SLICE_MS,
+      budget * MAX_SLICE_BUDGETS,
+    );
+    return Math.min(remaining, Math.max(1, Math.floor(ops / rowOps)));
+  }
+
+  _getSliceGeometry(config, state, tier) {
+    const height = this.canvas.height;
+    const yOffset = state.nextRow;
+    const rows = height > 0 ? this._sliceRows(config, state, tier) : 0;
+    const sliceScale = rows / height;
+    // Invert Y coordinate mapping because WebGPU Scissor Rect Y starts at TOP (0),
+    // but WebGPU NDC Y starts at BOTTOM (-1.0).
+    const yOffsetBottom = height - yOffset - rows;
+    const sliceOffset = -1.0 + (2.0 * yOffsetBottom + rows) / height;
+    const ops = rows * this.canvas.width * (config.iter || 1);
+    return { yOffset, rows, sliceScale, sliceOffset, ops };
+  }
+
+  _resizeCanvas(config, state) {
+    const { dpr, width, height, currentPixels } = state;
     let targetScale = 1.0;
 
-    const isDragging = state.pointers.size > 0;
-
-    if (isDragging || workerBusy || isPendingUpdate) {
+    if (this._isInteractive(state)) {
       const idealPixels = INTERACTION_MAX_OPS / (config.iter || 1);
       targetScale = Math.sqrt(idealPixels / currentPixels);
       targetScale = Math.min(INTERACTION_SCALE_LIMIT, targetScale);
-      state.totalPasses = 1;
-    } else {
-      const totalOps = currentPixels * config.iter;
-      state.totalPasses = Math.max(
-        1,
-        Math.ceil(totalOps / (PROGRESSIVE_MAX_OPS * tier.opsMultiplier)),
-      );
     }
 
     if (width > 0 && height > 0) {
@@ -316,18 +326,13 @@ export class Renderer {
         ),
       );
 
-      // Clamp total progressive passes to the physical canvas height to avoid empty/redundant draw calls.
-      if (!(isDragging || workerBusy || isPendingUpdate)) {
-        state.totalPasses = Math.min(state.totalPasses, targetHeight);
-      }
-
       if (
         this.canvas.width !== targetWidth ||
         this.canvas.height !== targetHeight
       ) {
         this.canvas.width = targetWidth;
         this.canvas.height = targetHeight;
-        state.currentPass = 0;
+        state.nextRow = 0;
       }
     }
   }
@@ -378,13 +383,13 @@ export class Renderer {
   _dispatchDrawCalls(state, tier, slice) {
     const commandEncoder = this.device.createCommandEncoder();
 
-    if (state.currentPass < state.totalPasses) {
+    if (slice.rows > 0) {
       const passEncoder = commandEncoder.beginRenderPass({
         colorAttachments: [
           {
             view: this.offscreenTextureView,
             clearValue: { r: 0, g: 0, b: 0, a: 0 },
-            loadOp: state.currentPass === 0 ? 'clear' : 'load',
+            loadOp: slice.yOffset === 0 ? 'clear' : 'load',
             storeOp: 'store',
           },
         ],
@@ -406,14 +411,12 @@ export class Renderer {
         0,
         1,
       );
-      if (slice.currentSliceHeight > 0) {
-        passEncoder.setScissorRect(
-          0,
-          slice.yOffset,
-          this.canvas.width,
-          slice.currentSliceHeight,
-        );
-      }
+      passEncoder.setScissorRect(
+        0,
+        slice.yOffset,
+        this.canvas.width,
+        slice.rows,
+      );
 
       if (tier.bindGroup) {
         passEncoder.setBindGroup(0, tier.bindGroup);
@@ -421,7 +424,7 @@ export class Renderer {
       }
       passEncoder.end();
 
-      state.currentPass++;
+      state.nextRow += slice.rows;
     }
 
     const destTexture = this.context.getCurrentTexture();
@@ -450,7 +453,7 @@ export class Renderer {
 
   _updateBackgroundCanvas(state) {
     if (
-      state.currentPass >= state.totalPasses &&
+      this._isComplete(state) &&
       this.canvas.width > 0 &&
       this.canvas.height > 0 &&
       this.bgCanvas
@@ -480,7 +483,7 @@ export class Renderer {
   }
 
   _handleScreenshot(state) {
-    if (state.screenshotRequested && state.currentPass >= state.totalPasses) {
+    if (state.screenshotRequested && this._isComplete(state)) {
       state.screenshotRequested = false;
       const d = new Date();
       const timestamp =
@@ -499,7 +502,7 @@ export class Renderer {
   }
 
   _handleShare(state) {
-    if (state.shareRequested && state.currentPass >= state.totalPasses) {
+    if (state.shareRequested && this._isComplete(state)) {
       state.shareRequested = false;
 
       this.canvas.toBlob((blob) => {
@@ -548,10 +551,10 @@ export class Renderer {
 
   render(config, state) {
     const tier = this._getPrecisionTier(state.targetZoom);
-    this._calculatePassesAndResize(config, state, tier);
+    this._resizeCanvas(config, state);
 
     if (
-      state.currentPass >= state.totalPasses &&
+      this._isComplete(state) &&
       !state.screenshotRequested &&
       !state.shareRequested
     ) {
@@ -562,24 +565,50 @@ export class Renderer {
 
     config.zoom = state.targetZoom;
 
-    const slice = this._getSliceGeometry(state);
+    const slice = this._getSliceGeometry(config, state, tier);
     this._updateUniforms(config, state, slice);
 
     const drawSuccess = this._dispatchDrawCalls(state, tier, slice);
     if (!drawSuccess) return false;
+    this._trackSlice(state, tier, slice);
 
     this._updateBackgroundCanvas(state);
     this._handleScreenshot(state);
     this._handleShare(state);
 
     return (
-      state.currentPass < state.totalPasses ||
+      !this._isComplete(state) ||
       state.screenshotRequested ||
       state.shareRequested
     );
   }
 
+  _trackSlice(state, tier, slice) {
+    if (slice.rows === 0 || this._isInteractive(state)) return;
+    const now = performance.now();
+    if (slice.yOffset === 0) this.progressiveStart = now;
+    this.pendingSlice = { tier: tier.name, ops: slice.ops, start: now };
+    if (this._isComplete(state)) {
+      performance.measure?.('fractious:full-res', {
+        start: this.progressiveStart,
+        end: now,
+      });
+    }
+  }
+
+  // Learns GPU throughput from how long each progressive slice takes. Slow slices take
+  // effect immediately; faster ones can at most double the estimate each time.
+  recordSliceTime(slice, elapsedMs) {
+    const previous = this.throughput.get(slice.tier) || Infinity;
+    const measured = slice.ops / Math.max(elapsedMs, 1);
+    this.throughput.set(slice.tier, Math.min(measured, previous * 2));
+  }
+
   onSubmittedWorkDone() {
-    return this.device.queue.onSubmittedWorkDone();
+    const slice = this.pendingSlice;
+    this.pendingSlice = null;
+    return this.device.queue.onSubmittedWorkDone().then(() => {
+      if (slice) this.recordSliceTime(slice, performance.now() - slice.start);
+    });
   }
 }

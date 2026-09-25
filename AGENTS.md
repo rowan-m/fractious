@@ -120,9 +120,10 @@ In `shader.wgsl`, the pixel's total iteration count `i` (`0..uniforms.iter`) is 
 
 While dragging/zooming or waiting for the WASM worker to compute a new reference orbit:
 
-1. `#fractal-bg` (a 2D canvas behind `#fractal`) is updated via `_updateBackgroundCanvas()` (`bgCtx.drawImage(this.canvas, 0, 0)`) whenever a render pass completes (`state.currentPass >= state.totalPasses`), including 1-pass low-resolution interactive previews.
+1. `#fractal-bg` (a 2D canvas behind `#fractal`) is updated via `_updateBackgroundCanvas()` (`bgCtx.drawImage(this.canvas, 0, 0)`) whenever a render completes (`state.nextRow >= canvas.height`), including single-slice low-resolution interactive previews.
 2. When the viewport transitions from a completed low-res preview to a multi-slice progressive high-res render (`this.canvas.width` / `height` resize), `#fractal-bg` retains the low-res preview underneath `#fractal` so there is never a black flash or stale-frame jump while progressive slices fill in.
 3. Progressive high-res slices in `Fractious.frame()` are gated on `device.queue.onSubmittedWorkDone()` and a monotonically increasing `_renderGeneration` token so GPU submissions never saturate the browser compositor queue and user input can preempt in-flight progressive passes within a single frame.
+4. Progressive slice height is adaptive: `Renderer.recordSliceTime()` learns per-tier GPU throughput (in worst-case ops per ms) from each slice's submit-to-done time, and `_sliceRows()` sizes the next slice to about `TARGET_SLICE_MS` (10ms). Slower measurements apply immediately, faster ones at most double the estimate, and slices are capped at `MAX_SLICE_BUDGETS` × the fixed worst-case budget to bound stalls when a slice runs into interior. Each full-res render records a `fractious:full-res` User Timing measure for traces.
 
 ---
 
