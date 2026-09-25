@@ -84,7 +84,7 @@ $$\Delta_{n+1} = 2 X_m \Delta_n + \Delta_n^2 + \Delta c$$
 
 `Renderer.js` automatically selects the cheapest sufficient WGSL pipeline based on `scale`:
 
-- **Tier 1 (`fs_main_f32`)**: `scale > 1.0e-6` — Native hardware `f32` (~7 decimal digits). At shallow zooms (`scale > 1.0e-3`, where `f32` resolves $c = X_1 + \Delta c$ well below a pixel), `in_main_bulbs` skips pixels inside the main cardioid and period-2 bulb before the loop, and a Brent periodicity check terminates periodic interior orbits early.
+- **Tier 1 (`fs_main_f32`)**: `scale > 1.0e-6` — Native hardware `f32` (~7 decimal digits). At shallow zooms (`scale > 1.0e-4`, where `f32` resolves $c = X_1 + \Delta c$ and $Z_n$ below a pixel), `in_main_bulbs` skips pixels inside the main cardioid and period-2 bulb before the loop, and a Brent periodicity check (with a 128-step capped checkpoint window) terminates periodic interior orbits early.
 - **Tier 2 (`fs_main_ds`)**: `1.0e-6 >= scale > 1.0e-13` — Knuth/Dekker Double-Single (`vec2<f32>`, ~14 decimal digits).
 - **Tier 3 (`fs_main_qs`)**: `scale <= 1.0e-13` — Quad-Single (`vec4<f32>`, ~28 decimal digits).
 - All three fragment entry points share a single colouring helper `compute_color(i, zn_sq, zn_sp, uv)` in `src/renderer/shader.wgsl`.
@@ -124,7 +124,7 @@ While dragging/zooming or waiting for the WASM worker to compute a new reference
 1. `#fractal-bg` (a 2D canvas behind `#fractal`) is updated via `_updateBackgroundCanvas()` (`bgCtx.drawImage(this.canvas, 0, 0)`) whenever a render completes (`state.nextRow >= canvas.height`), including single-slice low-resolution interactive previews.
 2. When the viewport transitions from a completed low-res preview to a multi-slice progressive high-res render (`this.canvas.width` / `height` resize), `#fractal-bg` retains the low-res preview underneath `#fractal` so there is never a black flash or stale-frame jump while progressive slices fill in.
 3. Progressive high-res slices in `Fractious.frame()` are gated on `device.queue.onSubmittedWorkDone()` and a monotonically increasing `_renderGeneration` token so GPU submissions never saturate the browser compositor queue and user input can preempt in-flight progressive passes within a single frame.
-4. Progressive slice height is adaptive: `Renderer.recordSliceTime()` learns per-tier GPU throughput (in worst-case ops per ms) from each slice's submit-to-done time, and `_sliceRows()` sizes the next slice to about `TARGET_SLICE_MS` (10ms). Slower measurements apply immediately, faster ones at most double the estimate, and slices are capped at `MAX_SLICE_BUDGETS` × the fixed worst-case budget to bound stalls when a slice runs into interior. Each full-res render records a `fractious:full-res` User Timing measure for traces.
+4. Progressive slice height is adaptive: `Renderer.recordSliceTime()` learns per-tier GPU throughput (in worst-case ops per ms) from each slice's submit-to-done time, and `_sliceRows()` sizes the next slice (`Math.ceil`) to about `TARGET_SLICE_MS` (32ms, above a 16.7ms 60Hz VSync frame on mobile). Slower measurements apply immediately, faster ones at most double the estimate, and slices are capped at `MAX_SLICE_BUDGETS` × the fixed worst-case budget to bound stalls when a slice runs into interior. Each full-res render records a `fractious:full-res` User Timing measure for traces.
 
 ---
 

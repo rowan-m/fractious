@@ -27,8 +27,8 @@ describe('Renderer adaptive progressive slices', () => {
 
   it('starts from the fixed worst-case budget before anything is measured', () => {
     const renderer = createRenderer();
-    // 25M ops / (1000 px * 10000 iter) = 2.5 rows
-    expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(2);
+    // ceil(25M ops / (1000 px * 10000 iter)) = ceil(2.5) = 3 rows
+    expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(3);
   });
 
   it('grows slices at most twofold per measurement and shrinks immediately', () => {
@@ -45,8 +45,12 @@ describe('Renderer adaptive progressive slices', () => {
 
   it('sizes slices to the target time, capped by the stall limit and the rows left', () => {
     const renderer = createRenderer();
-    renderer.throughput.set('QS', 4000000); // 40M ops per 10ms = 4 rows
+    renderer.throughput.set('QS', 1250000); // 40M ops per 32ms = 4 rows
     expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(4);
+
+    // A 1-row slice finishing under TARGET_SLICE_MS (e.g. 16ms VSync floor) always grows
+    renderer.recordSliceTime({ tier: 'QS', ops: 10000000 }, 16);
+    expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(2);
 
     renderer.throughput.set('QS', 1e12); // capped at 16 * 25M ops = 40 rows
     expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(40);

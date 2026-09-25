@@ -372,8 +372,8 @@ fn compute_rotated_uv(uv: vec2<f32>) -> vec2<f32> {
   );
 }
 
-// Interior shortcuts are only safe where f32 resolves c well below a pixel.
-const INTERIOR_CHECK_MIN_ZOOM: f32 = 1.0e-3;
+// Interior shortcuts are only safe where f32 resolves c and z below a pixel.
+const INTERIOR_CHECK_MIN_ZOOM: f32 = 1.0e-4;
 
 // Closed-form membership of the main cardioid and the period-2 bulb, which hold most
 // of the interior (and therefore most of the iterations) in low-zoom views.
@@ -427,8 +427,10 @@ fn fs_main_f32(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     return compute_color(uniforms.iter, 0.0, vec2<f32>(0.0), uv);
   }
   // Brent-style periodicity check: an orbit that returns (within a small fraction of
-  // a pixel) to a saved point is periodic, so the pixel is interior.
-  let period_tol = uniforms.zoom.x * 1.0e-5;
+  // a pixel, floored above f32 rounding noise) to a saved point is periodic, so the
+  // pixel is interior. Cap the checkpoint window so slowly converging boundary orbits
+  // refresh their saved point regularly.
+  let period_tol = clamp(uniforms.zoom.x * 2.0e-4, 2.5e-7, 5.0e-5);
   let period_tol_sq = period_tol * period_tol;
   var period_z = vec2<f32>(0.0, 0.0);
   var period_len: u32 = 8u;
@@ -484,7 +486,7 @@ fn fs_main_f32(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
       period_step = period_step + 1u;
       if (period_step == period_len) {
         period_step = 0u;
-        period_len = period_len * 2u;
+        period_len = min(period_len * 2u, 128u);
         period_z = vec2<f32>(zn_re, zn_im);
       }
     }
