@@ -60,33 +60,33 @@ src/main.js ──► src/Fractious.js (Orchestrator & URL State Sync)
 
 ### Module Responsibilities
 
-| File                                                     | Responsibility                                                                                                                                                                                                                                                                                                 |
-| :------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`index.html`](index.html)                               | Declarative markup for the dual canvases (`#fractal-bg`, `#canvas-main`), loading toast, pin overlay, and settings popover.                                                                                                                                                                                    |
-| [`src/Fractious.js`](src/Fractious.js)                   | Top-level application coordinator. Manages `requestAnimationFrame` loop, adaptive iteration scaling, URL synchronization, and handoff between `WorkerManager` and `Renderer`.                                                                                                                                  |
-| [`src/Renderer.js`](src/Renderer.js)                     | WebGPU device/pipeline lifecycle, dynamic precision tier switching (`F32` $\to$ `DS` $\to$ `QS`), progressive horizontal-slice rendering, and `#fractal-bg` snapshot compositing.                                                                                                                              |
-| [`src/renderer/shader.wgsl`](src/renderer/shader.wgsl)   | Perturbation theory fragment shaders across 3 floating-point emulation tiers (`fs_main_f32`, `fs_main_ds`, `fs_main_qs`) with **Zhuoran's Orbit Rebasing**.                                                                                                                                                    |
-| [`src/InteractionManager.js`](src/InteractionManager.js) | Unified pointer/touch/wheel gesture mathematics (zoom-around-point for pinch and double-click, 2-finger pinch/rotate) and DOM input event bindings.                                                                                                                                                            |
-| [`src/WorkerManager.js`](src/WorkerManager.js)           | Main-thread bridge to the Web Worker. Signals cooperative cancellation via a 4-byte `SharedArrayBuffer` (`Atomics.store(abortArray, 0, 1)`).                                                                                                                                                                   |
-| [`src/autoReload.js`](src/autoReload.js)                 | After a new service worker takes control, reloads the page onto the new version once it is hidden or the user is idle (the URL preserves the view), and checks for updates on resume.                                                                                                                          |
-| [`src/worker.js`](src/worker.js)                         | Web Worker entry point. Computes required bit precision from `scale`, invokes `compute_reference`, and transfers `orbit.buffer` back zero-copy.                                                                                                                                                                |
-| [`wasm/src/lib.rs`](wasm/src/lib.rs)                     | Rust/WASM core using `dashu`. Implements arbitrary-precision coordinate arithmetic (`add_coord`, `sub_coord`), and `compute_reference`: a coarse-to-fine perturbation-accelerated anchor search whose winning orbit is reused and extended into the quad-float reference orbit, truncated at its escape point. |
-| `src/*.test.js`                                          | Co-located Vitest unit tests (`Fractious.test.js`, `InteractionManager.test.js`, `main.test.js`, `worker.test.js`). There is no separate `tests/` directory for web tests; mock WASM imports via `vi.mock('../wasm/pkg/fractious_lib.js', ...)`.                                                               |
+| File                                                     | Responsibility                                                                                                                                                                                                                                                                                        |
+| :------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`index.html`](index.html)                               | Declarative markup for the dual canvases (`#fractal-bg`, `#canvas-main`), loading toast, pin overlay, and settings popover.                                                                                                                                                                           |
+| [`src/Fractious.js`](src/Fractious.js)                   | Top-level application coordinator. Manages `requestAnimationFrame` loop, adaptive iteration scaling, URL synchronization, and handoff between `WorkerManager` and `Renderer`.                                                                                                                         |
+| [`src/Renderer.js`](src/Renderer.js)                     | WebGPU device/pipeline lifecycle, dynamic precision tier switching (`F32` $\to$ `DS` $\to$ `QS`), progressive horizontal-slice rendering, and `#fractal-bg` snapshot compositing.                                                                                                                     |
+| [`src/renderer/shader.wgsl`](src/renderer/shader.wgsl)   | Perturbation theory fragment shaders across 3 floating-point emulation tiers (`fs_main_f32`, `fs_main_ds`, `fs_main_qs`) with **Zhuoran's Orbit Rebasing**.                                                                                                                                           |
+| [`src/InteractionManager.js`](src/InteractionManager.js) | Unified pointer/touch/wheel gesture mathematics (zoom-around-point for pinch and double-click, 2-finger pinch/rotate) and DOM input event bindings.                                                                                                                                                   |
+| [`src/WorkerManager.js`](src/WorkerManager.js)           | Main-thread bridge to the Web Worker. Signals cooperative cancellation via a 4-byte `SharedArrayBuffer` (`Atomics.store(abortArray, 0, 1)`).                                                                                                                                                          |
+| [`src/autoReload.js`](src/autoReload.js)                 | After a new service worker takes control, reloads the page onto the new version once it is hidden or the user is idle (the URL preserves the view), and checks for updates on resume.                                                                                                                 |
+| [`src/worker.js`](src/worker.js)                         | Web Worker entry point. Computes required bit precision from `scale`, invokes `compute_reference`, and transfers `orbit.buffer` and `sa.buffer` back zero-copy.                                                                                                                                       |
+| [`wasm/src/lib.rs`](wasm/src/lib.rs)                     | Rust/WASM core using `dashu`. Implements arbitrary-precision coordinate arithmetic (`add_coord`, `sub_coord`), and `compute_reference`: a coarse-to-fine perturbation-accelerated anchor search, quad-float reference orbit generator, and Order-8 Circle-Probed Series Approximation (`compute_sa`). |
+| `src/*.test.js`                                          | Co-located Vitest unit tests (`Fractious.test.js`, `InteractionManager.test.js`, `main.test.js`, `worker.test.js`). There is no separate `tests/` directory for web tests; mock WASM imports via `vi.mock('../wasm/pkg/fractious_lib.js', ...)`.                                                      |
 
 ---
 
 ## 3. Key Technical & Mathematical Invariants
 
-### 3.1 Perturbation Theory & Three GPU Precision Tiers
+### 3.1 Perturbation Theory, Series Approximation & Three GPU Precision Tiers
 
-Direct GPU evaluation fails around `scale < 1e-7` (`f32` mantissa exhaustion). Fractious computes a single arbitrary-precision reference orbit $X_0, X_1, \dots, X_M$ on the CPU (in Rust/WASM) and evaluates per-pixel deltas $\Delta_n = Z_n - X_m$ on the GPU:
-$$\Delta_{n+1} = 2 X_m \Delta_n + \Delta_n^2 + \Delta c$$
+Direct GPU evaluation fails around `scale < 1e-7` (`f32` mantissa exhaustion). Fractious computes a single arbitrary-precision reference orbit $X_0, X_1, \dots, X_M$ on the CPU (in Rust/WASM), skips the shared initial prefix up to step $m_{\text{skip}}$ via an **Order-8 Circle-Probed Series Approximation** validated on $|\Delta c| \le R_{\text{max}}$, and evaluates per-pixel deltas $\Delta_n = Z_n - X_m$ on the GPU in factored form (eliminating the separate $\Delta_n^2$ complex squaring):
+$$\Delta_{n+1} = (2 X_m + \Delta_n)\Delta_n + \Delta c$$
 
 `Renderer.js` automatically selects the cheapest sufficient WGSL pipeline based on `scale`:
 
 - **Tier 1 (`fs_main_f32`)**: `scale > 1.0e-6` — Native hardware `f32` (~7 decimal digits). At shallow zooms (`scale > 1.0e-4`, where `f32` resolves $c = X_1 + \Delta c$ and $Z_n$ below a pixel), `in_main_bulbs` skips pixels inside the main cardioid and period-2 bulb before the loop, and a Brent periodicity check (with a 128-step capped checkpoint window) terminates periodic interior orbits early.
-- **Tier 2 (`fs_main_ds`)**: `1.0e-6 >= scale > 1.0e-13` — Knuth/Dekker Double-Single (`vec2<f32>`, ~14 decimal digits).
-- **Tier 3 (`fs_main_qs`)**: `scale <= 1.0e-13` — Quad-Single (`vec4<f32>`, ~28 decimal digits).
+- **Tier 2 (`fs_main_ds`)**: `1.0e-6 >= scale > 1.0e-21` — Knuth/Dekker Double-Single (`vec2<f32>`, ~14 decimal digits; sufficient down to `1e-21` because post-rebase squaring $Z_n^2 + \Delta c$ only requires half the zoom depth in mantissa digits).
+- **Tier 3 (`fs_main_qs`)**: `scale <= 1.0e-21` — Quad-Single (`vec4<f32>`, ~28 decimal digits).
 - All three fragment entry points share a single colouring helper `compute_color(i, zn_sq, zn_sp, uv)` in `src/renderer/shader.wgsl`.
 - In `InteractionManager.js`, colour/rotation/view tweaks invoke `this.callbacks.onInteract(false)` (immediate 60fps GPU re-render with a 200ms debounced reference check), whereas coordinate jumps invoke `onInteract(true)` (immediate WASM reference orbit recalculation).
 
@@ -102,7 +102,7 @@ In `shader.wgsl`, the pixel's total iteration count `i` (`0..uniforms.iter`) is 
 
 ### 3.3 GPU Buffer Layouts (`Renderer.js` $\leftrightarrow$ `shader.wgsl`)
 
-- **`Uniforms` Buffer (`80 bytes`, 16-byte WebGPU struct alignment)**:
+- **`Uniforms` Buffer (`224 bytes`, 16-byte WebGPU struct alignment)**:
   - Bytes `0..31`: `center0..center3` (`4 × vec2<f32>` quad-float representation of `(state.offsetX, state.offsetY)` relative to the reference anchor)
   - Bytes `32..47`: `zoom` (`vec4<f32>` quad-float representation of `config.zoom`)
   - Byte `48`: `aspect_ratio` (`f32`)
@@ -113,6 +113,8 @@ In `shader.wgsl`, the pixel's total iteration count `i` (`0..uniforms.iter`) is 
   - Byte `68`: `slice_scale` (`f32`, progressive slice vertical scale)
   - Byte `72`: `slice_offset` (`f32`, progressive slice vertical NDC offset)
   - Byte `76`: `ref_iter` (`u32`, valid pre-escape length of `reference_orbit`)
+  - Bytes `80..95`: `sa_params` (`vec4<f32>`: `[bitcast<f32>(skip_iter), inv_rmax_hi, inv_rmax_lo, 0.0]`)
+  - Bytes `96..223`: `sa_coeffs` (`array<vec4<f32>, 8>`: Double-Single normalized Series Approximation coefficients $a_1, \dots, a_8$ on the disk $|\Delta c| \le R_{\text{max}}$)
 - **`reference_orbit` Storage Buffer (`(calcIter + 1) * 32 bytes`)**:
   - Each orbit step `m` occupies `2 × vec4<f32>` (`32 bytes`): `[zx0, zx1, zx2, zx3]` at byte offset `m * 32` (`m * 2u`) and `[zy0, zy1, zy2, zy3]` at byte offset `m * 32 + 16` (`m * 2u + 1u`).
   - The orbit ends at the anchor's escape point (or `calcIter`), so `ref_iter` is simply `orbit.byteLength / 32 - 1`.

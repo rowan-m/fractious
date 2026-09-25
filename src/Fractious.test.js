@@ -352,9 +352,21 @@ describe('Fractious reference results', () => {
   });
 
   it('rebases onto the new anchor without moving the view when nothing changed', () => {
+    const orbit = new Float32Array(8);
+    const sa = new Float32Array(36);
     fractious.updateReference(); // requested centre = (0.25, -0.5)
-    workerManager.onResult({ refX: '0.2', refY: '-0.4', orbit: [], iter: 10 });
+    workerManager.onResult({
+      refX: '0.2',
+      refY: '-0.4',
+      orbit,
+      sa,
+      iter: 10,
+    });
 
+    expect(fractious.renderer.updateOrbitBuffer).toHaveBeenCalledWith(
+      orbit,
+      sa,
+    );
     expect(state.offsetX).toBeCloseTo(0.05, 12);
     expect(state.offsetY).toBeCloseTo(-0.1, 12);
     expect(state.isPendingUpdate).toBe(false);

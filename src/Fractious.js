@@ -63,7 +63,7 @@ export class Fractious {
       this._lastRefOffsetY = baseOffsetY;
       this._lastRefZoom = req.zoom;
 
-      this.renderer.updateOrbitBuffer(payload.orbit);
+      this.renderer.updateOrbitBuffer(payload.orbit, payload.sa);
 
       this.config.iter = payload.iter;
 

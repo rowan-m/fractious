@@ -41,14 +41,18 @@ async function handleCalculateReference(payload, id) {
       abortArray,
     );
     const orbit = ref.take_orbit();
-    const result = { orbit, refX: ref.x, refY: ref.y, iter: ref.iter };
+    const sa = ref.take_sa();
+    const result = { orbit, sa, refX: ref.x, refY: ref.y, iter: ref.iter };
     ref.free();
 
     if (abortArray && Atomics.load(abortArray, 0) === 1) {
       return aborted();
     }
 
-    self.postMessage({ type: 'result', id, payload: result }, [orbit.buffer]);
+    self.postMessage({ type: 'result', id, payload: result }, [
+      orbit.buffer,
+      sa.buffer,
+    ]);
   } catch (error) {
     console.error('Worker error:', error);
     self.postMessage({ type: 'error', id, error: error.toString() });
