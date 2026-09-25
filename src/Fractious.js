@@ -45,24 +45,32 @@ export class Fractious {
     this.workerManager.init();
 
     this.workerManager.onResult = (payload) => {
+      // The request was made for a view the user may have moved away from
+      // since (pan, keys, wheel). Rebase the requested centre onto the new
+      // anchor, then re-apply whatever movement happened in the meantime.
+      const req = this._pendingRequest;
+      const baseOffsetX = sub_coord(req.centerX, payload.refX);
+      const baseOffsetY = sub_coord(req.centerY, payload.refY);
+
+      this.state.offsetX = baseOffsetX + (this.state.offsetX - req.offsetX);
+      this.state.offsetY = baseOffsetY + (this.state.offsetY - req.offsetY);
       this.state.refX = payload.refX;
       this.state.refY = payload.refY;
 
-      this.state.offsetX = sub_coord(this.config.centerX, this.state.refX);
-      this.state.offsetY = sub_coord(this.config.centerY, this.state.refY);
       this._lastRefX = this.state.refX;
       this._lastRefY = this.state.refY;
-      this._lastRefOffsetX = this.state.offsetX;
-      this._lastRefOffsetY = this.state.offsetY;
-      this._lastRefZoom = this.config.zoom;
+      this._lastRefOffsetX = baseOffsetX;
+      this._lastRefOffsetY = baseOffsetY;
+      this._lastRefZoom = req.zoom;
 
       this.renderer.updateOrbitBuffer(payload.orbit);
 
       this.config.iter = payload.iter;
 
-      const isPointerActive =
-        this.state.pointers && this.state.pointers.size > 0;
-      this.state.isPendingUpdate = Boolean(isPointerActive);
+      // Stay in low-res preview if a pointer is down or the view has moved
+      // (a follow-up reference request is already pending in that case).
+      this.state.isPendingUpdate =
+        this.state.pointers.size > 0 || !this._isSameReferenceView();
       this.state.workerBusy = false;
       this.requestRender();
     };
@@ -143,6 +151,13 @@ export class Fractious {
     }
     this.config.centerX = add_coord(this.state.refX, this.state.offsetX);
     this.config.centerY = add_coord(this.state.refY, this.state.offsetY);
+    this._pendingRequest = {
+      centerX: this.config.centerX,
+      centerY: this.config.centerY,
+      offsetX: this.state.offsetX,
+      offsetY: this.state.offsetY,
+      zoom: this.config.zoom,
+    };
     this.state.workerBusy = true;
     this.interactionManager.updateUI();
 
@@ -156,7 +171,6 @@ export class Fractious {
     return (
       this.state.refX === this._lastRefX &&
       this.state.refY === this._lastRefY &&
-      this.state.offsetX !== undefined &&
       this.state.offsetX === this._lastRefOffsetX &&
       this.state.offsetY === this._lastRefOffsetY &&
       this.state.targetZoom === this._lastRefZoom
@@ -173,10 +187,8 @@ export class Fractious {
       this._interactionTimeout = null;
     }
 
-    const isPointerActive = Boolean(
-      this.state.pointers && this.state.pointers.size > 0,
-    );
-    this.interactionManager.setPinVisible?.(
+    const isPointerActive = this.state.pointers.size > 0;
+    this.interactionManager.setPinVisible(
       isPointerActive || !needsNewReference,
     );
 
@@ -200,7 +212,7 @@ export class Fractious {
     } else {
       this._interactionTimeout = setTimeout(() => {
         this._interactionTimeout = null;
-        this.interactionManager.setPinVisible?.(false);
+        this.interactionManager.setPinVisible(false);
         if (this._isSameReferenceView()) {
           this.state.isPendingUpdate = false;
           this.requestRender();
@@ -251,10 +263,7 @@ export class Fractious {
       (!needsMorePasses && this.state.isRendering)
     ) {
       const passGen = this._renderGeneration;
-      const onDone = this.renderer.onSubmittedWorkDone
-        ? this.renderer.onSubmittedWorkDone()
-        : Promise.resolve();
-      onDone.then(() => {
+      this.renderer.onSubmittedWorkDone().then(() => {
         if (this._renderGeneration !== passGen) return;
         if (needsMorePasses) {
           this._scheduleFrame();

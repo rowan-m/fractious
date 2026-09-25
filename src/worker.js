@@ -1,7 +1,4 @@
-import init, {
-  calculate_reference,
-  find_best_anchor,
-} from '../wasm/pkg/fractious_lib.js';
+import init, { compute_reference } from '../wasm/pkg/fractious_lib.js';
 
 let isInitialized = false;
 
@@ -17,18 +14,11 @@ function calculatePrecision(scale) {
   return Math.min(Math.max(bits, 128), 4096);
 }
 
-function calculateUpgradedIter(iter, anchorIter, searchLimit) {
-  let calcIter = Math.max(iter, anchorIter);
-  if (anchorIter >= searchLimit) {
-    calcIter = Math.floor(searchLimit * 1.5);
-  } else if (calcIter > iter) {
-    calcIter = Math.floor(calcIter * 1.25);
-  }
-  return Math.min(calcIter, 2500000);
-}
-
-async function handleCalculateReference(payload) {
+async function handleCalculateReference(payload, id) {
   await initialize();
+
+  const aborted = () =>
+    self.postMessage({ type: 'result', id, payload: { aborted: true } });
 
   try {
     const { centerX, centerY, scale, aspect, iter, abortBuffer } = payload;
@@ -38,54 +28,36 @@ async function handleCalculateReference(payload) {
     // signalled an abort (e.g. user panned/zoomed quickly), exit immediately
     // before doing expensive precision or anchor calculations.
     if (abortArray && Atomics.load(abortArray, 0) === 1) {
-      return self.postMessage({ type: 'result', payload: { aborted: true } });
+      return aborted();
     }
 
-    const prec = calculatePrecision(scale);
-    const searchLimit = Math.max(iter * 3, 5000);
-
-    const anchor = find_best_anchor(
+    const ref = compute_reference(
       centerX,
       centerY,
       scale,
       aspect,
-      searchLimit,
-      prec,
+      iter,
+      calculatePrecision(scale),
       abortArray,
     );
-    if (abortArray && Atomics.load(abortArray, 0) === 1) {
-      return self.postMessage({ type: 'result', payload: { aborted: true } });
-    }
-
-    const calcIter = calculateUpgradedIter(iter, anchor.iter, searchLimit);
-    const orbit = calculate_reference(
-      anchor.x,
-      anchor.y,
-      calcIter,
-      prec,
-      abortArray,
-    );
+    const orbit = ref.take_orbit();
+    const result = { orbit, refX: ref.x, refY: ref.y, iter: ref.iter };
+    ref.free();
 
     if (abortArray && Atomics.load(abortArray, 0) === 1) {
-      return self.postMessage({ type: 'result', payload: { aborted: true } });
+      return aborted();
     }
 
-    self.postMessage(
-      {
-        type: 'result',
-        payload: { orbit, refX: anchor.x, refY: anchor.y, iter: calcIter },
-      },
-      [orbit.buffer],
-    );
+    self.postMessage({ type: 'result', id, payload: result }, [orbit.buffer]);
   } catch (error) {
     console.error('Worker error:', error);
-    self.postMessage({ type: 'error', error: error.toString() });
+    self.postMessage({ type: 'error', id, error: error.toString() });
   }
 }
 
 self.onmessage = async (e) => {
-  const { type, payload } = e.data;
+  const { type, payload, id } = e.data;
   if (type === 'calculate_reference') {
-    await handleCalculateReference(payload);
+    await handleCalculateReference(payload, id);
   }
 };

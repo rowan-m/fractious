@@ -21,20 +21,11 @@
         ]
       },
       {
-        "source": "/sw.js",
+        "source": "{/,/index.html,/sw.js,/manifest.json}",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "public, max-age=7200, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "/index.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=7200, must-revalidate"
+            "value": "no-cache"
           }
         ]
       },

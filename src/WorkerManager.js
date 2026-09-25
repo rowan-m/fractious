@@ -4,6 +4,7 @@ export class WorkerManager {
   constructor() {
     this.worker = null;
     this.currentAbortArray = null;
+    this.requestId = 0;
     this.onResult = null;
     this.onError = null;
   }
@@ -15,7 +16,9 @@ export class WorkerManager {
     });
 
     this.worker.onmessage = (e) => {
-      const { type, payload, error } = e.data;
+      const { type, payload, error, id } = e.data;
+      // Ignore anything from a superseded request.
+      if (id !== this.requestId) return;
 
       if (type === 'error') {
         if (this.onError) this.onError(error);
@@ -44,8 +47,10 @@ export class WorkerManager {
       this.currentAbortArray = null;
     }
 
+    this.requestId += 1;
     this.worker.postMessage({
       type: 'calculate_reference',
+      id: this.requestId,
       payload: {
         centerX: config.centerX,
         centerY: config.centerY,

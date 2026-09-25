@@ -12,10 +12,9 @@ vi.stubGlobal('self', mockSelf);
 vi.mock('../wasm/pkg/fractious_lib.js', () => {
   return {
     default: vi.fn().mockResolvedValue(), // init
-    find_best_anchor: vi.fn().mockImplementation(() => {
+    compute_reference: vi.fn().mockImplementation(() => {
       throw new Error('Test worker error');
     }),
-    calculate_reference: vi.fn(),
   };
 });
 
@@ -31,6 +30,7 @@ describe('worker.js', () => {
     const messageEvent = {
       data: {
         type: 'calculate_reference',
+        id: 7,
         payload: {
           centerX: 0,
           centerY: 0,
@@ -51,6 +51,7 @@ describe('worker.js', () => {
 
     expect(mockPostMessage).toHaveBeenCalledWith({
       type: 'error',
+      id: 7,
       error: 'Error: Test worker error',
     });
 
