@@ -1,10 +1,13 @@
-import { radToNormDeg } from './State.js';
+import { isInteracting, radToNormDeg } from './State.js';
 
 const ZOOM_STEP_FACTOR = Math.pow(10, 0.1);
 const ROTATE_BTN_STEP = Math.PI / 12; // 15 degrees
 const HUE_STEP_INCREMENT = 0.005;
 const HUE_INCREMENT = 0.01;
 const MOVE_STEP = 0.1;
+// Holding a key or button repeats its action, like keyboard auto-repeat.
+const HOLD_DELAY_MS = 400;
+const HOLD_REPEAT_MS = 50;
 
 export class InteractionManager {
   constructor(elements, config, state, callbacks) {
@@ -19,8 +22,11 @@ export class InteractionManager {
     this.handleWheel = this.handleWheel.bind(this);
     this.handleDoubleClick = this.handleDoubleClick.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.handleKeyUp = this.handleKeyUp.bind(this);
+    this.releaseAll = this.releaseAll.bind(this);
 
     this._keyActions = this._createKeyActionMap();
+    this._holdTimers = new Map();
   }
 
   _setVal(input, val) {
@@ -88,6 +94,34 @@ export class InteractionManager {
 
   _notifyInteract(needsNewReference = false) {
     this.callbacks.onInteract(needsNewReference);
+  }
+
+  // Pressing a key or button starts an interaction (pin shown, low-res preview) and
+  // runs its action, repeating while held. The interaction finishes once every
+  // pointer, key and button has been released.
+  _startHold(id, action) {
+    if (this.state.held.has(id)) return;
+    this.state.held.add(id);
+    action();
+    const repeat = () =>
+      this._holdTimers.set(id, setInterval(action, HOLD_REPEAT_MS));
+    this._holdTimers.set(id, setTimeout(repeat, HOLD_DELAY_MS));
+  }
+
+  _endHold(id) {
+    if (!this.state.held.delete(id)) return;
+    // Timeouts and intervals share one ID pool, so this cancels either.
+    clearTimeout(this._holdTimers.get(id));
+    this._holdTimers.delete(id);
+    this._endInteractionIfIdle();
+  }
+
+  releaseAll() {
+    [...this.state.held].forEach((id) => this._endHold(id));
+  }
+
+  _endInteractionIfIdle() {
+    if (!isInteracting(this.state)) this._notifyInteract(true);
   }
 
   handlePointerDown(e) {
@@ -207,7 +241,7 @@ export class InteractionManager {
       this.state.lastY = point.y;
       this.callbacks.onRequestRender();
     } else if (this.state.pointers.size === 0) {
-      this._notifyInteract(true);
+      this._endInteractionIfIdle();
     }
   }
 
@@ -248,6 +282,9 @@ export class InteractionManager {
     canvas.addEventListener('wheel', this.handleWheel, { passive: false });
     canvas.addEventListener('dblclick', this.handleDoubleClick);
     window.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('keyup', this.handleKeyUp);
+    // Key and button releases are missed while the page is in the background.
+    window.addEventListener('blur', this.releaseAll);
 
     if (typeof document.querySelectorAll === 'function') {
       document.querySelectorAll('form').forEach((form) => {
@@ -313,6 +350,26 @@ export class InteractionManager {
   _bindBtn(id, action) {
     const btn = document.getElementById(id);
     if (btn) btn.onclick = action;
+  }
+
+  _bindHoldBtn(id, action) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const hold = `btn:${id}`;
+    btn.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      btn.setPointerCapture(e.pointerId);
+      this._startHold(hold, action);
+    });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) =>
+      btn.addEventListener(type, () => this._endHold(hold)),
+    );
+    // Keyboard activation (Enter/Space on a focused button) has no pointer events.
+    btn.addEventListener('click', (e) => {
+      if (e.detail === 0) action();
+    });
+    // Stop a long press on touch screens opening the context menu.
+    btn.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
   _aspect() {
@@ -396,7 +453,6 @@ export class InteractionManager {
       ['t', hueInc],
       ['f', hueStepDec],
       ['g', hueStepInc],
-      ['?', () => this.el.shortcuts?.togglePopover?.()],
     ]);
   }
 
@@ -419,32 +475,44 @@ export class InteractionManager {
       }
     }
 
+    if (e.key === '?') {
+      e.preventDefault();
+      this.el.shortcuts?.togglePopover?.();
+      return;
+    }
+
     const action = this._keyActions.get(e.key.toLowerCase());
     if (action) {
       e.preventDefault();
-      action();
+      // Held keys repeat on our own timer (as buttons do), not the OS auto-repeat.
+      // Track the physical key so releasing it still matches if Shift changes e.key.
+      if (!e.repeat) this._startHold(`key:${e.code}`, action);
     }
   }
 
+  handleKeyUp(e) {
+    this._endHold(`key:${e.code}`);
+  }
+
   _bindNavigationButtons() {
-    this._bindBtn('btn-up', this._keyActions.get('w'));
-    this._bindBtn('btn-down', this._keyActions.get('s'));
-    this._bindBtn('btn-left', this._keyActions.get('a'));
-    this._bindBtn('btn-right', this._keyActions.get('d'));
+    this._bindHoldBtn('btn-up', this._keyActions.get('w'));
+    this._bindHoldBtn('btn-down', this._keyActions.get('s'));
+    this._bindHoldBtn('btn-left', this._keyActions.get('a'));
+    this._bindHoldBtn('btn-right', this._keyActions.get('d'));
   }
 
   _bindTransformButtons() {
-    this._bindBtn('btn-zoom-in', this._keyActions.get('e'));
-    this._bindBtn('btn-zoom-out', this._keyActions.get('q'));
-    this._bindBtn('btn-rotate-cw', this._keyActions.get('x'));
-    this._bindBtn('btn-rotate-ccw', this._keyActions.get('z'));
+    this._bindHoldBtn('btn-zoom-in', this._keyActions.get('e'));
+    this._bindHoldBtn('btn-zoom-out', this._keyActions.get('q'));
+    this._bindHoldBtn('btn-rotate-cw', this._keyActions.get('x'));
+    this._bindHoldBtn('btn-rotate-ccw', this._keyActions.get('z'));
   }
 
   _bindColorButtons() {
-    this._bindBtn('btn-cycle-in', this._keyActions.get('g'));
-    this._bindBtn('btn-cycle-out', this._keyActions.get('f'));
-    this._bindBtn('btn-hue-left', this._keyActions.get('r'));
-    this._bindBtn('btn-hue-right', this._keyActions.get('t'));
+    this._bindHoldBtn('btn-cycle-in', this._keyActions.get('g'));
+    this._bindHoldBtn('btn-cycle-out', this._keyActions.get('f'));
+    this._bindHoldBtn('btn-hue-left', this._keyActions.get('r'));
+    this._bindHoldBtn('btn-hue-right', this._keyActions.get('t'));
   }
 
   _bindUtilityButtons() {

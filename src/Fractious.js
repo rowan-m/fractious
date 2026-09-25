@@ -3,7 +3,7 @@ import init, {
   sub_coord,
   add_coord,
 } from '../wasm/pkg/fractious_lib.js';
-import { calculateBaseIter, radToNormDeg } from './State.js';
+import { calculateBaseIter, isInteracting, radToNormDeg } from './State.js';
 
 export class Fractious {
   constructor(config, state, renderer, workerManager, interactionManager) {
@@ -67,10 +67,10 @@ export class Fractious {
 
       this.config.iter = payload.iter;
 
-      // Stay in low-res preview if a pointer is down or the view has moved
+      // Stay in low-res preview while interacting or if the view has moved
       // (a follow-up reference request is already pending in that case).
       this.state.isPendingUpdate =
-        this.state.pointers.size > 0 || !this._isSameReferenceView();
+        isInteracting(this.state) || !this._isSameReferenceView();
       this.state.workerBusy = false;
       this.requestRender();
     };
@@ -187,12 +187,10 @@ export class Fractious {
       this._interactionTimeout = null;
     }
 
-    const isPointerActive = this.state.pointers.size > 0;
-    this.interactionManager.setPinVisible(
-      isPointerActive || !needsNewReference,
-    );
+    const isActive = isInteracting(this.state);
+    this.interactionManager.setPinVisible(isActive || !needsNewReference);
 
-    if (needsNewReference && this._isSameReferenceView() && !isPointerActive) {
+    if (needsNewReference && this._isSameReferenceView() && !isActive) {
       this.state.isPendingUpdate = false;
       this.requestRender();
       return;
@@ -202,8 +200,8 @@ export class Fractious {
     this.requestRender();
 
     // Never fire background reference updates or switch out of interactive low-res mode
-    // while a pointer/touch is still actively held down on the canvas.
-    if (isPointerActive) {
+    // while a pointer, key or button is still held down.
+    if (isActive) {
       return;
     }
 

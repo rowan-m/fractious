@@ -121,6 +121,7 @@ describe('Fractious interaction debouncing', () => {
       refX: '0.0',
       refY: '0.0',
       pointers: new Map(),
+      held: new Set(),
       isPendingUpdate: false,
       workerBusy: false,
     };
@@ -320,6 +321,7 @@ describe('Fractious reference results', () => {
       offsetY: -0.5,
       targetZoom: 1.0,
       pointers: new Map(),
+      held: new Set(),
       isPendingUpdate: false,
       workerBusy: false,
     };

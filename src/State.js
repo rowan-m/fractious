@@ -3,6 +3,12 @@ export function calculateBaseIter(zoom) {
   return Math.floor((1000 + 300 * Math.abs(logZoom)) * 1.5);
 }
 
+// True while the user is actively driving the view: pointers on the canvas, or held
+// keys or buttons. The view stays in low-res preview until everything is released.
+export function isInteracting(state) {
+  return state.pointers.size > 0 || state.held.size > 0;
+}
+
 export function radToNormDeg(rad) {
   return ((((rad * 180) / Math.PI) % 360) + 360) % 360;
 }
@@ -43,6 +49,7 @@ export function createDefaultState() {
     currentPixels: 0,
 
     pointers: new Map(),
+    held: new Set(), // keys and buttons currently held down
     prevDiff: -1,
     prevAngle: null,
     prevCenter: null,
