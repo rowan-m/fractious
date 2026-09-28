@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Renderer } from './Renderer.js';
 
-const tier = { name: 'QS', opsMultiplier: 1.0 };
-const config = { iter: 10000 };
+const tier = { name: 'QS', opsMultiplier: 8.0 };
+const config = { iter: 5000 };
 
 function createRenderer(width = 1000, height = 1000) {
   return new Renderer({ width, height }, null);
@@ -27,8 +27,8 @@ describe('Renderer adaptive progressive slices', () => {
 
   it('starts from the fixed worst-case budget before anything is measured', () => {
     const renderer = createRenderer();
-    // ceil(25M ops / (1000 px * 10000 iter)) = ceil(2.5) = 3 rows
-    expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(3);
+    // ceil(200M ops / (1000 px * 5000 iter)) = 40 rows
+    expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(40);
   });
 
   it('grows slices at most twofold per measurement and shrinks immediately', () => {
@@ -43,17 +43,18 @@ describe('Renderer adaptive progressive slices', () => {
     expect(renderer.throughput.get('QS')).toBe(200000);
   });
 
-  it('sizes slices to the target time, capped by the stall limit and the rows left', () => {
+  it('sizes slices to the target time, floored at a 32-row tile strip and capped by stall limit and rows left', () => {
     const renderer = createRenderer();
-    renderer.throughput.set('QS', 1250000); // 40M ops per 32ms = 4 rows
-    expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(4);
+    renderer.throughput.set('QS', 10000000); // 320M ops per 32ms = 64 rows
+    expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(64);
 
-    // A 1-row slice finishing under TARGET_SLICE_MS (e.g. 16ms VSync floor) always grows
-    renderer.recordSliceTime({ tier: 'QS', ops: 10000000 }, 16);
-    expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(2);
+    // When single-thread serial iteration latency exceeds TARGET_SLICE_MS, slices
+    // floor at MIN_SLICE_ROWS (32) rather than collapsing into 1-row slices
+    renderer.recordSliceTime({ tier: 'QS', ops: 160000000 }, 100);
+    expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(32);
 
-    renderer.throughput.set('QS', 1e12); // capped at 16 * 25M ops = 40 rows
-    expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(40);
+    renderer.throughput.set('QS', 1e12); // capped at 16 * 200M ops = 640 rows
+    expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(640);
     expect(renderer._sliceRows(config, progressiveState(990), tier)).toBe(10);
   });
 

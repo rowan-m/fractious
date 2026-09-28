@@ -13,6 +13,11 @@ const TARGET_SLICE_MS = 32;
 // slice can cost more than predicted if it runs into interior. Cap slices at this many
 // of the old fixed worst-case budgets to bound any single stall.
 const MAX_SLICE_BUDGETS = 16;
+// Floor progressive slices at one 32x32 mobile TBDR hardware tile strip. Below this
+// height, slices under-occupy parallel GPU shader lanes while still paying the full
+// single-thread serial iteration latency and full-screen post-pass blit, which would
+// otherwise collapse slices to 1 row whenever serial loop time exceeds TARGET_SLICE_MS.
+const MIN_SLICE_ROWS = 32;
 
 export class Renderer {
   constructor(canvas, bgCanvas) {
@@ -299,7 +304,10 @@ export class Renderer {
       opsPerMs * TARGET_SLICE_MS,
       budget * MAX_SLICE_BUDGETS,
     );
-    return Math.min(remaining, Math.ceil(ops / rowOps));
+    return Math.min(
+      remaining,
+      Math.max(MIN_SLICE_ROWS, Math.ceil(ops / rowOps)),
+    );
   }
 
   _getSliceGeometry(config, state, tier) {
