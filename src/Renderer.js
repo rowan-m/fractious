@@ -93,7 +93,7 @@ export class Renderer {
     });
 
     // initial minimal size, will be updated when orbit arrives
-    this.referenceOrbitSize = (200 + 1) * 8 * 4;
+    this.referenceOrbitSize = (200 + 1) * 4 * 4;
     this.referenceOrbitBuffer = this.device.createBuffer({
       size: Math.max(this.referenceOrbitSize, 16),
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
@@ -188,7 +188,7 @@ export class Renderer {
     const requiredSize = orbitArrayBuffer.byteLength;
     // The worker truncates the orbit at its escape point, so the last stored
     // point index is the valid reference length.
-    this.referenceOrbitMaxIter = Math.max(0, Math.floor(requiredSize / 32) - 1);
+    this.referenceOrbitMaxIter = Math.max(0, Math.floor(requiredSize / 16) - 1);
     if (sa && sa.length === 36) {
       this.saUniformView.set(sa);
       this.skipIter = Math.floor(this.uniformDataView.getFloat32(80, true));
@@ -300,10 +300,11 @@ export class Renderer {
     const rowOps = this.canvas.width * this._effectiveIter(config);
     const budget = PROGRESSIVE_MAX_OPS * tier.opsMultiplier;
     const opsPerMs = this.throughput.get(tier.name) || budget / TARGET_SLICE_MS;
-    const ops = Math.min(
-      opsPerMs * TARGET_SLICE_MS,
+    const maxOps = Math.max(
       budget * MAX_SLICE_BUDGETS,
+      MIN_SLICE_ROWS * 2 * rowOps,
     );
+    const ops = Math.min(opsPerMs * TARGET_SLICE_MS, maxOps);
     return Math.min(
       remaining,
       Math.max(MIN_SLICE_ROWS, Math.ceil(ops / rowOps)),
@@ -384,7 +385,7 @@ export class Renderer {
 
     const maxBufferIter = Math.max(
       0,
-      Math.floor(this.referenceOrbitSize / 32) - 1,
+      Math.floor(this.referenceOrbitSize / 16) - 1,
     );
     const refIter = Math.max(
       1,

@@ -5,7 +5,7 @@ use std::convert::TryFrom;
 use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
-/// Hard cap on reference orbit length (GPU buffer is 32 bytes per point).
+/// Hard cap on reference orbit length (GPU buffer is 16 bytes per point).
 const MAX_REFERENCE_ITER: u64 = 2_500_000;
 
 #[wasm_bindgen]
@@ -42,16 +42,6 @@ fn split_f64_to_2_f32(val: f64) -> (f32, f32) {
     let hi = val as f32;
     let lo = (val - f64::from(hi)) as f32;
     (hi, lo)
-}
-
-fn split_f64_to_4_f32(val: f64) -> (f32, f32, f32, f32) {
-    let part0 = val as f32;
-    let r1 = val - f64::from(part0);
-    let part1 = r1 as f32;
-    let r2 = r1 - f64::from(part1);
-    let part2 = r2 as f32;
-    let part3 = (r2 - f64::from(part2)) as f32;
-    (part0, part1, part2, part3)
 }
 
 /// Fixed inputs for iterating z -> z^2 + c at a given binary precision.
@@ -121,14 +111,16 @@ impl CycleDetector {
 }
 
 /// A Mandelbrot orbit z_0 = 0, z_{n+1} = z_n^2 + c in arbitrary precision. It can be
-/// advanced in stages, optionally recording each point as quad-f32 (the GPU reference
-/// layout: 8 floats per point) and/or f64 (for the perturbation probes).
+/// advanced in stages, optionally recording each point as double-single f32 (the GPU
+/// reference layout: 4 floats per point) and/or f64 (for the perturbation probes).
 struct Orbit {
     zx: FBig,
     zy: FBig,
     /// Index of the current point z_n, which has not been recorded yet.
     n: u32,
     escaped: bool,
+    period: Option<u32>,
+    period_locked: bool,
     qs: Option<Vec<f32>>,
     f64s: Option<Vec<(f64, f64)>>,
 }
@@ -141,9 +133,31 @@ impl Orbit {
             zy: zero,
             n: 0,
             escaped: false,
+            period: None,
+            period_locked: false,
             qs: record_qs.then(Vec::new),
             f64s: record_f64.then(Vec::new),
         }
+    }
+
+    fn extend_locked_cycle(&mut self, limit: u32, p: usize) {
+        if self.n > limit || p == 0 {
+            return;
+        }
+        let rem = (limit - self.n + 1) as usize;
+        if let Some(qs) = self.qs.as_mut() {
+            let start = qs.len() - p * 4;
+            for idx in 0..(rem * 4) {
+                qs.push(qs[start + idx]);
+            }
+        }
+        if let Some(f64s) = self.f64s.as_mut() {
+            let start = f64s.len() - p;
+            for idx in 0..rem {
+                f64s.push(f64s[start + idx]);
+            }
+        }
+        self.n = limit + 1;
     }
 
     /// Records and iterates points up to and including z_limit, stopping early on escape
@@ -158,9 +172,16 @@ impl Orbit {
     ) -> bool {
         let prec = ctx.prec;
         if let Some(qs) = self.qs.as_mut() {
-            qs.reserve((limit.saturating_sub(self.n) as usize + 1) * 8);
+            qs.reserve((limit.saturating_sub(self.n) as usize + 1) * 4);
+        }
+        if self.period_locked {
+            if let Some(p) = self.period.map(|p| p as usize) {
+                self.extend_locked_cycle(limit, p);
+                return true;
+            }
         }
 
+        let mut cycle_matches = 0_usize;
         while !self.escaped && self.n <= limit {
             if self.n.is_multiple_of(1000) && is_aborted(ctx.abort) {
                 return false;
@@ -169,13 +190,22 @@ impl Orbit {
             let z64 = (self.zx.to_f64().value(), self.zy.to_f64().value());
             if let Some(detector) = cycles.as_deref_mut() {
                 if detector.repeats(&self.zx, &self.zy, z64, self.n, prec) {
+                    self.period = Some(detector.lam);
                     return true;
                 }
             }
+            let (x0, x1) = split_f64_to_2_f32(z64.0);
+            let (y0, y1) = split_f64_to_2_f32(z64.1);
+            let pt = [x0, x1, y0, y1];
+            let matches_cycle = cycles.is_none()
+                && self.period.is_some_and(|p| {
+                    let p = p as usize;
+                    self.qs
+                        .as_ref()
+                        .is_some_and(|qs| qs.len() >= p * 4 && qs[qs.len() - p * 4..][..4] == pt)
+                });
             if let Some(qs) = self.qs.as_mut() {
-                let (x0, x1, x2, x3) = split_f64_to_4_f32(z64.0);
-                let (y0, y1, y2, y3) = split_f64_to_4_f32(z64.1);
-                qs.extend_from_slice(&[x0, x1, x2, x3, y0, y1, y2, y3]);
+                qs.extend_from_slice(&pt);
             }
             if let Some(f64s) = self.f64s.as_mut() {
                 f64s.push(z64);
@@ -184,6 +214,19 @@ impl Orbit {
             if z64.0 * z64.0 + z64.1 * z64.1 > 4.0 {
                 self.escaped = true;
                 break;
+            }
+            if matches_cycle {
+                cycle_matches += 1;
+                if let Some(p) = self.period.map(|p| p as usize) {
+                    if cycle_matches >= p {
+                        self.n += 1;
+                        self.period_locked = true;
+                        self.extend_locked_cycle(limit, p);
+                        break;
+                    }
+                }
+            } else {
+                cycle_matches = 0;
             }
 
             let zx2 = (&self.zx * &self.zx).with_precision(prec).value();
@@ -491,7 +534,7 @@ const SA_FLOATS: usize = 4 + SA_ORDER * 4;
 /// around the reference anchor, validated by 8 boundary probes on the circle `|u| = 1`.
 fn compute_sa(qs: &[f32], max_dc: f64) -> Vec<f32> {
     let mut out = vec![0.0_f32; SA_FLOATS];
-    let num_points = qs.len() / 8;
+    let num_points = qs.len() / 4;
     if num_points <= 2 || !(1e-37..1e-3).contains(&max_dc) {
         return out;
     }
@@ -511,9 +554,9 @@ fn compute_sa(qs: &[f32], max_dc: f64) -> Vec<f32> {
     let mut skip_iter = 0_u32;
 
     for m in 0..ref_iter {
-        let base = m * 8;
-        let xr = f64::from(qs[base]) + f64::from(qs[base + 1]) + f64::from(qs[base + 2]);
-        let xi = f64::from(qs[base + 4]) + f64::from(qs[base + 5]) + f64::from(qs[base + 6]);
+        let base = m * 4;
+        let xr = f64::from(qs[base]) + f64::from(qs[base + 1]);
+        let xi = f64::from(qs[base + 2]) + f64::from(qs[base + 3]);
         let tx = 2.0 * xr;
         let ty = 2.0 * xi;
 
@@ -534,12 +577,9 @@ fn compute_sa(qs: &[f32], max_dc: f64) -> Vec<f32> {
             ai[k] = (tx * ak_i + ty * ak_r) + si;
         }
 
-        let next_base = (m + 1) * 8;
-        let xnr =
-            f64::from(qs[next_base]) + f64::from(qs[next_base + 1]) + f64::from(qs[next_base + 2]);
-        let xni = f64::from(qs[next_base + 4])
-            + f64::from(qs[next_base + 5])
-            + f64::from(qs[next_base + 6]);
+        let next_base = (m + 1) * 4;
+        let xnr = f64::from(qs[next_base]) + f64::from(qs[next_base + 1]);
+        let xni = f64::from(qs[next_base + 2]) + f64::from(qs[next_base + 3]);
         let mut valid = true;
         for (ux, uy, dr, di) in &mut probes {
             let dcx = *ux * max_dc;
@@ -631,7 +671,7 @@ pub struct Reference {
 
 #[wasm_bindgen]
 impl Reference {
-    /// Moves the quad-f32 orbit out (8 floats per point, ending at the escape point if
+    /// Moves the double-single f32 orbit out (4 floats per point, ending at the escape point if
     /// the anchor escapes) without copying it through a getter.
     pub fn take_orbit(&mut self) -> Vec<f32> {
         std::mem::take(&mut self.orbit)
@@ -728,10 +768,10 @@ mod tests {
     fn test_split_fbig() {
         let d = DBig::from_str("-0.743643887037158704752191506114774").unwrap();
         let f = d.to_binary().value().with_precision(256).value();
-        let (p0, p1, p2, p3) = split_f64_to_4_f32(f.to_f64().value());
-        let reconstructed = (p0 as f64) + (p1 as f64) + (p2 as f64) + (p3 as f64);
+        let (p0, p1) = split_f64_to_2_f32(f.to_f64().value());
+        let reconstructed = f64::from(p0) + f64::from(p1);
         let diff = (reconstructed - -0.7436438870371587_f64).abs();
-        assert!(diff < 1e-15);
+        assert!(diff < 1e-14);
     }
 
     #[wasm_bindgen_test]
@@ -772,51 +812,52 @@ mod tests {
 
     #[wasm_bindgen_test]
     fn test_orbit_origin() {
-        // max_iter = 2 -> points z_0..z_2 -> (2 + 1) * 8 = 24 floats
-        assert_eq!(reference_orbit("0.0", "0.0", 2, 53), vec![0.0; 24]);
+        // max_iter = 2 -> points z_0..z_2 -> (2 + 1) * 4 = 12 floats
+        assert_eq!(reference_orbit("0.0", "0.0", 2, 53), vec![0.0; 12]);
     }
 
     #[wasm_bindgen_test]
     fn test_orbit_diverge() {
         // Iter 0: z=0,0 -> stored. New z = 3,0
         // Iter 1: z=3,0 -> stored. (3^2 + 0^2 > 4) -> escapes
-        // The orbit ends at the escape point (2 points = 16 floats)
-        let mut expected = vec![0.0; 16];
-        expected[8] = 3.0; // zx0 at iter 1
+        // The orbit ends at the escape point (2 points = 8 floats)
+        let mut expected = vec![0.0; 8];
+        expected[4] = 3.0; // zx0 at iter 1
         assert_eq!(reference_orbit("3.0", "0.0", 2, 53), expected);
     }
 
     #[wasm_bindgen_test]
     fn test_orbit_oscillate() {
         // c = (-1, 0): z alternates 0, -1, 0, -1
-        // Vec structure for each iteration: [zx0..zx3, zy0..zy3]
-        let mut expected = vec![0.0; 32];
-        expected[8] = -1.0; // Iter 1: z=(-1, 0) -> zx0 = -1.0
-        expected[24] = -1.0; // Iter 3: z=(-1, 0) -> zx0 = -1.0
+        // Vec structure for each iteration: [zx0, zx1, zy0, zy1]
+        let mut expected = vec![0.0; 16];
+        expected[4] = -1.0; // Iter 1: z=(-1, 0) -> zx0 = -1.0
+        expected[12] = -1.0; // Iter 3: z=(-1, 0) -> zx0 = -1.0
         assert_eq!(reference_orbit("-1.0", "0.0", 3, 53), expected);
     }
 
     #[wasm_bindgen_test]
     fn test_orbit_invalid_input_falls_back_to_zero() {
-        assert_eq!(reference_orbit("invalid", "invalid", 2, 53), vec![0.0; 24]);
+        assert_eq!(reference_orbit("invalid", "invalid", 2, 53), vec![0.0; 12]);
     }
 
     #[wasm_bindgen_test]
     fn test_staged_advance_matches_single_pass() {
-        // Stop at a cycle, then resume: must be bit-identical to one uninterrupted pass.
-        let cx = DBig::from_str("-0.1").unwrap();
-        let cy = DBig::from_str("0.1").unwrap();
-        let ctx = IterCtx::new(&cx, &cy, 128, &None);
-        let mut staged = Orbit::new(128, true, false);
-        let mut cycles = CycleDetector::new(128);
-        assert!(staged.advance(&ctx, 5000, Some(&mut cycles)));
-        assert!(!staged.escaped && staged.n < 5000, "expected a cycle stop");
-        assert!(staged.advance(&ctx, 6000, None));
+        // Stop at a cycle, then resume across multiple stages: must be bit-identical to one uninterrupted pass.
+        for (c_re, c_im) in [("-0.1", "0.1"), ("-0.95", "0.05")] {
+            let cx = DBig::from_str(c_re).unwrap();
+            let cy = DBig::from_str(c_im).unwrap();
+            let ctx = IterCtx::new(&cx, &cy, 128, &None);
+            let mut staged = Orbit::new(128, true, false);
+            let mut cycles = CycleDetector::new(128);
+            assert!(staged.advance(&ctx, 5000, Some(&mut cycles)));
+            assert!(!staged.escaped && staged.n < 5000, "expected a cycle stop");
+            assert!(staged.advance(&ctx, 5500, None));
+            assert!(staged.period_locked, "expected cycle lock");
+            assert!(staged.advance(&ctx, 6000, None));
 
-        assert_eq!(
-            staged.qs.unwrap(),
-            reference_orbit("-0.1", "0.1", 6000, 128)
-        );
+            assert_eq!(staged.qs.unwrap(), reference_orbit(c_re, c_im, 6000, 128));
+        }
     }
 
     #[wasm_bindgen_test]

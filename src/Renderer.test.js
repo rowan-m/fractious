@@ -55,6 +55,10 @@ describe('Renderer adaptive progressive slices', () => {
 
     renderer.throughput.set('QS', 1e12); // capped at 16 * 200M ops = 640 rows
     expect(renderer._sliceRows(config, progressiveState(), tier)).toBe(640);
+    // At ultra-high iterations where 16 * budget < 32 rows, fast slices can still scale up to 2 * MIN_SLICE_ROWS (64)
+    expect(
+      renderer._sliceRows({ iter: 150000 }, progressiveState(), tier),
+    ).toBe(64);
     expect(renderer._sliceRows(config, progressiveState(990), tier)).toBe(10);
   });
 
