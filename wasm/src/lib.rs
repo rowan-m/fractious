@@ -667,7 +667,7 @@ pub fn compute_reference(
         prec,
         &abort_flag,
     );
-    let calc_iter = upgraded_iter(base_iter, anchor.score, search_limit);
+    let mut calc_iter = upgraded_iter(base_iter, anchor.score, search_limit);
 
     let ctx = IterCtx::new(&anchor.x, &anchor.y, prec, &abort_flag);
     let mut orbit = anchor
@@ -675,13 +675,30 @@ pub fn compute_reference(
         .unwrap_or_else(|| Orbit::new(prec, true, false));
     orbit.advance(&ctx, calc_iter, None);
 
-    let orbit_qs = orbit.qs.unwrap_or_default();
     let max_dc = (anchor.ox.hypot(anchor.oy) + scale * aspect.hypot(1.0)) * 1.25;
     let sa = if is_aborted(&abort_flag) {
         vec![0.0; SA_FLOATS]
     } else {
-        compute_sa(&orbit_qs, max_dc)
+        let mut sa = compute_sa(orbit.qs.as_deref().unwrap_or_default(), max_dc);
+        let skip_iter = sa[0] as u32;
+        if skip_iter > 0 {
+            let reached_end = skip_iter.saturating_add(1) >= calc_iter;
+            calc_iter =
+                (u64::from(calc_iter) + u64::from(skip_iter)).min(MAX_REFERENCE_ITER) as u32;
+            orbit.advance(&ctx, calc_iter, None);
+            if reached_end && !is_aborted(&abort_flag) {
+                sa = compute_sa(orbit.qs.as_deref().unwrap_or_default(), max_dc);
+            }
+            if anchor.score >= search_limit && orbit.escaped {
+                let skip = sa[0] as u32;
+                calc_iter = calc_iter
+                    .max(orbit.n.saturating_add(skip.saturating_mul(3)))
+                    .min(MAX_REFERENCE_ITER as u32);
+            }
+        }
+        sa
     };
+    let orbit_qs = orbit.qs.unwrap_or_default();
 
     Reference {
         x: anchor.x.to_string(),
@@ -852,5 +869,6 @@ mod tests {
         assert_eq!(sa.len(), SA_FLOATS);
         assert!(sa[0] > 50.0, "expected SA to skip initial iterations");
         assert!(sa[1] > 0.0, "expected positive inv_max_dc");
+        assert!(r.iter >= 500 + (sa[0] as u32));
     }
 }
