@@ -115,9 +115,9 @@ In `shader.wgsl`, the pixel's total iteration count `i` (`0..uniforms.iter`) is 
   - Byte `76`: `ref_iter` (`u32`, valid pre-escape length of `reference_orbit`)
   - Bytes `80..95`: `sa_params` (`vec4<f32>`: `[bitcast<f32>(skip_iter), inv_rmax_hi, inv_rmax_lo, 0.0]`)
   - Bytes `96..223`: `sa_coeffs` (`array<vec4<f32>, 8>`: Double-Single normalized Series Approximation coefficients $a_1, \dots, a_8$ on the disk $|\Delta c| \le R_{\text{max}}$)
-- **`reference_orbit` Storage Buffer (`(calcIter + 1) * 32 bytes`)**:
-  - Each orbit step `m` occupies `2 × vec4<f32>` (`32 bytes`): `[zx0, zx1, zx2, zx3]` at byte offset `m * 32` (`m * 2u`) and `[zy0, zy1, zy2, zy3]` at byte offset `m * 32 + 16` (`m * 2u + 1u`).
-  - The orbit ends at the anchor's escape point (or `calcIter`), so `ref_iter` is simply `orbit.byteLength / 32 - 1`.
+- **`reference_orbit` Storage Buffer (`(calcIter + 1) * 16 bytes`)**:
+  - Each orbit step `m` occupies a single `vec4<f32>` (`16 bytes`): `[zx_hi, zx_lo, zy_hi, zy_lo]` at byte offset `m * 16`.
+  - The orbit ends at the anchor's escape point (or `calcIter`), so `ref_iter` is simply `orbit.byteLength / 16 - 1`.
 
 ### 3.4 Dual-Canvas Zero-Latency Interaction (`#fractal-bg` + `#fractal`)
 
@@ -126,7 +126,7 @@ While dragging/zooming or waiting for the WASM worker to compute a new reference
 1. `#fractal-bg` (a 2D canvas behind `#fractal`) is updated via `_updateBackgroundCanvas()` (`bgCtx.drawImage(this.canvas, 0, 0)`) whenever a render completes (`state.nextRow >= canvas.height`), including single-slice low-resolution interactive previews.
 2. When the viewport transitions from a completed low-res preview to a multi-slice progressive high-res render (`this.canvas.width` / `height` resize), `#fractal-bg` retains the low-res preview underneath `#fractal` so there is never a black flash or stale-frame jump while progressive slices fill in.
 3. Progressive high-res slices in `Fractious.frame()` are gated on `device.queue.onSubmittedWorkDone()` and a monotonically increasing `_renderGeneration` token so GPU submissions never saturate the browser compositor queue and user input can preempt in-flight progressive passes within a single frame.
-4. Progressive slice height is adaptive: `Renderer.recordSliceTime()` learns per-tier GPU throughput (in worst-case ops per ms) from each slice's submit-to-done time, and `_sliceRows()` sizes the next slice (`Math.ceil`) to about `TARGET_SLICE_MS` (32ms, above a 16.7ms 60Hz VSync frame on mobile). Slower measurements apply immediately, faster ones at most double the estimate, and slices are floored at `MIN_SLICE_ROWS` (32 rows, one mobile TBDR hardware tile strip) and capped at `MAX_SLICE_BUDGETS` × the fixed worst-case budget so high-iteration serial latency never collapses slices to 1 row and exterior-to-interior transitions stay bounded. Each full-res render records a `fractious:full-res` User Timing measure for traces.
+4. Progressive slice height is adaptive: `Renderer.recordSliceTime()` learns per-tier GPU throughput (in worst-case ops per ms) from each slice's submit-to-done time, and `_sliceRows()` sizes the next slice (`Math.ceil`) to about `TARGET_SLICE_MS` (32ms, above a 16.7ms 60Hz VSync frame on mobile). Slower measurements apply immediately, faster ones at most double the estimate, and slices are floored at `MIN_SLICE_ROWS` (32 rows, one mobile TBDR hardware tile strip) and capped at `Math.max(budget * MAX_SLICE_BUDGETS, MIN_SLICE_ROWS * 2 * rowOps)` so high-iteration serial latency never collapses slices to 1 row, ultra-deep exterior slices can still scale up to `2 × MIN_SLICE_ROWS`, and exterior-to-interior transitions stay bounded. Each full-res render records a `fractious:full-res` User Timing measure for traces.
 
 ---
 
