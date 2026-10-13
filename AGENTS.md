@@ -19,7 +19,7 @@ This document equips AI coding agents and engineers with the architectural conte
 
 2. **Clean, Declarative HTML & Native Web Platform UI**
    - Keep UI structure in clean, semantic, declarative HTML in [`index.html`](index.html) and styles in [`src/style.css`](src/style.css).
-   - Use native browser capabilities (`popover` API, semantic `<button>` and `<input>` elements, CSS custom properties, glassmorphic `backdrop-filter`) instead of imperative DOM-generation trees or external UI libraries.
+   - Use native browser capabilities (`popover` API, semantic `<button>` and `<input>` elements, CSS custom properties) instead of imperative DOM-generation trees or external UI libraries.
    - Never use `.innerHTML` or `insertAdjacentHTML` (enforced by `eslint-plugin-no-unsanitized`).
 
 3. **URL as the Single Source of Truth (Linkable State)**
