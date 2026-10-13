@@ -99,6 +99,24 @@ describe('InteractionManager updateUI', () => {
     expect(elements.inputs.c_re.value).toBe('1.5');
   });
 
+  it('should toggle aria-busy attribute on canvas when busy', () => {
+    elements.canvas = { setAttribute: vi.fn() };
+    state.workerBusy = true;
+    interactionManager.updateUI();
+    expect(elements.canvas.setAttribute).toHaveBeenCalledWith(
+      'aria-busy',
+      'true',
+    );
+
+    state.workerBusy = false;
+    state.isRendering = false;
+    interactionManager.updateUI();
+    expect(elements.canvas.setAttribute).toHaveBeenCalledWith(
+      'aria-busy',
+      'false',
+    );
+  });
+
   it('should toggle the shortcuts popover on ? without interacting with the fractal', () => {
     elements.shortcuts = { togglePopover: vi.fn() };
     const preventDefault = vi.fn();

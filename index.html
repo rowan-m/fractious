@@ -131,6 +131,7 @@
           id="fractal"
           role="img"
           aria-label="Interactive Mandelbrot set rendering"
+          aria-busy="false"
         ></canvas>
       </div>
       <div class="pin">
@@ -359,6 +360,19 @@
       </dl>
       <p>Hold a key or on-screen button to repeat it.</p>
     </div>
+    <dialog id="gpu-error" class="modal" aria-labelledby="gpu-error-title">
+      <h2 id="gpu-error-title">WebGPU Required</h2>
+      <p id="gpu-error-message">
+        WebGPU is not supported or enabled in this browser.
+      </p>
+      <p>
+        Fractious requires a browser with WebGPU enabled (such as Chrome 113+,
+        Edge 113+, or Safari 18+).
+      </p>
+      <form method="dialog">
+        <button type="submit">Dismiss</button>
+      </form>
+    </dialog>
     <script type="module" src="src/main.js"></script>
   </body>
 </html>

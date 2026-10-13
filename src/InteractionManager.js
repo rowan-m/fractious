@@ -49,12 +49,11 @@ export class InteractionManager {
     this._setVal(inputs.iterations, this.config.iter);
     this._setVal(inputs.hue, this.config.hue.toFixed(3));
     this._setVal(inputs.hueStep, this.config.hueStep.toFixed(3));
+    const isBusy = Boolean(this.state.workerBusy || this.state.isRendering);
     if (this.el.iterIcon) {
-      this.el.iterIcon.classList.toggle(
-        'busy',
-        Boolean(this.state.workerBusy || this.state.isRendering),
-      );
+      this.el.iterIcon.classList.toggle('busy', isBusy);
     }
+    this.el.canvas?.setAttribute('aria-busy', String(isBusy));
   }
 
   applyRotation(dx, dy, scale) {

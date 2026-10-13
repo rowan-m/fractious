@@ -54,9 +54,9 @@ export class Renderer {
   }
 
   _showFatalError(message) {
-    document.body.style.color = '#f1f5f9';
-    document.body.style.padding = '2rem';
-    document.body.textContent = message;
+    const msg = document.getElementById('gpu-error-message');
+    if (msg) msg.textContent = message;
+    document.getElementById('gpu-error')?.showModal?.();
   }
 
   async init() {

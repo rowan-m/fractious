@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Renderer } from './Renderer.js';
 
 const tier = { name: 'QS', opsMultiplier: 8.0 };
@@ -74,5 +74,26 @@ describe('Renderer adaptive progressive slices', () => {
     expect(slice).toMatchObject({ yOffset: 0, rows: 100, sliceScale: 1 });
     expect(slice.sliceOffset).toBeCloseTo(0, 10);
     expect(slice.ops).toBe(100 * 1000 * 400);
+  });
+});
+
+describe('Renderer error display', () => {
+  it('displays fatal error message using the modal dialog', () => {
+    const dialog = { showModal: vi.fn() };
+    const msg = { textContent: '' };
+    vi.stubGlobal('document', {
+      getElementById: (id) => {
+        if (id === 'gpu-error') return dialog;
+        if (id === 'gpu-error-message') return msg;
+        return null;
+      },
+    });
+
+    const renderer = createRenderer();
+    renderer._showFatalError('WebGPU not supported.');
+
+    expect(msg.textContent).toBe('WebGPU not supported.');
+    expect(dialog.showModal).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
   });
 });
