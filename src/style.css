@@ -116,6 +116,7 @@ canvas:active {
   display: flex;
   justify-content: center;
   align-content: flex-end;
+  pointer-events: none;
 }
 
 .pinpoint {
@@ -126,6 +127,7 @@ canvas:active {
   text-shadow: -2px -2px 4px rgba(0, 0, 0, 0.8);
   user-select: none;
   touch-action: none;
+  pointer-events: none;
   transition:
     opacity 100ms ease,
     transform 100ms ease-in;
