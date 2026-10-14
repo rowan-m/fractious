@@ -13,7 +13,7 @@ This document equips AI coding agents and engineers with the architectural conte
    - **Prefer automatic mathematical/algorithmic solutions over manual UI knobs.** If the fractal loses detail or glitches at deep zooms, solve it in the perturbation math, shader rebasing, or anchor search rather than exposing technical workarounds to the user.
    - Keep the production bundle tiny. Strict size budgets are enforced in `package.json` via `scripts/check-size.js` (`npm run check:size`):
      - Main JS (`dist/assets/index-*.js`): **$\le$ 15 kB**
-     - WASM binary (`dist/assets/fractious_lib_bg-*.wasm`): **$\le$ 110 kB**
+     - WASM binary (`dist/assets/fractious_lib_bg-*.wasm`): **$\le$ 125 kB**
      - Worker JS (`dist/assets/worker-*.js`): **$\le$ 5 kB**
      - Stylesheet (`dist/assets/index-*.css`): **$\le$ 2 kB**
 

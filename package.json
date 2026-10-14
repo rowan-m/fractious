@@ -63,7 +63,7 @@
     },
     {
       "path": "./dist/assets/fractious_lib_bg-*.wasm",
-      "maxSize": "110 kB"
+      "maxSize": "125 kB"
     },
     {
       "path": "./dist/assets/worker-*.js",

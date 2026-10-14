@@ -19,7 +19,14 @@ fn bits_to_decimal_digits(bits: usize) -> usize {
 
 fn f64_to_dbig(val: f64, dec_prec: usize) -> DBig {
     Rational::try_from(val)
-        .map(|r| DBig::from(r).with_precision(dec_prec).value())
+        .map(|r| {
+            let float = r.to_float(16).value();
+            if dec_prec > 16 {
+                float.with_precision(dec_prec).value()
+            } else {
+                float
+            }
+        })
         .unwrap_or(DBig::ZERO)
 }
 
@@ -272,7 +279,11 @@ pub fn add_coord(val: String, delta: f64) -> String {
     let res = (r_d.with_precision(target_prec).value() + d_d.with_precision(target_prec).value())
         .with_precision(target_prec)
         .value();
-    res.to_string()
+    if res == DBig::ZERO {
+        "0".to_string()
+    } else {
+        res.to_string()
+    }
 }
 
 #[wasm_bindgen]
@@ -522,6 +533,13 @@ fn search_anchor(
                 }
             }
         }
+    }
+
+    if best.x == DBig::ZERO {
+        best.x = DBig::ZERO;
+    }
+    if best.y == DBig::ZERO {
+        best.y = DBig::ZERO;
     }
 
     best
