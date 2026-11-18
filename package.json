@@ -36,25 +36,25 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitest/coverage-v8": "^5.1.0",
+    "@vitest/coverage-v8": "^5.1.1",
     "audit-ci": "^7.1.0",
-    "dependency-cruiser": "^18.7.2",
+    "dependency-cruiser": "^18.8.0",
     "esbuild": "^0.28.2",
-    "eslint": "^10.14.0",
+    "eslint": "^10.15.0",
     "eslint-plugin-no-unsanitized": "^4.1.5",
     "eslint-plugin-security": "^4.2.1",
     "eslint-plugin-sonarjs": "^4.2.2",
     "globals": "^17.14.0",
     "happy-dom": "^21.0.4",
-    "prettier": "^3.9.10",
+    "prettier": "^3.10.1",
     "prettier-plugin-packagejson": "^3.1.0",
     "rimraf": "^6.1.4",
-    "vite": "^8.3.7",
+    "vite": "^8.3.8",
     "vite-plugin-pwa": "^2.0.0",
     "vite-plugin-wasm": "^3.6.0",
-    "vitest": "^5.1.0",
+    "vitest": "^5.1.1",
     "wasm-pack": "^0.15.1",
-    "wgslender": "^1.5.1"
+    "wgslender": "^1.6.0"
   },
   "bundlesize": [
     {
